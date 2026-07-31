@@ -1,0 +1,16 @@
+{
+  "name": "@trustcircle/adapter-kanban",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "dependencies": {
+    "@trustcircle/adapter-sdk": "*",
+    "@trustcircle/contracts": "*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

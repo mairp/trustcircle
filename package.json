@@ -1,0 +1,50 @@
+{
+  "name": "trustcircle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TrustCircleAI Governance Control Plane — vendor-neutral, brownfield governance control plane monorepo (spec 001-governance-control-plane).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0 <23.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.9.8",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "adapters/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "typecheck": "tsc --build --verbose",
+    "contracts:validate": "node --import tsx packages/contracts/scripts/validate.ts",
+    "contracts:generate": "node --import tsx packages/contracts/scripts/generate.ts",
+    "contracts:check": "node --import tsx packages/contracts/scripts/validate.ts --check-generated",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:contract": "vitest run --project contract",
+    "test:integration": "vitest run --project integration",
+    "test:security": "vitest run --project security",
+    "test:migrations": "vitest run --project migration",
+    "test:resilience": "vitest run --project resilience",
+    "test:recovery": "vitest run --project recovery",
+    "test:e2e": "playwright test",
+    "test:accessibility": "playwright test --project=accessibility",
+    "test:performance": "node --import tsx tests/performance/config.ts",
+    "test:boundaries": "node --test \"tests/boundaries/**/*.test.mjs\"",
+    "test:evidence": "node --experimental-strip-types --test \"tests/evidence/**/*.test.mjs\"",
+    "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
+    "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
+    "health": "node --import tsx apps/api/src/health-check.ts",
+    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:boundaries && npm run test:evidence"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}
