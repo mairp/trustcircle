@@ -36,7 +36,7 @@
     "test:recovery": "vitest run --project recovery",
     "test:e2e": "playwright test",
     "test:accessibility": "playwright test --project=accessibility",
-    "test:performance": "node --import tsx tests/performance/config.ts",
+    "test:performance": "node tests/performance/config.ts",
     "test:boundaries": "node --test \"tests/boundaries/**/*.test.mjs\"",
     "test:evidence": "node --experimental-strip-types --test \"tests/evidence/**/*.test.mjs\"",
     "test:sod": "node --experimental-strip-types --test \"tests/authz/**/*.test.mjs\"",
