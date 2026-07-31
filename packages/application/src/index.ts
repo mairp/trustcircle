@@ -5,3 +5,8 @@
 // so downstream consumers (apps/api, adapters) import configuration through a single stable
 // surface. Adding a symbol here is an additive, backward-compatible contract change.
 export * from './config/environment.ts';
+
+// Re-exports the optimistic-concurrency / ETag / If-Match / conflict-response contract
+// (Phase 22 / VO-52d0780c11bcc6fd7583) — the transport-boundary half of the versioned,
+// deduplicated, conflict-safe mutating-operation guarantee. Additive, backward-compatible.
+export * from './concurrency.ts';

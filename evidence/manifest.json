@@ -63,6 +63,13 @@
       "digest": "74b06faa167bd46a89c0f9b41c6a95a82e7467bfec3b69a408f23a153b9b010b"
     },
     {
+      "path": "packages/application/src/concurrency.ts",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "1cfa6f5b38275b91754fcc3fe28c8376cc8fb6558fbc9cf816cb06e463ed47ff"
+    },
+    {
       "path": "packages/application/src/config/environment.ts",
       "status": "present",
       "vo": "VO-config-env",
@@ -179,7 +186,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "416e9fdc80f862476eb64992223507c88a73c5edacd6a531f09fd4ff6316a478"
+      "digest": "a827f7c4158765b0608d99888956756ef5a1b57b12b2e3fa6aa8c65c80b1fd95"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -264,6 +271,10 @@
       "digest": "d292a108b12af8be6bef14b61304e11d95e02c447a30b1d97ce8de2076f1ac70"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE21-EVIDENCE.md",
+      "digest": "ff97039f5c83e31bb32edc26a0d8cd8fd4829384c035f99002566e5942711e7f"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE3-EVIDENCE.md",
       "digest": "330e1bd52be74c79e3f38bf574fd9979f65c1c25d051aa1b9e8d17255f12d12a"
     },
@@ -292,5 +303,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "7c14551e1299b733bdb195229222664bc683c241b8d3533bad216bacdb1fa1b5"
+  "inventoryDigest": "6daee25ad97809f68f69c77cef841a886123afdde469aee50a1b766e015c9ad4"
 }
