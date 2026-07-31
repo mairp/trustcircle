@@ -3,6 +3,9 @@
   "files": [],
   "references": [
     {
+      "path": "./adapters/wiggum"
+    },
+    {
       "path": "./apps/api"
     },
     {

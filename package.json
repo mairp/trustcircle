@@ -44,10 +44,12 @@
     "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
     "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
     "health": "node --import tsx apps/api/src/health-check.ts",
-    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling"
+    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
     "@eslint/js": "9.39.5",
+    "@playwright/test": "1.62.1",
     "@types/node": "22.20.1",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",

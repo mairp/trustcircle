@@ -118,6 +118,7 @@ const EXPECTED_ADAPTERS = [
   'adapters/kanban',
   'adapters/workflow-orchestration',
   'adapters/agentctl',
+  'adapters/wiggum', // hosts src/snapshot.ts per T264 / US6 (read-only Wiggum discovery)
 ];
 
 const ALL_MEMBERS = [...EXPECTED_PACKAGES, ...EXPECTED_APPS, ...EXPECTED_ADAPTERS];
