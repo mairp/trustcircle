@@ -144,6 +144,9 @@ tests/migration | qa/core | planned | Vitest `migration` project (expand/migrate
 tests/resilience | qa/core | planned | Vitest `resilience` project
 tests/recovery | qa/core | planned | Vitest `recovery` project
 tests/accessibility | qa/accessibility | planned | Playwright accessibility owner directory
+.github/workflows | platform/ci | present | Pull-request validation gate (contracts/generated/lint/types/tests/migrations/evidence)
+scripts/ci | platform/ci | present | CI helper scripts (evidence-manifest builder/verifier, guarded step runner)
+evidence | platform/ci | present | Machine-readable evidence manifest (tamper-evident supported-contract inventory)
 ```
 
 ## Source-contract artifact ownership
@@ -166,6 +169,9 @@ playwright.config.ts | present | VO-a11y-config | Playwright axe / keyboard / 40
 tests/integration/simulation-binding.test.ts | planned | VO-a5205654a25746949236 | Source-drift between inspect/simulate/approve/execute invalidates authority
 apps/web/src/features/controllers/OperationActions.tsx | planned | VO-76455e2a60fbc99a2097 | Policy-aware pause/resume/reconcile/rollback/collect-evidence/cancel/e-stop controls
 packages/evidence/src/original-preservation.ts | planned | VO-40b09e5441216007c9e5 | Capture raw source content/revision/metadata/digest/custody before any transformation
+.github/workflows/verify.yml | present | VO-ec575c4ce42b548bfb4d | PR-validation gate: contracts/generated/lint/types/tests/migrations/evidence-manifest
+scripts/ci/evidence-manifest.mjs | present | VO-ec575c4ce42b548bfb4d | Tamper-evident evidence-manifest builder/verifier over supported source contracts
+scripts/ci/run-if-present.mjs | present | VO-ec575c4ce42b548bfb4d | Guarded PR-validation runner: present⇒run, absent⇒visible skip (never silent pass)
 ```
 
 ## Change discipline (compatibility obligation)

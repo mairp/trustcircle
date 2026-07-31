@@ -1,0 +1,143 @@
+{
+  "manifestVersion": 1,
+  "bundle": {
+    "id": "36GCYGDJ15PTYP60F91QWRAY2M",
+    "contentHash": "af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b"
+  },
+  "sourceOfTruth": "docs/architecture/repository-layout.md",
+  "contracts": [
+    {
+      "path": ".github/workflows/verify.yml",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "5fb5861af762f2a26c0afc72fc65571abffe1320a3f9db9013b6ba0e2d547c69"
+    },
+    {
+      "path": "adapters/wiggum/src/snapshot.ts",
+      "status": "present",
+      "vo": "VO-d982977672dda011fc65",
+      "exists": true,
+      "digest": "3bfa43954d92dada9d1708135da8c7eff9f00d3994d40e074e108f2dba648a07"
+    },
+    {
+      "path": "apps/api/src/middleware/context.ts",
+      "status": "present",
+      "vo": "VO-e4323651ab39776dcdbd",
+      "exists": true,
+      "digest": "31729dcfad3f8ed3c9f6af61a034e631f15eb7f96b7d2f39e70e1d1066c4d5f7"
+    },
+    {
+      "path": "apps/web/src/features/controllers/OperationActions.tsx",
+      "status": "planned",
+      "vo": "VO-76455e2a60fbc99a2097",
+      "exists": false,
+      "digest": null
+    },
+    {
+      "path": "packages/application/src/config/environment.ts",
+      "status": "present",
+      "vo": "VO-config-env",
+      "exists": true,
+      "digest": "47dcd906dd3e90f0547fa27c1ded89d77934cdaecd9e1fcd1a25cb7378874d2b"
+    },
+    {
+      "path": "packages/authz/src/separation-of-duties.ts",
+      "status": "present",
+      "vo": "VO-173f7afb7801f4ab3e29",
+      "exists": true,
+      "digest": "9a6e2771ad3f35ab4c26b664960dd7a833374f5e43d23cf54ae23e0057a33fb2"
+    },
+    {
+      "path": "packages/evidence/src/original-preservation.ts",
+      "status": "planned",
+      "vo": "VO-40b09e5441216007c9e5",
+      "exists": false,
+      "digest": null
+    },
+    {
+      "path": "packages/evidence/src/retention.ts",
+      "status": "present",
+      "vo": "VO-b9b935bf93be10bdecdd",
+      "exists": true,
+      "digest": "5325797a43f11939741e185d41dbe49668d5f2f2123f3843070896f751f63d87"
+    },
+    {
+      "path": "playwright.config.ts",
+      "status": "present",
+      "vo": "VO-a11y-config",
+      "exists": true,
+      "digest": "41e2022f5caac11b26d22a6f0e3b413301a5f66fc2e5d0f30421660d3d3322c8"
+    },
+    {
+      "path": "scripts/ci/evidence-manifest.mjs",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "9f3cd081a49671cae0f912b6d421097abaf0d6c639e1ed4ed8743f4408c7902d"
+    },
+    {
+      "path": "scripts/ci/run-if-present.mjs",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "ae77dac1f4a4af445782c9f376dbfec0bffc9a466fd04b1209c43e99669b1dec"
+    },
+    {
+      "path": "tests/integration/simulation-binding.test.ts",
+      "status": "planned",
+      "vo": "VO-a5205654a25746949236",
+      "exists": false,
+      "digest": null
+    },
+    {
+      "path": "tests/performance/config.ts",
+      "status": "present",
+      "vo": "VO-perf-config",
+      "exists": true,
+      "digest": "37974dfa3c7c2c71a6aeb9ff0ceff8f5a3189eb2ae8f05d038d514ce7f003f9e"
+    },
+    {
+      "path": "vitest.workspace.ts",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "bf9208abc1512e23ca4526f40fd38a63ba412dc498b90caa9dc3b1c8d8dfded9"
+    }
+  ],
+  "evidence": [
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE1-EVIDENCE.md",
+      "digest": "d2b30710346b2bf1db42eea1ab0e9038dc954c578f9e546c9a34f828d9aa8f67"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
+      "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE3-EVIDENCE.md",
+      "digest": "330e1bd52be74c79e3f38bf574fd9979f65c1c25d051aa1b9e8d17255f12d12a"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE4-EVIDENCE.md",
+      "digest": "a90b5a6824e18d556564ef541b83880ccf17374c5b2388f1e168ceafc8c38c5e"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE5-EVIDENCE.md",
+      "digest": "1d544cf191ccc4610d9fb9ac5556d835d3565b42152a5888f1323d0f967be3de"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE6-EVIDENCE.md",
+      "digest": "5b0f3a1b0e07fa20a0443899895efca382282824c68baca0c368a41fa7214f3a"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE7-EVIDENCE.md",
+      "digest": "07a23232fe6f1416c3a527989df786d29cd065128ead5987e632b640a41524f2"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE8-EVIDENCE.md",
+      "digest": "5681aeb13bde6a888a6585a61f071d00cd43dcea238f3b14a927f184c05c32ac"
+    }
+  ],
+  "inventoryDigest": "e9e22546c23890751d9c901afdd39c185134bb14a189175b98c984528c103eae"
+}

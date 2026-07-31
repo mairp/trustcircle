@@ -44,7 +44,13 @@
     "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
     "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
     "health": "node --import tsx apps/api/src/health-check.ts",
-    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling"
+    "ci:contracts": "node scripts/ci/run-if-present.mjs --label contracts --requires packages/contracts/scripts/validate.ts -- npm run contracts:validate",
+    "ci:contracts:generated": "node scripts/ci/run-if-present.mjs --label generated-code --requires packages/contracts/scripts/validate.ts -- npm run contracts:check",
+    "ci:migrations": "node scripts/ci/run-if-present.mjs --label migrations --requires packages/persistence/src/database.ts -- npm run test:migrations",
+    "evidence:manifest": "node scripts/ci/evidence-manifest.mjs build",
+    "evidence:verify": "node scripts/ci/evidence-manifest.mjs verify",
+    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling",
+    "verify:pr": "npm run ci:contracts && npm run ci:contracts:generated && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:security && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling && npm run ci:migrations && npm run evidence:verify"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",

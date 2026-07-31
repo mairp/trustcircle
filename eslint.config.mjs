@@ -183,7 +183,7 @@ export default tseslint.config(
   // 5. Node built-in test suites (tests/**/*.mjs) — allow Node test globals, relax TS-only
   //    rules that do not apply to plain ESM test files.
   {
-    files: ['tests/**/*.mjs', '**/*.config.mjs', 'eslint.config.mjs'],
+    files: ['tests/**/*.mjs', 'scripts/**/*.mjs', '**/*.config.mjs', 'eslint.config.mjs'],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',

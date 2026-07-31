@@ -1,0 +1,171 @@
+# Phase 9 — Pull-request validation gate (task series T009 / GAR-010 / VO-ec575c4ce42b548bfb4d).
+#
+# This workflow is the automated compatibility gate for the governance monorepo. On every
+# pull request (and on pushes to the protected branches) it validates each supported-consumer
+# surface so that a change to inventory, decisions, lifecycle states, SOURCE CONTRACTS,
+# EVIDENCE, MAPPINGS, and EXPORTS either preserves consumers or is blocked until it carries
+# approved deprecation/migration/rollback/notice/compatibility evidence.
+#
+# Required PR-validation domains (each has a dedicated job below):
+#   1. contracts          — contract definitions validate against their schemas
+#   2. generated-code      — checked-in generated code is up to date with its source contracts
+#   3. lint                — ESLint (incl. dependency-boundary rules) is clean
+#   4. types               — strict `tsc --build` project graph type-checks
+#   5. tests               — unit / contract / integration / security + governance suites pass
+#   6. migrations          — schema migrations apply / migration suite passes
+#   7. evidence-manifest    — the evidence manifest matches on-disk supported contracts (tamper-evident)
+#
+# Determinism: Node 22 is pinned, `npm ci` installs from the committed lockfile, and legs whose
+# real tooling lands in a later implementation phase run through scripts/ci/run-if-present.mjs,
+# which emits a VISIBLE `::warning::` skip notice (never a silent pass) until the artifact exists.
+
+name: verify
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Never let two runs of the same ref fight; cancel superseded runs.
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Structural verification must not download browsers or reach the network.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+  CI: 'true'
+
+jobs:
+  # ---- 3. lint -------------------------------------------------------------
+  lint:
+    name: lint (eslint + prettier)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: ESLint (dependency-boundary rules)
+        run: npm run lint
+      - name: Prettier format check
+        run: npm run format
+
+  # ---- 4. types ------------------------------------------------------------
+  types:
+    name: types (strict tsc --build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript project graph typecheck
+        run: npm run typecheck
+
+  # ---- 1. contracts + 2. generated-code -----------------------------------
+  contracts:
+    name: contracts + generated code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate source contracts against schemas
+        run: npm run ci:contracts
+      - name: Assert checked-in generated code is up to date
+        run: npm run ci:contracts:generated
+
+  # ---- 5. tests ------------------------------------------------------------
+  tests:
+    name: tests (unit/contract/integration/security + governance suites)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Unit suite
+        run: npm run test:unit
+      - name: Contract suite
+        run: npm run test:contract
+      - name: Integration suite
+        run: npm run test:integration
+      - name: Security suite
+        run: npm run test:security
+      - name: Boundary suite
+        run: npm run test:boundaries
+      - name: Evidence (retention) suite
+        run: npm run test:evidence
+      - name: Separation-of-duties suite
+        run: npm run test:sod
+      - name: Tooling / config-contract suite
+        run: npm run test:tooling
+
+  # ---- 6. migrations -------------------------------------------------------
+  migrations:
+    name: migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Migration suite / schema apply
+        run: npm run ci:migrations
+
+  # ---- 7. evidence-manifest ------------------------------------------------
+  evidence-manifest:
+    name: evidence manifest (tamper-evident supported-contract inventory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify evidence manifest matches on-disk supported contracts
+        run: npm run evidence:verify
+
+  # ---- Aggregate gate: every required domain must pass ---------------------
+  verify:
+    name: verify (required)
+    runs-on: ubuntu-latest
+    needs: [lint, types, contracts, tests, migrations, evidence-manifest]
+    if: always()
+    steps:
+      - name: Fail if any required PR-validation domain failed
+        run: |
+          echo "lint=${{ needs.lint.result }}"
+          echo "types=${{ needs.types.result }}"
+          echo "contracts=${{ needs.contracts.result }}"
+          echo "tests=${{ needs.tests.result }}"
+          echo "migrations=${{ needs.migrations.result }}"
+          echo "evidence-manifest=${{ needs.evidence-manifest.result }}"
+          if [ "${{ needs.lint.result }}" != "success" ] \
+            || [ "${{ needs.types.result }}" != "success" ] \
+            || [ "${{ needs.contracts.result }}" != "success" ] \
+            || [ "${{ needs.tests.result }}" != "success" ] \
+            || [ "${{ needs.migrations.result }}" != "success" ] \
+            || [ "${{ needs.evidence-manifest.result }}" != "success" ]; then
+            echo "::error::One or more required PR-validation domains failed"
+            exit 1
+          fi
+          echo "All required PR-validation domains passed."
