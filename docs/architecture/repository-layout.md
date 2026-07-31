@@ -147,6 +147,7 @@ tests/accessibility | qa/accessibility | planned | Playwright accessibility owne
 .github/workflows | platform/ci | present | Pull-request validation gate (contracts/generated/lint/types/tests/migrations/evidence)
 scripts/ci | platform/ci | present | CI helper scripts (evidence-manifest builder/verifier, guarded step runner)
 evidence | platform/ci | present | Machine-readable evidence manifest (tamper-evident supported-contract inventory)
+.gitignore | platform/ci | present | Version-control ignore contract: disposable data ignored, signed manifests + fixtures retained
 ```
 
 ## Source-contract artifact ownership
@@ -174,6 +175,7 @@ packages/evidence/src/original-preservation.ts | planned | VO-40b09e5441216007c9
 .github/workflows/verify.yml | present | VO-ec575c4ce42b548bfb4d | PR-validation gate: contracts/generated/lint/types/tests/migrations/evidence-manifest
 scripts/ci/evidence-manifest.mjs | present | VO-ec575c4ce42b548bfb4d | Tamper-evident evidence-manifest builder/verifier over supported source contracts
 scripts/ci/run-if-present.mjs | present | VO-ec575c4ce42b548bfb4d | Guarded PR-validation runner: present⇒run, absent⇒visible skip (never silent pass)
+.gitignore | present | VO-ec575c4ce42b548bfb4d | Ignore disposable local data; retain signed validation manifest (evidence/manifest.json) + contract/test fixtures
 ```
 
 ## Change discipline (compatibility obligation)

@@ -14,6 +14,13 @@
       "digest": "5fb5861af762f2a26c0afc72fc65571abffe1320a3f9db9013b6ba0e2d547c69"
     },
     {
+      "path": ".gitignore",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "f6dfb39a645847f0fd9978f6662ef8ab9da66ec23ffecaad9aa54bc4b0c0efbe"
+    },
+    {
       "path": "adapters/wiggum/src/snapshot.ts",
       "status": "present",
       "vo": "VO-d982977672dda011fc65",
@@ -129,6 +136,10 @@
       "digest": "3e643c1013d63e9ad77cf502b8bc76fac48106c8f9006192ea0be50eab6859cb"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE11-EVIDENCE.md",
+      "digest": "3a934ad8ab37bbacd1a794000d55d20729cf0fb88a9e2c8fbc2b4fcbe3702db1"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
       "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
     },
@@ -161,5 +172,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "8d38352132fbc414d8be16b6acb3665707b0f5369d31135b7c804ff017dabe29"
+  "inventoryDigest": "93e766b491e4cc2973abc5cb67e7a1c4c6f548a0cc498e5191360899835f07a2"
 }
