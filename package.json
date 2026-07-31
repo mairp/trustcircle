@@ -40,7 +40,7 @@
     "test:boundaries": "node --test \"tests/boundaries/**/*.test.mjs\"",
     "test:evidence": "node --experimental-strip-types --test \"tests/evidence/**/*.test.mjs\"",
     "test:sod": "node --experimental-strip-types --test \"tests/authz/**/*.test.mjs\"",
-    "test:tooling": "node --test \"tests/tooling/**/*.test.mjs\"",
+    "test:tooling": "node --test-concurrency=1 --test \"tests/tooling/**/*.test.mjs\"",
     "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
     "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
     "health": "node --import tsx apps/api/src/health-check.ts",

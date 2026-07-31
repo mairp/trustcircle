@@ -56,6 +56,13 @@
       "digest": "e114ceb91c9cfc831b67f93e31fb87f3b3465abb1b0ecbded1696a5a7d81654a"
     },
     {
+      "path": "packages/contracts/scripts/validate.ts",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "fb2d21d9f6f9e530201924f138cf3784b9ed4136682d0175aaca5604b26ef697"
+    },
+    {
       "path": "packages/evidence/src/original-preservation.ts",
       "status": "planned",
       "vo": "VO-40b09e5441216007c9e5",
@@ -118,6 +125,10 @@
       "digest": "d2b30710346b2bf1db42eea1ab0e9038dc954c578f9e546c9a34f828d9aa8f67"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE10-EVIDENCE.md",
+      "digest": "3e643c1013d63e9ad77cf502b8bc76fac48106c8f9006192ea0be50eab6859cb"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
       "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
     },
@@ -150,5 +161,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "20d895d97822a7e0137852058dac676c2950c4c76bfeda3efaac7fc42ed1d26a"
+  "inventoryDigest": "8d38352132fbc414d8be16b6acb3665707b0f5369d31135b7c804ff017dabe29"
 }

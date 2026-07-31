@@ -167,6 +167,7 @@ packages/application/src/config/environment.ts | present | VO-config-env | Typed
 tests/performance/config.ts | present | VO-perf-config | k6 acceptance-scale + fault-injection profiles
 playwright.config.ts | present | VO-a11y-config | Playwright axe / keyboard / 400%-reflow projects
 packages/contracts/scripts/generate.ts | present | VO-ec575c4ce42b548bfb4d | OpenAPI/AsyncAPI/JSON Schema type-generation; deterministic, provenance-pinned, drift-checking
+packages/contracts/scripts/validate.ts | present | VO-ec575c4ce42b548bfb4d | Contract validation, unresolved-placeholder rejection, and generated-diff compatibility gate
 tests/integration/simulation-binding.test.ts | planned | VO-a5205654a25746949236 | Source-drift between inspect/simulate/approve/execute invalidates authority
 apps/web/src/features/controllers/OperationActions.tsx | planned | VO-76455e2a60fbc99a2097 | Policy-aware pause/resume/reconcile/rollback/collect-evidence/cancel/e-stop controls
 packages/evidence/src/original-preservation.ts | planned | VO-40b09e5441216007c9e5 | Capture raw source content/revision/metadata/digest/custody before any transformation

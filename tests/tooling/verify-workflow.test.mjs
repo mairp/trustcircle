@@ -236,7 +236,11 @@ test('run-if-present emits a VISIBLE skip (not a silent pass) when required path
       '--label',
       'contracts',
       '--requires',
-      'packages/contracts/scripts/validate.ts',
+      // A path that is guaranteed absent in every phase (this artifact is a
+      // deferred/planned one). validate.ts USED to serve as the absent fixture
+      // but now exists (Phase 11), so we probe a still-missing planned artifact
+      // to keep proving the SKIP path, not an accidental RUN.
+      'apps/web/src/features/controllers/OperationActions.tsx',
       '--',
       'node',
       '-e',
