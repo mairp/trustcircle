@@ -7,3 +7,4 @@
 // package.json resolves here.
 export * from './primitives.ts';
 export * from './state-machine.ts';
+export * from './outcomes.ts';

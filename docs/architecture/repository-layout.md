@@ -163,6 +163,7 @@ in the phase that implements their capability.
 ```contracts
 packages/domain/src/primitives.ts | present | VO-34d9f9fb2a6a39e2d62c | UUIDv7 stable identifiers, source/observation/recorded time types, structured reasons, tenant-scoped governed-entity primitives (version/owner/lifecycle/tests/monitoring/failure/exceptions/evidence)
 packages/domain/src/state-machine.ts | present | VO-34d9f9fb2a6a39e2d62c | Reusable guarded state-machine transitions: governed-entity machines, optimistic-version concurrency, guard-recorded rejections, terminal-history preservation (append-only, terminal states are sinks)
+packages/domain/src/outcomes.ts | present | VO-34d9f9fb2a6a39e2d62c | Canonical outcome codes, RFC 9457 problem+json envelopes, bounded retryability, and total safe-next-action mapping; the outcome vocabulary is a governed mapping entity carrying all nine GAR-005 facets
 packages/evidence/src/retention.ts | present | VO-b9b935bf93be10bdecdd | Retention resolution, legal-hold enforcement, signed disposition records
 packages/authz/src/separation-of-duties.ts | present | VO-173f7afb7801f4ab3e29 | Non-waivable SoD / self-approval / incompatible-role guards
 vitest.workspace.ts | present | VO-ec575c4ce42b548bfb4d | Vitest projects: unit/contract/integration/security/migration/resilience

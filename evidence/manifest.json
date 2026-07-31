@@ -77,6 +77,13 @@
       "digest": "fb2d21d9f6f9e530201924f138cf3784b9ed4136682d0175aaca5604b26ef697"
     },
     {
+      "path": "packages/domain/src/outcomes.ts",
+      "status": "present",
+      "vo": "VO-34d9f9fb2a6a39e2d62c",
+      "exists": true,
+      "digest": "b3302703eab78fdaf26ecf49e569d5e78585560a9464d95ad4f33cc542cbc23d"
+    },
+    {
       "path": "packages/domain/src/primitives.ts",
       "status": "present",
       "vo": "VO-34d9f9fb2a6a39e2d62c",
@@ -173,6 +180,10 @@
       "digest": "66018dc28c1492f0d0148eaad7c98db38eb77634a4ec87e2953dc1c8963ce005"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE15-EVIDENCE.md",
+      "digest": "3f779187ceb84461cc32a2740f280a65a51d7e2aa299faa4c9ff47f9759edcc4"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
       "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
     },
@@ -205,5 +216,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "c054bde9f026591a95c61da84ff1b1e48140243571778dc5049041099223e471"
+  "inventoryDigest": "78d8221e15b892fff1ceafe7b93f188d12c6f23dec39becc8b235a3af7b2a756"
 }
