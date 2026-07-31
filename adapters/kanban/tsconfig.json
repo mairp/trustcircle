@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../../.tsbuild/adapters/kanban",
+    "tsBuildInfoFile": "../../.tsbuild/adapters/kanban/.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../../packages/adapter-sdk"
+    },
+    {
+      "path": "../../packages/contracts"
+    }
+  ]
+}

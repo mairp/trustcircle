@@ -21,6 +21,13 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const readJson = (rel) => JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
+// tsconfig files are JSONC (TypeScript permits // and /* */ comments). Strip comments so we
+// can validate them with JSON.parse without stripping the documentation from the configs.
+const stripJsonc = (text) =>
+  text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:"'\\])\/\/[^\n\r]*/g, '$1');
+const readJsonc = (rel) => JSON.parse(stripJsonc(readFileSync(join(ROOT, rel), 'utf8')));
 const root = readJson('package.json');
 
 // ---- Workspace declaration -------------------------------------------------
@@ -160,6 +167,65 @@ test('packages.evidence export surface is implemented and its targets exist (VO-
   for (const symbol of ['resolveRetention', 'evaluateDisposition', 'recordDisposition', 'verifyDispositionRecord']) {
     assert.match(retention, new RegExp(`export function ${symbol}\\b|export class ${symbol}\\b`),
       `retention.ts must export ${symbol}`);
+  }
+});
+
+test('packages.authz export surface is implemented and its targets exist (VO-173f7afb7801f4ab3e29)', () => {
+  const authz = readJson('packages/authz/package.json');
+  assert.equal(authz.name, '@trustcircle/authz');
+  assert.ok(existsSync(join(ROOT, 'packages/authz/src')), 'authz src boundary must exist');
+  const exportTarget = authz.exports?.['.'] ?? authz.main;
+  assert.ok(exportTarget, 'authz package must declare an export entry');
+  const exportRel = exportTarget.replace(/^\.\//, '');
+  assert.ok(
+    existsSync(join(ROOT, 'packages/authz', exportRel)),
+    `authz export target must exist on disk: ${exportRel}`,
+  );
+  // The Separation-of-Duties source (T043) MUST be implemented, not a scaffold.
+  assert.ok(
+    existsSync(join(ROOT, 'packages/authz/src/separation-of-duties.ts')),
+    'packages/authz/src/separation-of-duties.ts must be implemented (T043 / VO-173f7afb7801f4ab3e29)',
+  );
+  const sod = readFileSync(join(ROOT, 'packages/authz/src/separation-of-duties.ts'), 'utf8');
+  for (const symbol of [
+    'evaluateSeparationOfDuties',
+    'evaluateWithWaiver',
+    'evaluateCentralReviewerDistinctness',
+  ]) {
+    assert.match(
+      sod,
+      new RegExp(`export function ${symbol}\\b`),
+      `separation-of-duties.ts must export ${symbol}`,
+    );
+  }
+});
+
+test('strict shared tsconfig base and project-reference solution exist and stay consistent (T002 / GAR-010)', () => {
+  // The shared strict base must exist and actually enable strict compilation.
+  assert.ok(existsSync(join(ROOT, 'tsconfig.base.json')), 'tsconfig.base.json must exist');
+  const base = readJsonc('tsconfig.base.json');
+  const co = base.compilerOptions ?? {};
+  assert.equal(co.strict, true, 'base must enable strict');
+  assert.equal(co.composite, true, 'base must enable composite for project references');
+  assert.equal(co.declaration, true, 'composite requires declaration emit');
+  assert.match(String(co.module), /nodenext/i, 'base must use NodeNext module resolution');
+
+  // The root solution file must reference workspace members via project references, and every
+  // referenced project must exist on disk with its own composite tsconfig — otherwise the
+  // build graph is broken and consumers relying on `tsc --build` would fail.
+  assert.ok(existsSync(join(ROOT, 'tsconfig.json')), 'root solution tsconfig.json must exist');
+  const solution = readJsonc('tsconfig.json');
+  assert.ok(Array.isArray(solution.references) && solution.references.length > 0,
+    'solution tsconfig must declare project references');
+  for (const ref of solution.references) {
+    const refDir = ref.path.replace(/^\.\//, '');
+    assert.ok(existsSync(join(ROOT, refDir, 'tsconfig.json')),
+      `referenced project must have a tsconfig.json: ${refDir}`);
+    const child = readJsonc(join(refDir, 'tsconfig.json'));
+    assert.match(String(child.extends), /tsconfig\.base\.json$/,
+      `${refDir}/tsconfig.json must extend the shared base`);
+    assert.equal(child.compilerOptions?.composite ?? base.compilerOptions.composite, true,
+      `${refDir} must remain a composite project`);
   }
 });
 

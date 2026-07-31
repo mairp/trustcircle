@@ -39,12 +39,14 @@
     "test:performance": "node --import tsx tests/performance/config.ts",
     "test:boundaries": "node --test \"tests/boundaries/**/*.test.mjs\"",
     "test:evidence": "node --experimental-strip-types --test \"tests/evidence/**/*.test.mjs\"",
+    "test:sod": "node --experimental-strip-types --test \"tests/authz/**/*.test.mjs\"",
     "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
     "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
     "health": "node --import tsx apps/api/src/health-check.ts",
-    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:boundaries && npm run test:evidence"
+    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:boundaries && npm run test:evidence && npm run test:sod"
   },
   "devDependencies": {
+    "@types/node": "22.20.1",
     "typescript": "5.7.3"
   }
 }

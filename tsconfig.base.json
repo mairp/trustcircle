@@ -1,0 +1,71 @@
+{
+  // TrustCircleAI shared TypeScript base (T002 / GAR-010).
+  //
+  // Every workspace member's tsconfig.json `extends` this file, so strict
+  // compilation, module resolution, and the project-reference contract are
+  // configured in exactly one place. Changing a knob here changes it for the
+  // whole monorepo, which is the point: compilation policy is shared, not
+  // per-package drift.
+  //
+  // Consumer-compatibility note (Phase 2 acceptance criterion): these settings
+  // are ADDITIVE over the Phase 1 package boundaries. Source contracts stay at
+  // `src/index.ts` (unchanged `main`/`exports`), so no existing consumer import
+  // path breaks. `composite`/`declaration` only add generated `.d.ts` + build
+  // info under `.tsbuild/` (git-ignored), preserving every supported consumer.
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "TrustCircleAI shared base",
+  "compilerOptions": {
+    // --- Language / runtime target: Node.js 22 + TypeScript 5.7 ----------
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "moduleDetection": "force",
+
+    // --- Project references (composite build) ----------------------------
+    // `composite` is required for `tsc --build` project references. It forces
+    // `declaration` on and requires an explicit `rootDir`, both set per-member.
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "incremental": true,
+
+    // --- Strictness: the whole point of a "strict shared" base -----------
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+
+    // --- Interop / correctness safeguards --------------------------------
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+
+    // --- Emit policy -----------------------------------------------------
+    // Type-check + declaration emit only. Runtime execution uses Node's native
+    // type stripping (`--experimental-strip-types`) / tsx, so we never ship
+    // transpiled JS from `tsc`; `.d.ts` outputs go to a git-ignored `.tsbuild`.
+    "emitDeclarationOnly": true,
+    "pretty": true
+  }
+}

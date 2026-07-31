@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../../.tsbuild/adapters/agentctl",
+    "tsBuildInfoFile": "../../.tsbuild/adapters/agentctl/.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../../packages/adapter-sdk"
+    },
+    {
+      "path": "../../packages/contracts"
+    }
+  ]
+}

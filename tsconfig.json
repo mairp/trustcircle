@@ -1,0 +1,39 @@
+{
+  "//": "Solution-style root config for `tsc --build`. References every workspace member that currently has TypeScript sources; extends the shared strict base only for editor defaults. Apps/adapters are added to references as their src/ gains .ts files in later phases.",
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/adapter-sdk"
+    },
+    {
+      "path": "./packages/application"
+    },
+    {
+      "path": "./packages/audit-ledger"
+    },
+    {
+      "path": "./packages/authz"
+    },
+    {
+      "path": "./packages/contracts"
+    },
+    {
+      "path": "./packages/domain"
+    },
+    {
+      "path": "./packages/evidence"
+    },
+    {
+      "path": "./packages/observability"
+    },
+    {
+      "path": "./packages/persistence"
+    },
+    {
+      "path": "./packages/policy"
+    },
+    {
+      "path": "./packages/projections"
+    }
+  ]
+}
