@@ -112,6 +112,13 @@
       "digest": "5325797a43f11939741e185d41dbe49668d5f2f2123f3843070896f751f63d87"
     },
     {
+      "path": "packages/persistence/src/database.ts",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "b9935fb6268d0a87522a82188e74e6e4b1a9f66fb6392f75df21eeec03896cf5"
+    },
+    {
       "path": "playwright.config.ts",
       "status": "present",
       "vo": "VO-a11y-config",
@@ -184,6 +191,10 @@
       "digest": "3f779187ceb84461cc32a2740f280a65a51d7e2aa299faa4c9ff47f9759edcc4"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE16-EVIDENCE.md",
+      "digest": "81e2f2ad3fd891ab74ac8aa732e667dff9112a895e8f9bafaac8d50836057940"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
       "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
     },
@@ -216,5 +227,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "78d8221e15b892fff1ceafe7b93f188d12c6f23dec39becc8b235a3af7b2a756"
+  "inventoryDigest": "3b6e356ccfb1b05743aa11d339e9be9552ae20525156d89fceb1dcfcb251c83b"
 }
