@@ -147,9 +147,11 @@ tests/recovery | qa/core | planned | Vitest `recovery` project
 tests/accessibility | qa/accessibility | planned | Playwright accessibility owner directory
 .github/workflows | platform/ci | present | Pull-request validation gate (contracts/generated/lint/types/tests/migrations/evidence)
 scripts/ci | platform/ci | present | CI helper scripts (evidence-manifest builder/verifier, guarded step runner)
+scripts/spec | governance/spec | present | Spec tooling: deterministic traceability-matrix generator/drift-checker
 evidence | platform/ci | present | Machine-readable evidence manifest (tamper-evident supported-contract inventory)
 .gitignore | platform/ci | present | Version-control ignore contract: disposable data ignored, signed manifests + fixtures retained
 docs/development | docs/onboarding | present | Developer bootstrap guide: WSL setup, test prerequisites, safe fixture rules, standard commands
+specs/001-governance-control-plane | governance/spec | present | Feature specification, plan, data-model, tasks, and the FR/GAR/AR/NFR/SC-to-task-to-test-to-evidence traceability matrix
 ```
 
 ## Source-contract artifact ownership
@@ -186,6 +188,7 @@ scripts/ci/evidence-manifest.mjs | present | VO-ec575c4ce42b548bfb4d | Tamper-ev
 scripts/ci/run-if-present.mjs | present | VO-ec575c4ce42b548bfb4d | Guarded PR-validation runner: present⇒run, absent⇒visible skip (never silent pass)
 .gitignore | present | VO-ec575c4ce42b548bfb4d | Ignore disposable local data; retain signed validation manifest (evidence/manifest.json) + contract/test fixtures
 docs/development/bootstrap.md | present | VO-ec575c4ce42b548bfb4d | Developer bootstrap: WSL setup, test prerequisites, safe fixture rules, standard-command surface (script-drift enforced)
+specs/001-governance-control-plane/traceability.md | present | VO-52d0780c11bcc6fd7583 | FR/GAR/AR/NFR/SC-to-task-to-test-to-evidence traceability matrix: every spec requirement mapped to its governing tasks.md task(s), on-disk implementing artifact/test, and independently observable evidence; the versioned-&-validated-source-contract + correlated/deduplicated/reconcilable/retry-bounded/safe-outcome obligation clauses mapped to genuine built artifacts (persistence runMutation/reconcileMutation, contracts validate.ts, migration runner); deterministically generated + drift-checked by scripts/spec/build-traceability.mjs
 ```
 
 ## Change discipline (compatibility obligation)

@@ -154,6 +154,13 @@
       "digest": "ae77dac1f4a4af445782c9f376dbfec0bffc9a466fd04b1209c43e99669b1dec"
     },
     {
+      "path": "specs/001-governance-control-plane/traceability.md",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "5ea01f5bfeb0391673badae4b6663b0d3935acfcabad939608a95824c01cf844"
+    },
+    {
       "path": "tests/integration/simulation-binding.test.ts",
       "status": "planned",
       "vo": "VO-a5205654a25746949236",
@@ -260,5 +267,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "7cb4d6dd3f8fabdffa0ddf9ff91ed05c3900dfd0beb4b35c87ca1d28b9437bf1"
+  "inventoryDigest": "102b0a8a5f1eff52f9b32f5ecd273417c45571b7c2b2d5b7f656f102edba60ad"
 }
