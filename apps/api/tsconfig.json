@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/apps/api",
     "tsBuildInfoFile": "../../.tsbuild/apps/api/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../../packages/application"

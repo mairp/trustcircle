@@ -5,8 +5,6 @@
     "outDir": "../../.tsbuild/packages/domain",
     "tsBuildInfoFile": "../../.tsbuild/packages/domain/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": []
 }

@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/apps/projector",
     "tsBuildInfoFile": "../../.tsbuild/apps/projector/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../../packages/application"

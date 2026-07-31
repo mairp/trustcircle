@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/packages/policy",
     "tsBuildInfoFile": "../../.tsbuild/packages/policy/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../domain"

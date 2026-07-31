@@ -40,13 +40,23 @@
     "test:boundaries": "node --test \"tests/boundaries/**/*.test.mjs\"",
     "test:evidence": "node --experimental-strip-types --test \"tests/evidence/**/*.test.mjs\"",
     "test:sod": "node --experimental-strip-types --test \"tests/authz/**/*.test.mjs\"",
+    "test:tooling": "node --test \"tests/tooling/**/*.test.mjs\"",
     "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
     "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
     "health": "node --import tsx apps/api/src/health-check.ts",
-    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:boundaries && npm run test:evidence && npm run test:sod"
+    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
     "@types/node": "22.20.1",
-    "typescript": "5.7.3"
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-import-resolver-typescript": "4.4.4",
+    "eslint-plugin-import": "2.32.0",
+    "globals": "16.5.0",
+    "prettier": "3.9.6",
+    "typescript": "5.7.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.10"
   }
 }

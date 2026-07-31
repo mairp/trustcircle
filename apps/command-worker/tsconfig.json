@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/apps/command-worker",
     "tsBuildInfoFile": "../../.tsbuild/apps/command-worker/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../../packages/application"

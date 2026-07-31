@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/packages/projections",
     "tsBuildInfoFile": "../../.tsbuild/packages/projections/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../domain"

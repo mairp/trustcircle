@@ -77,13 +77,12 @@ const CONFLICTING_DUTY_PAIRS: ReadonlyArray<readonly [Duty, Duty]> = [
 /** True iff the two duties conflict (order-independent). A duty never conflicts with itself. */
 export function dutiesConflict(a: Duty, b: Duty): boolean {
   if (a === b) return false;
-  return CONFLICTING_DUTY_PAIRS.some(
-    ([x, y]) => (x === a && y === b) || (x === b && y === a),
-  );
+  return CONFLICTING_DUTY_PAIRS.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 }
 
 /** Relationships a principal can bear to an action (data-model.md SoDConstraint.incompatible_relationships). */
-export type Relationship = 'requester' | 'owner' | 'executor' | 'custodian' | 'reviewer' | 'approver';
+export type Relationship =
+  'requester' | 'owner' | 'executor' | 'custodian' | 'reviewer' | 'approver';
 
 /**
  * A role a principal is currently assigned. `PLATFORM_ADMIN` is called out explicitly because

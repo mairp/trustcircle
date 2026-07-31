@@ -1,0 +1,34 @@
+# Prettier exclusions — must mirror the generated-file / build-output ignores in
+# eslint.config.mjs so both tools agree on what is machine-authored or disposable.
+
+# Installed / disposable
+node_modules/
+.tsbuild/
+**/*.tsbuildinfo
+**/dist/
+**/build/
+**/coverage/
+playwright-report/
+test-results/
+
+# Runtime state / tooling scratch
+.lisa/
+.git/
+.agents/
+.specify/
+
+# Lockfile (npm owns its formatting)
+package-lock.json
+
+# Generated contract types (produced by `npm run contracts:generate`)
+packages/contracts/src/generated/
+**/*.gen.ts
+**/*.generated.ts
+
+# Authored specification & test-plan documents — canonical source-of-truth prose and
+# hand-maintained contract fixtures. Reformatting these would churn approved content and,
+# for the contract fixtures, could alter a supported source contract (GAR-010). Owned by
+# their authors, not by the formatter.
+specs/
+testautomation/
+

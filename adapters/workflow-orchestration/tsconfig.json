@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/adapters/workflow-orchestration",
     "tsBuildInfoFile": "../../.tsbuild/adapters/workflow-orchestration/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../../packages/adapter-sdk"

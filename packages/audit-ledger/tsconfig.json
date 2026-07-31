@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/packages/audit-ledger",
     "tsBuildInfoFile": "../../.tsbuild/packages/audit-ledger/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../domain"

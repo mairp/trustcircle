@@ -24,9 +24,7 @@ const readJson = (rel) => JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
 // tsconfig files are JSONC (TypeScript permits // and /* */ comments). Strip comments so we
 // can validate them with JSON.parse without stripping the documentation from the configs.
 const stripJsonc = (text) =>
-  text
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:"'\\])\/\/[^\n\r]*/g, '$1');
+  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:"'\\])\/\/[^\n\r]*/g, '$1');
 const readJsonc = (rel) => JSON.parse(stripJsonc(readFileSync(join(ROOT, rel), 'utf8')));
 const root = readJson('package.json');
 
@@ -35,10 +33,7 @@ test('root package.json declares the npm workspace over packages/apps/adapters',
   assert.equal(root.private, true, 'root workspace must be private');
   assert.ok(Array.isArray(root.workspaces), 'workspaces must be an array');
   for (const glob of ['packages/*', 'apps/*', 'adapters/*']) {
-    assert.ok(
-      root.workspaces.includes(glob),
-      `workspaces must include ${glob}`,
-    );
+    assert.ok(root.workspaces.includes(glob), `workspaces must include ${glob}`);
   }
 });
 
@@ -128,9 +123,7 @@ const EXPECTED_ADAPTERS = [
 const ALL_MEMBERS = [...EXPECTED_PACKAGES, ...EXPECTED_APPS, ...EXPECTED_ADAPTERS];
 
 // Build the set of declared workspace member package names for boundary checks.
-const memberNames = new Set(
-  ALL_MEMBERS.map((rel) => readJson(join(rel, 'package.json')).name),
-);
+const memberNames = new Set(ALL_MEMBERS.map((rel) => readJson(join(rel, 'package.json')).name));
 
 test('every declared bounded-context package exists and is a private scoped workspace', () => {
   for (const rel of ALL_MEMBERS) {
@@ -164,9 +157,17 @@ test('packages.evidence export surface is implemented and its targets exist (VO-
     'packages/evidence/src/retention.ts must be implemented (T037 / VO-b9b935bf93be10bdecdd)',
   );
   const retention = readFileSync(join(ROOT, 'packages/evidence/src/retention.ts'), 'utf8');
-  for (const symbol of ['resolveRetention', 'evaluateDisposition', 'recordDisposition', 'verifyDispositionRecord']) {
-    assert.match(retention, new RegExp(`export function ${symbol}\\b|export class ${symbol}\\b`),
-      `retention.ts must export ${symbol}`);
+  for (const symbol of [
+    'resolveRetention',
+    'evaluateDisposition',
+    'recordDisposition',
+    'verifyDispositionRecord',
+  ]) {
+    assert.match(
+      retention,
+      new RegExp(`export function ${symbol}\\b|export class ${symbol}\\b`),
+      `retention.ts must export ${symbol}`,
+    );
   }
 });
 
@@ -215,17 +216,27 @@ test('strict shared tsconfig base and project-reference solution exist and stay 
   // build graph is broken and consumers relying on `tsc --build` would fail.
   assert.ok(existsSync(join(ROOT, 'tsconfig.json')), 'root solution tsconfig.json must exist');
   const solution = readJsonc('tsconfig.json');
-  assert.ok(Array.isArray(solution.references) && solution.references.length > 0,
-    'solution tsconfig must declare project references');
+  assert.ok(
+    Array.isArray(solution.references) && solution.references.length > 0,
+    'solution tsconfig must declare project references',
+  );
   for (const ref of solution.references) {
     const refDir = ref.path.replace(/^\.\//, '');
-    assert.ok(existsSync(join(ROOT, refDir, 'tsconfig.json')),
-      `referenced project must have a tsconfig.json: ${refDir}`);
+    assert.ok(
+      existsSync(join(ROOT, refDir, 'tsconfig.json')),
+      `referenced project must have a tsconfig.json: ${refDir}`,
+    );
     const child = readJsonc(join(refDir, 'tsconfig.json'));
-    assert.match(String(child.extends), /tsconfig\.base\.json$/,
-      `${refDir}/tsconfig.json must extend the shared base`);
-    assert.equal(child.compilerOptions?.composite ?? base.compilerOptions.composite, true,
-      `${refDir} must remain a composite project`);
+    assert.match(
+      String(child.extends),
+      /tsconfig\.base\.json$/,
+      `${refDir}/tsconfig.json must extend the shared base`,
+    );
+    assert.equal(
+      child.compilerOptions?.composite ?? base.compilerOptions.composite,
+      true,
+      `${refDir} must remain a composite project`,
+    );
   }
 });
 
@@ -235,10 +246,7 @@ test('workspace dependency edges stay inside declared boundaries (no undeclared 
     const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
     for (const dep of Object.keys(deps)) {
       if (dep.startsWith('@trustcircle/')) {
-        assert.ok(
-          memberNames.has(dep),
-          `${rel} depends on undeclared workspace member ${dep}`,
-        );
+        assert.ok(memberNames.has(dep), `${rel} depends on undeclared workspace member ${dep}`);
       }
     }
   }

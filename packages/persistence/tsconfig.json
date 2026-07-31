@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/packages/persistence",
     "tsBuildInfoFile": "../../.tsbuild/packages/persistence/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../domain"

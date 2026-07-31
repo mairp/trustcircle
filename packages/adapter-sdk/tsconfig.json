@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/packages/adapter-sdk",
     "tsBuildInfoFile": "../../.tsbuild/packages/adapter-sdk/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../contracts"

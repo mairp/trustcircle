@@ -146,13 +146,8 @@ function holdCovers(hold: LegalHold, item: EvidenceItem): boolean {
 }
 
 /** The IDs of active legal holds that cover the given item. */
-export function activeHoldsFor(
-  item: EvidenceItem,
-  holds: readonly LegalHold[],
-): readonly string[] {
-  return holds
-    .filter((h) => h.status === 'active' && holdCovers(h, item))
-    .map((h) => h.holdId);
+export function activeHoldsFor(item: EvidenceItem, holds: readonly LegalHold[]): readonly string[] {
+  return holds.filter((h) => h.status === 'active' && holdCovers(h, item)).map((h) => h.holdId);
 }
 
 // ---------------------------------------------------------------------------

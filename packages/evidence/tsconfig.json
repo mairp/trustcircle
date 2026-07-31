@@ -5,9 +5,7 @@
     "outDir": "../../.tsbuild/packages/evidence",
     "tsBuildInfoFile": "../../.tsbuild/packages/evidence/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "../domain"

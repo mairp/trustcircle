@@ -72,10 +72,34 @@ test('originals have no parent; derived repairs/redactions/exports retain a prov
 // ---- Clause: retention resolution (longest applicable) ---------------------
 test('resolveRetention returns the MAX expiry across applicable approved policies', () => {
   const policies = [
-    { policyId: 'p-short', tenantId: 'tenant-a', appliesToClassifications: [], durationMillis: 100, approved: true },
-    { policyId: 'p-long', tenantId: 'tenant-a', appliesToClassifications: ['sensitive'], durationMillis: 5_000, approved: true },
-    { policyId: 'p-unapproved', tenantId: 'tenant-a', appliesToClassifications: [], durationMillis: 9_999_999, approved: false },
-    { policyId: 'p-othertenant', tenantId: 'tenant-b', appliesToClassifications: [], durationMillis: 9_999_999, approved: true },
+    {
+      policyId: 'p-short',
+      tenantId: 'tenant-a',
+      appliesToClassifications: [],
+      durationMillis: 100,
+      approved: true,
+    },
+    {
+      policyId: 'p-long',
+      tenantId: 'tenant-a',
+      appliesToClassifications: ['sensitive'],
+      durationMillis: 5_000,
+      approved: true,
+    },
+    {
+      policyId: 'p-unapproved',
+      tenantId: 'tenant-a',
+      appliesToClassifications: [],
+      durationMillis: 9_999_999,
+      approved: false,
+    },
+    {
+      policyId: 'p-othertenant',
+      tenantId: 'tenant-b',
+      appliesToClassifications: [],
+      durationMillis: 9_999_999,
+      approved: true,
+    },
   ];
   const res = resolveRetention(original, policies);
   assert.deepEqual([...res.appliedPolicyIds].sort(), ['p-long', 'p-short']);
@@ -89,7 +113,12 @@ test('activeHoldsFor detects covering active holds and ignores released / out-of
   const holds = [
     { holdId: 'h-active', tenantId: 'tenant-a', scopeEvidenceIds: [], status: 'active' },
     { holdId: 'h-released', tenantId: 'tenant-a', scopeEvidenceIds: [], status: 'released' },
-    { holdId: 'h-scoped-other', tenantId: 'tenant-a', scopeEvidenceIds: ['ev-999'], status: 'active' },
+    {
+      holdId: 'h-scoped-other',
+      tenantId: 'tenant-a',
+      scopeEvidenceIds: ['ev-999'],
+      status: 'active',
+    },
   ];
   assert.deepEqual([...activeHoldsFor(original, holds)], ['h-active']);
   // Negative control: no active covering holds => empty.
@@ -98,37 +127,73 @@ test('activeHoldsFor detects covering active holds and ignores released / out-of
 
 // ---- Clause: disposition invariant (hold / retention / authorization) ------
 test('disposition is blocked by active hold, unexpired retention, or missing authorization', () => {
-  const policies = [{ policyId: 'p', tenantId: 'tenant-a', appliesToClassifications: [], durationMillis: 5_000, approved: true }];
+  const policies = [
+    {
+      policyId: 'p',
+      tenantId: 'tenant-a',
+      appliesToClassifications: [],
+      durationMillis: 5_000,
+      approved: true,
+    },
+  ];
   const auth = { principalId: 'officer-1', grantId: 'grant-1' };
 
   // Blocked: retention not elapsed.
-  const early = evaluateDisposition({ item: original, policies, holds: [], authorization: auth, now: original.createdAt + 1 });
+  const early = evaluateDisposition({
+    item: original,
+    policies,
+    holds: [],
+    authorization: auth,
+    now: original.createdAt + 1,
+  });
   assert.equal(early.eligible, false);
   assert.ok(early.reasons.includes('retention-not-elapsed'));
 
   // Blocked: active legal hold even after retention elapsed.
   const held = evaluateDisposition({
-    item: original, policies,
+    item: original,
+    policies,
     holds: [{ holdId: 'h', tenantId: 'tenant-a', scopeEvidenceIds: [], status: 'active' }],
-    authorization: auth, now: original.createdAt + 10_000,
+    authorization: auth,
+    now: original.createdAt + 10_000,
   });
   assert.equal(held.eligible, false);
   assert.ok(held.reasons.includes('active-legal-hold'));
 
   // Blocked: unauthorized.
-  const unauth = evaluateDisposition({ item: original, policies, holds: [], authorization: null, now: original.createdAt + 10_000 });
+  const unauth = evaluateDisposition({
+    item: original,
+    policies,
+    holds: [],
+    authorization: null,
+    now: original.createdAt + 10_000,
+  });
   assert.equal(unauth.eligible, false);
   assert.ok(unauth.reasons.includes('unauthorized'));
 
   // Eligible: retention elapsed, no holds, authorized.
-  const ok = evaluateDisposition({ item: original, policies, holds: [], authorization: auth, now: original.createdAt + 10_000 });
+  const ok = evaluateDisposition({
+    item: original,
+    policies,
+    holds: [],
+    authorization: auth,
+    now: original.createdAt + 10_000,
+  });
   assert.equal(ok.eligible, true);
   assert.deepEqual([...ok.reasons], []);
 });
 
 // ---- Clause: signed disposition records w/ provenance + access history ------
 test('recordDisposition emits a signed, tamper-evident record retaining provenance/authorization/access history', () => {
-  const policies = [{ policyId: 'p', tenantId: 'tenant-a', appliesToClassifications: [], durationMillis: 5_000, approved: true }];
+  const policies = [
+    {
+      policyId: 'p',
+      tenantId: 'tenant-a',
+      appliesToClassifications: [],
+      durationMillis: 5_000,
+      approved: true,
+    },
+  ];
   const auth = { principalId: 'officer-1', grantId: 'grant-1' };
   const accessHistory = [
     { principalId: 'auditor-9', action: 'read', at: original.createdAt + 500 },
@@ -137,9 +202,15 @@ test('recordDisposition emits a signed, tamper-evident record retaining provenan
   const signingKey = 'test-signing-key';
 
   const record = recordDisposition({
-    item: original, policies, holds: [], authorization: auth,
-    now: original.createdAt + 10_000, method: 'crypto-shred',
-    executedBy: 'officer-1', accessHistory, signingKey,
+    item: original,
+    policies,
+    holds: [],
+    authorization: auth,
+    now: original.createdAt + 10_000,
+    method: 'crypto-shred',
+    executedBy: 'officer-1',
+    accessHistory,
+    signingKey,
   });
 
   // Provenance / integrity / authorization / retention / access history all retained.
@@ -159,15 +230,29 @@ test('recordDisposition emits a signed, tamper-evident record retaining provenan
 });
 
 test('recordDisposition refuses to sign a record while disposition is not permitted', () => {
-  const policies = [{ policyId: 'p', tenantId: 'tenant-a', appliesToClassifications: [], durationMillis: 5_000, approved: true }];
+  const policies = [
+    {
+      policyId: 'p',
+      tenantId: 'tenant-a',
+      appliesToClassifications: [],
+      durationMillis: 5_000,
+      approved: true,
+    },
+  ];
   const auth = { principalId: 'officer-1', grantId: 'grant-1' };
   assert.throws(
-    () => recordDisposition({
-      item: original, policies,
-      holds: [{ holdId: 'h', tenantId: 'tenant-a', scopeEvidenceIds: [], status: 'active' }],
-      authorization: auth, now: original.createdAt + 10_000,
-      method: 'delete', executedBy: 'officer-1', accessHistory: [], signingKey: 'k',
-    }),
+    () =>
+      recordDisposition({
+        item: original,
+        policies,
+        holds: [{ holdId: 'h', tenantId: 'tenant-a', scopeEvidenceIds: [], status: 'active' }],
+        authorization: auth,
+        now: original.createdAt + 10_000,
+        method: 'delete',
+        executedBy: 'officer-1',
+        accessHistory: [],
+        signingKey: 'k',
+      }),
     DispositionNotPermittedError,
   );
 });
