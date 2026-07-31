@@ -202,6 +202,69 @@ test('packages.authz export surface is implemented and its targets exist (VO-173
   }
 });
 
+test('packages.application env config export surface is implemented and its targets exist (VO-ec575c4ce42b548bfb4d)', () => {
+  const application = readJson('packages/application/package.json');
+  assert.equal(application.name, '@trustcircle/application');
+  assert.ok(
+    existsSync(join(ROOT, 'packages/application/src')),
+    'application src boundary must exist',
+  );
+  const exportTarget = application.exports?.['.'] ?? application.main;
+  assert.ok(exportTarget, 'application package must declare an export entry');
+  const exportRel = exportTarget.replace(/^\.\//, '');
+  assert.ok(
+    existsSync(join(ROOT, 'packages/application', exportRel)),
+    `application export target must exist on disk: ${exportRel}`,
+  );
+  // The typed environment / secret-reference / safe-defaults source (Phase 7) MUST be
+  // implemented, not a scaffold, and must re-export from the package entry point.
+  const envRel = 'packages/application/src/config/environment.ts';
+  assert.ok(
+    existsSync(join(ROOT, envRel)),
+    `${envRel} must be implemented (Phase 7 / VO-ec575c4ce42b548bfb4d)`,
+  );
+  const index = readFileSync(join(ROOT, 'packages/application', exportRel), 'utf8');
+  assert.match(
+    index,
+    /export \* from '\.\/config\/environment\.ts'/,
+    'application index must re-export the environment config surface',
+  );
+  const envSource = readFileSync(join(ROOT, envRel), 'utf8');
+  for (const symbol of [
+    'parseEnvironment',
+    'parseEnvironmentOrThrow',
+    'parseSecretReference',
+    'toRedactedString',
+  ]) {
+    assert.match(
+      envSource,
+      new RegExp(`export function ${symbol}\\b`),
+      `environment.ts must export function ${symbol}`,
+    );
+  }
+  for (const symbol of ['EnvironmentValidationError']) {
+    assert.match(
+      envSource,
+      new RegExp(`export class ${symbol}\\b`),
+      `environment.ts must export class ${symbol}`,
+    );
+  }
+  // The exported variable inventory + safe-default table are part of the source contract.
+  for (const symbol of [
+    'ENVIRONMENT_VARIABLE_NAMES',
+    'SECRET_REFERENCE_VARIABLE_NAMES',
+    'SECRET_REFERENCE_SCHEMES',
+    'DEPLOYMENT_STAGES',
+    'SAFE_DEFAULTS',
+  ]) {
+    assert.match(
+      envSource,
+      new RegExp(`export const ${symbol}\\b`),
+      `environment.ts must export const ${symbol}`,
+    );
+  }
+});
+
 test('strict shared tsconfig base and project-reference solution exist and stay consistent (T002 / GAR-010)', () => {
   // The shared strict base must exist and actually enable strict compilation.
   assert.ok(existsSync(join(ROOT, 'tsconfig.base.json')), 'tsconfig.base.json must exist');
