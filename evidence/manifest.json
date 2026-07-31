@@ -49,6 +49,13 @@
       "digest": "c086c2f61c437aa7a1d7324707a22144f433d24c2d263a9093843e1bf0c16b28"
     },
     {
+      "path": "db/migrations/0002_tenant_rls.sql",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "6f547883c9ad8c798cebf5a5cadc47a01a5ad39ba7ab90f03220cabf57ec484b"
+    },
+    {
       "path": "docs/development/bootstrap.md",
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
@@ -161,6 +168,13 @@
       "digest": "37974dfa3c7c2c71a6aeb9ff0ceff8f5a3189eb2ae8f05d038d514ce7f003f9e"
     },
     {
+      "path": "tests/security/tenant-rls.test.ts",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "130fa9a38a90259823e70bcbd1cb785bd3c69115d072d3611b63797c5badb02a"
+    },
+    {
       "path": "vitest.workspace.ts",
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
@@ -206,6 +220,10 @@
       "digest": "d8e47357a3b65254919e2715a9b08f0e753bbeb9756855b02197baf5c7500bff"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE18-EVIDENCE.md",
+      "digest": "8cce6bfbc48d3c5bb7878a2b0156a3d49ea92a86cbef8cabecf9df0ab33e5fef"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
       "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
     },
@@ -238,5 +256,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "81cc8945739f214a1f3fa856f11dc18eee0d435a2f5d2ac8d044f3d4045cd60f"
+  "inventoryDigest": "6b436f40a9a82ce558e46e37cc9e5936bac9bc2d0d68aac33bf32be6c7f14be0"
 }
