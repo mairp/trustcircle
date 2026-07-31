@@ -1032,7 +1032,36 @@ export function pgPoolDriver(pool: PgPool): SqlDriver {
   };
 }
 
-/** Discover ordered migrations under db/migrations (id__name.kind.sql), for the CLI. */
+/**
+ * Parse a migration file name into its (id, name, kind). Two supported forms:
+ *
+ *   1. `<id>__<name>.<kind>.sql`  — explicit kind, e.g. `0001__init.expand.sql`.
+ *   2. `<id>_<name>.sql`          — plain form (kind defaults to `expand`),
+ *                                   e.g. `0001_tenancy_authority.sql`.
+ *
+ * Both forms are a supported consumer surface: the plain form is the authored
+ * convention for the tenancy/authority migrations, and the explicit form lets a
+ * later migration declare `migrate`/`contract` kinds. The `id` is the leading
+ * zero-padded ordinal in both. Returns `null` for a non-migration `.sql` file
+ * name so callers can raise a precise error.
+ */
+export function parseMigrationFilename(
+  file: string,
+): { id: string; name: string; kind: MigrationKind } | null {
+  // Explicit-kind form first (double underscore, trailing .<kind>.sql).
+  const explicit = file.match(/^(\d+)__(.+)\.(expand|migrate|contract)\.sql$/);
+  if (explicit) {
+    return { id: explicit[1]!, name: explicit[2]!, kind: explicit[3] as MigrationKind };
+  }
+  // Plain form: <id>_<name>.sql — single leading separator, kind defaults to expand.
+  const plain = file.match(/^(\d+)_(.+)\.sql$/);
+  if (plain) {
+    return { id: plain[1]!, name: plain[2]!, kind: 'expand' };
+  }
+  return null;
+}
+
+/** Discover ordered migrations under db/migrations, for the CLI. */
 export async function loadMigrationsFromDisk(dir: string): Promise<Migration[]> {
   const { readdirSync, readFileSync } = await import('node:fs');
   const { join } = await import('node:path');
@@ -1040,13 +1069,16 @@ export async function loadMigrationsFromDisk(dir: string): Promise<Migration[]> 
     .filter((f) => f.endsWith('.sql'))
     .sort();
   return files.map((file) => {
-    // Convention: <id>__<name>.<kind>.sql  e.g. 0001__init.expand.sql
-    const m = file.match(/^(\d+)__(.+)\.(expand|migrate|contract)\.sql$/);
-    if (!m) throw new Error(`migration file name not in <id>__<name>.<kind>.sql form: ${file}`);
+    const parsed = parseMigrationFilename(file);
+    if (!parsed) {
+      throw new Error(
+        `migration file name not in <id>_<name>.sql or <id>__<name>.<kind>.sql form: ${file}`,
+      );
+    }
     return {
-      id: m[1]!,
-      name: m[2]!,
-      kind: m[3] as MigrationKind,
+      id: parsed.id,
+      name: parsed.name,
+      kind: parsed.kind,
       up: readFileSync(join(dir, file), 'utf8'),
     };
   });

@@ -42,6 +42,13 @@
       "digest": null
     },
     {
+      "path": "db/migrations/0001_tenancy_authority.sql",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "c086c2f61c437aa7a1d7324707a22144f433d24c2d263a9093843e1bf0c16b28"
+    },
+    {
       "path": "docs/development/bootstrap.md",
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
@@ -116,7 +123,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "b9935fb6268d0a87522a82188e74e6e4b1a9f66fb6392f75df21eeec03896cf5"
+      "digest": "d75dd3a7edcb66545d48817990df71c70fb8c99e1555e38a50451613f603d958"
     },
     {
       "path": "playwright.config.ts",
@@ -195,6 +202,10 @@
       "digest": "81e2f2ad3fd891ab74ac8aa732e667dff9112a895e8f9bafaac8d50836057940"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE17-EVIDENCE.md",
+      "digest": "d8e47357a3b65254919e2715a9b08f0e753bbeb9756855b02197baf5c7500bff"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
       "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
     },
@@ -227,5 +238,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "3b6e356ccfb1b05743aa11d339e9be9552ae20525156d89fceb1dcfcb251c83b"
+  "inventoryDigest": "81cc8945739f214a1f3fa856f11dc18eee0d435a2f5d2ac8d044f3d4045cd60f"
 }
