@@ -91,7 +91,7 @@ tests/                               # cross-cutting acceptance/verification sui
 └── tooling/                         # config/tooling acceptance tests        [present]
 ```
 
-> Note: some Vitest project directories (`tests/contract`, `tests/migration`,
+> Note: some Vitest project directories (`tests/migration`,
 > `tests/resilience`, `tests/recovery`) and `tests/accessibility` are `planned`:
 > the Vitest/
 > Playwright **project names** already exist as a supported consumer surface
@@ -139,7 +139,7 @@ tests/boundaries | qa/core | present | Workspace boundary acceptance tests
 tests/evidence | qa/core | present | Evidence/retention acceptance tests
 tests/authz | qa/security | present | Separation-of-duties acceptance tests
 tests/tooling | qa/core | present | Config/tooling acceptance tests
-tests/contract | qa/core | planned | Vitest `contract` project (consumer contract tests)
+tests/contract | qa/core | present | Vitest `contract` project (consumer contract tests)
 tests/migration | qa/core | planned | Vitest `migration` project (expand/migrate/contract DB-change tests)
 tests/resilience | qa/core | planned | Vitest `resilience` project
 tests/recovery | qa/core | planned | Vitest `recovery` project
@@ -166,6 +166,7 @@ adapters/wiggum/src/snapshot.ts | present | VO-d982977672dda011fc65 | Read-only 
 packages/application/src/config/environment.ts | present | VO-config-env | Typed environment parsing, secret-reference validation, safe defaults
 tests/performance/config.ts | present | VO-perf-config | k6 acceptance-scale + fault-injection profiles
 playwright.config.ts | present | VO-a11y-config | Playwright axe / keyboard / 400%-reflow projects
+packages/contracts/scripts/generate.ts | present | VO-ec575c4ce42b548bfb4d | OpenAPI/AsyncAPI/JSON Schema type-generation; deterministic, provenance-pinned, drift-checking
 tests/integration/simulation-binding.test.ts | planned | VO-a5205654a25746949236 | Source-drift between inspect/simulate/approve/execute invalidates authority
 apps/web/src/features/controllers/OperationActions.tsx | planned | VO-76455e2a60fbc99a2097 | Policy-aware pause/resume/reconcile/rollback/collect-evidence/cancel/e-stop controls
 packages/evidence/src/original-preservation.ts | planned | VO-40b09e5441216007c9e5 | Capture raw source content/revision/metadata/digest/custody before any transformation
