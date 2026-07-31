@@ -163,6 +163,8 @@ evidence (GAR-010). Paths marked `planned` are owned/reserved here now and land
 in the phase that implements their capability.
 
 ```contracts
+specs/001-governance-control-plane/spec.md | present | VO-52d0780c11bcc6fd7583 | Requirement catalog (FR/GAR/AR/NFR/SC) — the source-of-truth grounding surface the traceability matrix parses; sha256-pinned so its 108 governed requirements cannot silently drift
+specs/001-governance-control-plane/tasks.md | present | VO-52d0780c11bcc6fd7583 | Task breakdown (T001..) with task→requirement links — the source-of-truth grounding surface for every task ID cited by the traceability matrix; sha256-pinned so cited task IDs remain verifiable
 packages/domain/src/primitives.ts | present | VO-34d9f9fb2a6a39e2d62c | UUIDv7 stable identifiers, source/observation/recorded time types, structured reasons, tenant-scoped governed-entity primitives (version/owner/lifecycle/tests/monitoring/failure/exceptions/evidence)
 packages/domain/src/state-machine.ts | present | VO-34d9f9fb2a6a39e2d62c | Reusable guarded state-machine transitions: governed-entity machines, optimistic-version concurrency, guard-recorded rejections, terminal-history preservation (append-only, terminal states are sinks)
 packages/domain/src/outcomes.ts | present | VO-34d9f9fb2a6a39e2d62c | Canonical outcome codes, RFC 9457 problem+json envelopes, bounded retryability, and total safe-next-action mapping; the outcome vocabulary is a governed mapping entity carrying all nine GAR-005 facets

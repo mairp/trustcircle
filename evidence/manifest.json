@@ -154,6 +154,20 @@
       "digest": "ae77dac1f4a4af445782c9f376dbfec0bffc9a466fd04b1209c43e99669b1dec"
     },
     {
+      "path": "specs/001-governance-control-plane/spec.md",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "87c5e7a905eaeb0b71c5258fa3f32f0ad34a014d0061f0e7793ca20f06bc22ab"
+    },
+    {
+      "path": "specs/001-governance-control-plane/tasks.md",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "bb5eb26c17ea98e1e1d0241643a37c9a1424882b26728524fd3f94697060730a"
+    },
+    {
       "path": "specs/001-governance-control-plane/traceability.md",
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
@@ -267,5 +281,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "102b0a8a5f1eff52f9b32f5ecd273417c45571b7c2b2d5b7f656f102edba60ad"
+  "inventoryDigest": "b1045eaeda66f68313fa3c6bc1ea1b794cbcb6ad778e61cc0fb33385da412c10"
 }
