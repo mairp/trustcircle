@@ -42,6 +42,13 @@
       "digest": null
     },
     {
+      "path": "docs/development/bootstrap.md",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "74b06faa167bd46a89c0f9b41c6a95a82e7467bfec3b69a408f23a153b9b010b"
+    },
+    {
       "path": "packages/application/src/config/environment.ts",
       "status": "present",
       "vo": "VO-config-env",
@@ -140,6 +147,10 @@
       "digest": "3a934ad8ab37bbacd1a794000d55d20729cf0fb88a9e2c8fbc2b4fcbe3702db1"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE12-EVIDENCE.md",
+      "digest": "b8542f27be69f88c895f967e8b5813329ae0f72d15b2a62f7c6ca83de94177df"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE2-EVIDENCE.md",
       "digest": "bacf4a74daa9dc3bf7a152d16fe61dc93ab678a20a51c3180a529bc812066e08"
     },
@@ -172,5 +183,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "93e766b491e4cc2973abc5cb67e7a1c4c6f548a0cc498e5191360899835f07a2"
+  "inventoryDigest": "821911f8e48c34d6e15ef736fbaa8ff42f8e23935d19aab69fce4f33db0ec63b"
 }

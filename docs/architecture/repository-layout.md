@@ -148,6 +148,7 @@ tests/accessibility | qa/accessibility | planned | Playwright accessibility owne
 scripts/ci | platform/ci | present | CI helper scripts (evidence-manifest builder/verifier, guarded step runner)
 evidence | platform/ci | present | Machine-readable evidence manifest (tamper-evident supported-contract inventory)
 .gitignore | platform/ci | present | Version-control ignore contract: disposable data ignored, signed manifests + fixtures retained
+docs/development | docs/onboarding | present | Developer bootstrap guide: WSL setup, test prerequisites, safe fixture rules, standard commands
 ```
 
 ## Source-contract artifact ownership
@@ -176,6 +177,7 @@ packages/evidence/src/original-preservation.ts | planned | VO-40b09e5441216007c9
 scripts/ci/evidence-manifest.mjs | present | VO-ec575c4ce42b548bfb4d | Tamper-evident evidence-manifest builder/verifier over supported source contracts
 scripts/ci/run-if-present.mjs | present | VO-ec575c4ce42b548bfb4d | Guarded PR-validation runner: present⇒run, absent⇒visible skip (never silent pass)
 .gitignore | present | VO-ec575c4ce42b548bfb4d | Ignore disposable local data; retain signed validation manifest (evidence/manifest.json) + contract/test fixtures
+docs/development/bootstrap.md | present | VO-ec575c4ce42b548bfb4d | Developer bootstrap: WSL setup, test prerequisites, safe fixture rules, standard-command surface (script-drift enforced)
 ```
 
 ## Change discipline (compatibility obligation)
