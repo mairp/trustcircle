@@ -40,6 +40,7 @@
     "test:boundaries": "node --test \"tests/boundaries/**/*.test.mjs\"",
     "test:evidence": "node --experimental-strip-types --test \"tests/evidence/**/*.test.mjs\"",
     "test:sod": "node --experimental-strip-types --test \"tests/authz/**/*.test.mjs\"",
+    "test:domain": "node --experimental-strip-types --test \"tests/domain/**/*.test.mjs\"",
     "test:tooling": "node --test-concurrency=1 --test \"tests/tooling/**/*.test.mjs\"",
     "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
     "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
@@ -49,8 +50,8 @@
     "ci:migrations": "node scripts/ci/run-if-present.mjs --label migrations --requires packages/persistence/src/database.ts -- npm run test:migrations",
     "evidence:manifest": "node scripts/ci/evidence-manifest.mjs build",
     "evidence:verify": "node scripts/ci/evidence-manifest.mjs verify",
-    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling",
-    "verify:pr": "npm run ci:contracts && npm run ci:contracts:generated && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:security && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:tooling && npm run ci:migrations && npm run evidence:verify"
+    "verify:release": "npm run contracts:validate && npm run contracts:check && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:domain && npm run test:tooling",
+    "verify:pr": "npm run ci:contracts && npm run ci:contracts:generated && npm run lint && npm run format && npm run typecheck && npm run test:unit && npm run test:contract && npm run test:integration && npm run test:security && npm run test:boundaries && npm run test:evidence && npm run test:sod && npm run test:domain && npm run test:tooling && npm run ci:migrations && npm run evidence:verify"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",

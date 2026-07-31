@@ -138,6 +138,7 @@ tests/performance | qa/performance | present | k6 acceptance-scale + fault-injec
 tests/boundaries | qa/core | present | Workspace boundary acceptance tests
 tests/evidence | qa/core | present | Evidence/retention acceptance tests
 tests/authz | qa/security | present | Separation-of-duties acceptance tests
+tests/domain | qa/core | present | Domain governance-primitive acceptance tests (UUIDv7/time/reasons/governed-entity)
 tests/tooling | qa/core | present | Config/tooling acceptance tests
 tests/contract | qa/core | present | Vitest `contract` project (consumer contract tests)
 tests/migration | qa/core | planned | Vitest `migration` project (expand/migrate/contract DB-change tests)
@@ -160,6 +161,7 @@ evidence (GAR-010). Paths marked `planned` are owned/reserved here now and land
 in the phase that implements their capability.
 
 ```contracts
+packages/domain/src/primitives.ts | present | VO-34d9f9fb2a6a39e2d62c | UUIDv7 stable identifiers, source/observation/recorded time types, structured reasons, tenant-scoped governed-entity primitives (version/owner/lifecycle/tests/monitoring/failure/exceptions/evidence)
 packages/evidence/src/retention.ts | present | VO-b9b935bf93be10bdecdd | Retention resolution, legal-hold enforcement, signed disposition records
 packages/authz/src/separation-of-duties.ts | present | VO-173f7afb7801f4ab3e29 | Non-waivable SoD / self-approval / incompatible-role guards
 vitest.workspace.ts | present | VO-ec575c4ce42b548bfb4d | Vitest projects: unit/contract/integration/security/migration/resilience
