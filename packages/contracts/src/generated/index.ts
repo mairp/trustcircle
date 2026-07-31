@@ -4,8 +4,8 @@
  * Aggregate export surface for all generated contract types.
  */
 
-export * from './adapter-manifest.js';
-export * from './adapter-protocol.js';
-export * from './evidence-envelope.js';
-export * from './governance-api.js';
-export * from './governance-events.js';
+export type * from './adapter-manifest.ts';
+export type * from './adapter-protocol.ts';
+export type * from './evidence-envelope.ts';
+export type * from './governance-api.ts';
+export type * from './governance-events.ts';

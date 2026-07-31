@@ -53,7 +53,7 @@
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
       "exists": true,
-      "digest": "96a3336ca03dfb40ba32ae493831a4ab6ad5f7cea5b41b2eb69ac19a78e5bf85"
+      "digest": "e114ceb91c9cfc831b67f93e31fb87f3b3465abb1b0ecbded1696a5a7d81654a"
     },
     {
       "path": "packages/evidence/src/original-preservation.ts",
@@ -150,5 +150,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "f7272912e5ab716fbbeca721b83f9fa5994ebc4d9b3a635b5a492c8cea2f7d51"
+  "inventoryDigest": "20d895d97822a7e0137852058dac676c2950c4c76bfeda3efaac7fc42ed1d26a"
 }

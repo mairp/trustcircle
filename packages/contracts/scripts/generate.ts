@@ -430,7 +430,13 @@ export function generateIndex(contracts: readonly SourceContract[]): string {
     '',
   ];
   for (const c of [...contracts].sort((a, b) => a.id.localeCompare(b.id))) {
-    lines.push(`export * from './${c.id}.js';`);
+    // Emit `.ts` specifiers: the whole toolchain (Node
+    // `--experimental-strip-types` with `allowImportingTsExtensions`, tsx, and
+    // `tsc` NodeNext) resolves these at BOTH runtime and typecheck. A `.js`
+    // specifier would typecheck but fail Node's runtime module resolution
+    // because no `.js` artifact is emitted, breaking the package export surface
+    // for supported consumers.
+    lines.push(`export type * from './${c.id}.ts';`);
   }
   lines.push('');
   return lines.join('\n');
