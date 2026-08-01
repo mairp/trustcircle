@@ -33,7 +33,46 @@
 // additionally requires `npx playwright install`, which is a CI concern, not an import-time
 // one — importing this file never launches a browser.
 
+import { existsSync, readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Resolve an installed full-Chromium executable for the hermetic current-state accessibility
+ * project. Playwright pins an exact browser build; when the network-restricted host only has a
+ * slightly older `chromium-<rev>` cached, `npx playwright install` cannot fetch the pinned
+ * revision. Rather than fail the WCAG gate for an infrastructure reason, this locates ANY
+ * installed full-Chromium `chrome` binary (chromium-<rev>/chrome-linux64/chrome) under the
+ * Playwright browsers cache and pins it via `launchOptions.executablePath`. Returns undefined
+ * when nothing is cached (CI with the
+ * pinned build present), so Playwright's own resolution is used unchanged there.
+ * `TC_CHROME_PATH` overrides everything for bespoke CI images.
+ */
+function resolveInstalledChromium(): string | undefined {
+  const explicit = process.env.TC_CHROME_PATH;
+  if (explicit && existsSync(explicit)) return explicit;
+  const cacheRoot =
+    process.env.PLAYWRIGHT_BROWSERS_PATH ?? join(homedir(), '.cache', 'ms-playwright');
+  let entries: string[];
+  try {
+    entries = readdirSync(cacheRoot);
+  } catch {
+    return undefined;
+  }
+  // Prefer the highest-revision full chromium build available.
+  const builds = entries
+    .filter((e) => /^chromium-\d+$/.test(e))
+    .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]));
+  for (const build of builds) {
+    const exe = join(cacheRoot, build, 'chrome-linux64', 'chrome');
+    if (existsSync(exe)) return exe;
+  }
+  return undefined;
+}
+
+const INSTALLED_CHROMIUM = resolveInstalledChromium();
 
 /**
  * WCAG 2.2 AA success-criteria tag set that every axe-core scan MUST assert against. Kept as
@@ -89,6 +128,28 @@ export type PlaywrightProjectName = (typeof PLAYWRIGHT_PROJECT_NAMES)[number];
  * project contract (PLAYWRIGHT_PROJECT_NAMES) is unchanged and non-breaking.
  */
 export const DISCOVERY_PROJECT_NAME = 'discovery' as const;
+
+/**
+ * The self-contained CURRENT-STATE ACCESSIBILITY project (Phase 61 /
+ * tests/accessibility/current-state.spec.ts).
+ *
+ * The four WCAG capability projects above drive a real browser against the apps/web preview
+ * server. This project instead drives a real browser (Desktop Chrome) against a HERMETIC,
+ * in-page render of the officer's current-state views — the reconciled inventory, coverage
+ * gaps, cross-source drill-down, staleness/last-known markers, the open-ended source catalog,
+ * and governed-source gaps — mounted with `page.setContent(...)` from a deterministic fixture
+ * (tests/accessibility/support/current-state-view.ts). Because the DOM is injected in-page,
+ * the spec needs NO web server, NO tenant-auth `setup`, and NO apps/web source to exist yet:
+ * it runs anywhere a browser binary is present, under `TC_NO_WEBSERVER=1`.
+ *
+ * It pins the 400%-reflow layout viewport (REFLOW_400.viewport) so the same journey can assert
+ * WCAG 1.4.10 reflow alongside keyboard, screen-reader (name/role/state + live regions),
+ * non-color, and table-alternative behavior for current-state views. Kept as its OWN project
+ * (not one of the four contract names, and with no `setup` dependency) so the supported
+ * PLAYWRIGHT_PROJECT_NAMES surface is unchanged and non-breaking — exactly as the browserless
+ * discovery project is kept separate.
+ */
+export const ACCESSIBILITY_CURRENT_STATE_PROJECT_NAME = 'accessibility-current-state' as const;
 
 /**
  * `playwright test` starts the apps/web preview server (see `webServer` below) so the WCAG
@@ -171,6 +232,27 @@ export default defineConfig({
     {
       name: DISCOVERY_PROJECT_NAME,
       testMatch: /discovery-.*\.spec\.ts/,
+    },
+
+    // (6) CURRENT-STATE ACCESSIBILITY — hermetic, browser-driven WCAG 2.2 AA verification of
+    // the officer's current-state views (keyboard, screen-reader, non-color, table-alternative,
+    // 400% reflow) mounted in-page via setContent. Own testDir, own device+viewport, no `setup`
+    // dependency, no web server: runs anywhere a browser is present under TC_NO_WEBSERVER=1.
+    {
+      name: ACCESSIBILITY_CURRENT_STATE_PROJECT_NAME,
+      testDir: './tests/accessibility',
+      testMatch: /.*\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        // Pin the 400%-reflow layout viewport so the reflow assertions collapse to the
+        // WCAG 1.4.10 320-CSS-px column when zoomed 4×.
+        viewport: REFLOW_400.viewport,
+        deviceScaleFactor: 1,
+        // Use a full (non-headless-shell) Chromium so `zoom`/reflow and the full a11y tree
+        // behave like a real browser, and fall back to any installed build on hosts that
+        // cannot download Playwright's exact pinned revision.
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
     },
   ],
 

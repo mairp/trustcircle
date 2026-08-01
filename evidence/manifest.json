@@ -270,7 +270,7 @@
       "status": "present",
       "vo": "VO-a11y-config",
       "exists": true,
-      "digest": "7bef37b27b561cb8fbd6d20328d5377f7aee13f38427f68535c3bdfdd567ee5c"
+      "digest": "80319e29a34c14067586fe1dd9949288c59a4765ff0ff96c743f62a63c343485"
     },
     {
       "path": "scripts/ci/evidence-manifest.mjs",
@@ -480,5 +480,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "28c2d3af94a9bf55d2e5c22675214e2f9b6b947c6678d490cc21042e3c6c0c05"
+  "inventoryDigest": "fe4e9148a4f8ed59581012cd1b7347decb9d86035cae2bbfc44de2c0f7aff210"
 }

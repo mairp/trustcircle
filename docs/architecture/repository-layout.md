@@ -92,12 +92,14 @@ tests/                               # cross-cutting acceptance/verification sui
 ```
 
 > Note: some Vitest project directories (`tests/migration`,
-> `tests/resilience`, `tests/recovery`) and `tests/accessibility` are `planned`:
+> `tests/resilience`, `tests/recovery`) are `planned`:
 > the Vitest/
 > Playwright **project names** already exist as a supported consumer surface
 > (see `vitest.workspace.ts` / `playwright.config.ts`), and the projects
 > resolve via `passWithNoTests`; the physical owner directory is populated when
-> the corresponding suites are authored in a later phase.
+> the corresponding suites are authored in a later phase. `tests/accessibility`
+> is now `present`: it holds the hermetic current-state WCAG 2.2 AA spec run by
+> the self-contained `accessibility-current-state` Playwright project.
 
 ## Ownership table (machine-readable)
 
@@ -145,7 +147,7 @@ tests/contract | qa/core | present | Vitest `contract` project (consumer contrac
 tests/migration | qa/core | planned | Vitest `migration` project (expand/migrate/contract DB-change tests)
 tests/resilience | qa/core | planned | Vitest `resilience` project
 tests/recovery | qa/core | planned | Vitest `recovery` project
-tests/accessibility | qa/accessibility | planned | Playwright accessibility owner directory
+tests/accessibility | qa/accessibility | present | Hermetic current-state WCAG 2.2 AA spec (`current-state.spec.ts`) + fixture (`support/current-state-view.ts`), run by the `accessibility-current-state` Playwright project
 .github/workflows | platform/ci | present | Pull-request validation gate (contracts/generated/lint/types/tests/migrations/evidence)
 scripts/ci | platform/ci | present | CI helper scripts (evidence-manifest builder/verifier, guarded step runner)
 scripts/spec | governance/spec | present | Spec tooling: deterministic traceability-matrix generator/drift-checker
