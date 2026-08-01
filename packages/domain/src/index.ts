@@ -9,3 +9,4 @@ export * from './primitives.ts';
 export * from './state-machine.ts';
 export * from './outcomes.ts';
 export * from './component-profile.ts';
+export * from './inventory.ts';
