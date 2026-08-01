@@ -9,6 +9,9 @@
       "path": "./apps/api"
     },
     {
+      "path": "./apps/projector"
+    },
+    {
       "path": "./packages/adapter-sdk"
     },
     {

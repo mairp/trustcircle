@@ -1,0 +1,42 @@
+-- 0006_inbox_payload — Retain the ORIGINAL inbox event payload so the durable inbox can
+-- deterministically re-apply on retry and rebuild ordering state from its own durable rows
+-- (Phase 28 / task T028 / GAR-008 / VO-52d0780c11bcc6fd7583).
+--
+-- Design authority (specs/001-governance-control-plane):
+--   * data-model.md §"InboxMessage": the inbox retains enough of the delivered event to process
+--     it exactly once per consumer and to RECONCILE — a bounded retry re-runs the read-model
+--     apply, and a rebuild folds the durable applied rows back through the ordering tracker.
+--     Both need the original payload, not just its digest.
+--   * plan.md / spec.md CHK016 (VO-52d0780c11bcc6fd7583): mutating operations MUST be
+--     correlated, deduplicated, RECONCILABLE, retry-bounded, and safe under duplicate, delayed,
+--     partial, conflicting, and uncertain outcomes. Reconcilability requires the inbox to be
+--     self-sufficient: apps/projector/src/inbox-consumer.ts reconstructs per-aggregate ordering
+--     purely from inbox_message rows (rebuildAggregateState) and re-runs apply on a bounded
+--     retry — neither can depend on the transient broker message still being in hand.
+--
+-- WHY a NEW migration (not an edit to 0004): db/migrations/0004_delivery.sql is CHECKSUM-PINNED
+-- once applied (packages/persistence/src/database.ts `runMigrations` records its checksum in
+-- schema_migrations and rejects an in-place edit with MigrationChecksumError — an applied
+-- migration is immutable). So the inbox payload column is added here as a SEPARATE, later,
+-- EXPAND-ONLY migration, exactly as 0005_outbox_claim added the outbox claim-lease columns. This
+-- MIRRORS outbox_message, which already retains payload_json (0004 line 75) for the same replay
+-- reason; the inbox now has parity.
+--
+-- Effect-witness (VO-52d0780c11bcc6fd7583, effect-witness):
+--   Applying this migration yields an INDEPENDENTLY READABLE durable effect — the
+--   inbox_message.payload_json column — that could not exist before the migration ran. The
+--   consumer's success response is NOT the proof; the durable column and the retained payload on
+--   each applied/buffered/quarantined row are. rebuildAggregateState SELECTs payload_json to
+--   fold applied rows back through the ordering tracker.
+--
+-- Change discipline (db/migrations/README.md, GAR-010, VO-ec575c4ce42b548bfb4d): EXPAND only.
+-- Every statement is additive and idempotent (`ADD COLUMN IF NOT EXISTS`) so re-applying is a
+-- safe no-op and it composes with the 0004 inbox_message table without narrowing any column.
+
+-- ===========================================================================
+-- 1. Retained inbox payload — the original delivered event body, kept alongside its digest so a
+--    bounded retry re-runs the SAME apply and a rebuild folds durable applied rows back through
+--    the aggregate-ordering tracker. NULL only transiently for a pre-existing row applied under
+--    an older schema; new rows always carry it (the consumer INSERTs it at first sight).
+-- ===========================================================================
+ALTER TABLE inbox_message ADD COLUMN IF NOT EXISTS payload_json TEXT;

@@ -54,12 +54,7 @@
 // driver + a scriptable publisher, so every invariant above is provable under `npm ci` with no
 // live database or broker, under Node 22 `--experimental-strip-types` / tsx.
 
-import {
-  type Database,
-  type SqlExecutor,
-  digest,
-  canonicalJson,
-} from '@trustcircle/persistence';
+import { type Database, type SqlExecutor, digest, canonicalJson } from '@trustcircle/persistence';
 
 // ===========================================================================
 // 0. Publish port — the injected message-bus seam
@@ -143,12 +138,7 @@ const DEFAULT_DEAD_LETTER_OWNER = 'team:platform-delivery';
 // ===========================================================================
 
 /** Publish lifecycle of an outbox row (superset of the unit-of-work's `OutboxStatus`). */
-export type OutboxPublishStatus =
-  | 'pending'
-  | 'publishing'
-  | 'published'
-  | 'failed'
-  | 'dead_letter';
+export type OutboxPublishStatus = 'pending' | 'publishing' | 'published' | 'failed' | 'dead_letter';
 
 /** The delivery outcome recorded per attempt in the append-only delivery_attempt history. */
 export type AttemptOutcome = 'succeeded' | 'retryable' | 'failed' | 'uncertain';
@@ -231,11 +221,7 @@ export function nextBackoffMs(attemptJustCompleted: number, baseMs: number, capM
 // same row — only one UPDATE matches the `status IN ('pending','failed')` predicate.
 
 /** Read the batch of due, claimable rows (pending, or failed with next_attempt_at reached). */
-async function selectDue(
-  tx: SqlExecutor,
-  now: number,
-  limit: number,
-): Promise<OutboxRowView[]> {
+async function selectDue(tx: SqlExecutor, now: number, limit: number): Promise<OutboxRowView[]> {
   const res = await tx.query<OutboxDbRow>(
     `SELECT * FROM outbox_message
       WHERE status = 'pending'
@@ -445,19 +431,15 @@ function mapOutboxRow(r: OutboxDbRow): OutboxRowView {
 }
 
 async function readOutboxRow(tx: SqlExecutor, messageId: string): Promise<OutboxRowView | null> {
-  const res = await tx.query<OutboxDbRow>(
-    'SELECT * FROM outbox_message WHERE message_id = $1',
-    [messageId],
-  );
+  const res = await tx.query<OutboxDbRow>('SELECT * FROM outbox_message WHERE message_id = $1', [
+    messageId,
+  ]);
   const r = res.rows[0];
   return r ? mapOutboxRow(r) : null;
 }
 
 /** Public independent read path: the current durable state of an outbox message. */
-export function readOutboxMessage(
-  db: Database,
-  messageId: string,
-): Promise<OutboxRowView | null> {
+export function readOutboxMessage(db: Database, messageId: string): Promise<OutboxRowView | null> {
   return readOutboxRow(db, messageId);
 }
 
@@ -503,7 +485,12 @@ export async function readDeadLetter(
   db: Database,
   tenantId: string,
   messageId: string,
-): Promise<{ deadLetterId: string; failureClass: string; attempts: number; outcome: string } | null> {
+): Promise<{
+  deadLetterId: string;
+  failureClass: string;
+  attempts: number;
+  outcome: string;
+} | null> {
   const res = await db.query<{
     dead_letter_id: string;
     failure_class: string;
@@ -538,7 +525,10 @@ function deriveDeadLetterId(messageId: string): string {
   return 'dlq-' + digest({ messageId, kind: 'outbox_dead_letter' }).slice(0, 32);
 }
 
-function normalizeOutcome(err: unknown): { outcome: Exclude<PublishOutcome, 'acknowledged'>; detail: string } {
+function normalizeOutcome(err: unknown): {
+  outcome: Exclude<PublishOutcome, 'acknowledged'>;
+  detail: string;
+} {
   if (err instanceof PublishError) return { outcome: err.outcome, detail: err.message };
   // An unclassified throw is treated as UNCERTAIN — the safest class: it is retried within the
   // bound and NEVER reported as a successful publish.

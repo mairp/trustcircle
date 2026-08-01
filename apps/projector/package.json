@@ -10,6 +10,7 @@
     "@trustcircle/application": "*",
     "@trustcircle/projections": "*",
     "@trustcircle/contracts": "*",
+    "@trustcircle/persistence": "*",
     "@trustcircle/observability": "*"
   },
   "scripts": {

@@ -97,8 +97,7 @@ export function createOutboxDriver() {
           .filter(
             (r) =>
               r.status === 'pending' ||
-              (r.status === 'failed' &&
-                (r.next_attempt_at == null || r.next_attempt_at <= now)),
+              (r.status === 'failed' && (r.next_attempt_at == null || r.next_attempt_at <= now)),
           )
           .sort((a, b) => a.created_at - b.created_at)
           .slice(0, limit)
@@ -112,8 +111,7 @@ export function createOutboxDriver() {
           .filter(
             (r) =>
               r.status === 'pending' ||
-              (r.status === 'failed' &&
-                (r.next_attempt_at == null || r.next_attempt_at <= now)),
+              (r.status === 'failed' && (r.next_attempt_at == null || r.next_attempt_at <= now)),
           )
           .sort((a, b) => a.created_at - b.created_at)
           .slice(0, limit)
@@ -227,7 +225,8 @@ export function createOutboxDriver() {
         const [tenant_id, message_id] = params;
         const rows = [...view().delivery_attempt.values()]
           .filter(
-            (r) => r.tenant_id === tenant_id && r.origin === 'outbox' && r.message_id === message_id,
+            (r) =>
+              r.tenant_id === tenant_id && r.origin === 'outbox' && r.message_id === message_id,
           )
           .sort((a, b) => a.attempt_no - b.attempt_no)
           .map((r) => ({ ...r }));
