@@ -5,7 +5,7 @@
     "outDir": "../../.tsbuild/apps/web",
     "tsBuildInfoFile": "../../.tsbuild/apps/web/.tsbuildinfo"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
       "path": "../../packages/contracts"
