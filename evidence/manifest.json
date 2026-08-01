@@ -140,6 +140,13 @@
       "digest": "36ee6aad039f03723f2055f3ec8887c9e85f8360cceac8d27e1898230f37d9a0"
     },
     {
+      "path": "packages/authz/src/oidc.ts",
+      "status": "present",
+      "vo": "VO-173f7afb7801f4ab3e29",
+      "exists": true,
+      "digest": "f658ae8e02d8efdc43a9bc06138f69dccda11dcb590c2138806943e730f8eee9"
+    },
+    {
       "path": "packages/authz/src/separation-of-duties.ts",
       "status": "present",
       "vo": "VO-173f7afb7801f4ab3e29",
@@ -417,5 +424,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "5c01abfb7168a623bf42a96f6a2ab5bcb8d083e521158c6b4bcb0774b17202d0"
+  "inventoryDigest": "8102b1e4308130fd16d94748a8e2b39247279bfe138ec055504856f0828278d3"
 }
