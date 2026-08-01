@@ -1,0 +1,417 @@
+# deploy/compose/control-plane.yml
+# =============================================================================
+# Core-only Docker Compose profile for the governance control plane.
+#
+# Phase 54 / task T054 / NFR-010 (VO-80051a0ad930b1560ff7).
+#
+# SOLE ACCEPTANCE ORACLE (NFR-010 "Safe Degradation"):
+#   "Loss of required authority, policy, evidence, ownership, or reconciliation MUST
+#    block affected execution immediately. Health or connectivity loss MUST block new
+#    execution immediately; an in-progress operation may continue only under FR-046
+#    through FR-050 while read-only visibility and escalation remain available."
+#
+# WHAT THIS FILE IS
+# -----------------
+# The executable, orchestrator-level realization of the CORE-REQUIRED runtime set that
+# deploy/profiles/components.yaml (Phase 53) declares. It stands up EXACTLY the ten
+# `core-required` components — PostgreSQL, object storage, NATS JetStream, OPA, the
+# OpenTelemetry Collector, the API, the command-worker, the projector, the discovery
+# agent, and the web UI — in the deterministic `startupOrder` from that profile, and
+# NOTHING from the expected-offline runtime sets (on-demand LISA/Wiggum, optional,
+# external Kanban/agentctl/workflow_orchestration, intentionally-inactive). Keeping the
+# core-only profile free of expected-offline components is what keeps their offline state
+# DISTINCT from a degraded/failed core.
+#
+# HOW IT ENFORCES NFR-010 (fail-closed, at the orchestrator level)
+# ----------------------------------------------------------------
+#   1. HEALTH/CONNECTIVITY LOSS BLOCKS NEW EXECUTION IMMEDIATELY.
+#      Every backing prerequisite (postgres, object-storage, nats, opa) declares a
+#      `healthcheck`. Every executing/consuming service declares
+#      `depends_on: { <prereq>: { condition: service_healthy } }`, so a service that
+#      would perform NEW governed execution (api, command-worker) is NOT started — and,
+#      via its own healthcheck, is reported UNHEALTHY / not-ready — until all of its
+#      required prerequisites are healthy. A lost/unreachable prerequisite therefore
+#      blocks new execution at the substrate level; it cannot be silently bypassed.
+#
+#   2. LOSS OF A REQUIRED PREREQUISITE PROVIDER BLOCKS AFFECTED EXECUTION IMMEDIATELY.
+#      OPA is the policy prerequisite provider; postgres/object-storage back evidence,
+#      ownership, and reconciliation. The `required: true` dependencies in the profile
+#      are mirrored here as HARD `condition: service_healthy` edges — never
+#      `service_started` — so a decision/execution surface fails closed when its
+#      authority/policy/evidence/ownership/reconciliation substrate is unavailable.
+#
+#   3. READ-ONLY VISIBILITY AND ESCALATION REMAIN AVAILABLE WHEN DEGRADED.
+#      `web` depends ONLY on `api` reachability (`service_started`, not
+#      `service_healthy`) so the operator UI comes up and stays up to render the
+#      FAIL-VISIBLE readiness picture (the API's `/v1/readiness` surface) and to
+#      escalate, even while a core executor is blocked. The projector (a read-model
+#      builder, `mayExecute:false`) likewise never gains execution authority from being
+#      up; it signals stale state rather than inferring health.
+#
+#   4. EXPECTED-OFFLINE STAYS DISTINCT FROM DEGRADED.
+#      Because on-demand / optional / external / intentionally-inactive components are
+#      simply ABSENT from this core-only profile, their being offline is the expected
+#      steady state and is never an incident. Activating them is an owner-approved,
+#      profile-versioned action (a separate compose overlay), never a boot-time default.
+#
+# TARGET: local validation in WSL (`plan.md` §Target Platform). Images are pinned by
+# digest-friendly major tags; application services build from a shared multi-stage
+# Dockerfile that targets each app's entrypoint. Secrets here are LOCAL-DEV placeholders;
+# production supplies them via the platform secret store, never this file.
+#
+# GROUNDING (kept in lockstep, verified by tests/tooling/control-plane-compose.test.mjs):
+#   - deploy/profiles/components.yaml   — the core-required set, startupOrder, dependsOn,
+#                                         prerequisites, and degradation policy this file
+#                                         must realize without drift.
+#   - deploy/nats/topology.json         — the JetStream topology NATS serves.
+#   - apps/api/src/server.ts            — the `/v1/health` and `/v1/readiness` surface the
+#                                         healthcheck and the web UI consume.
+# =============================================================================
+
+name: trustcircle-control-plane
+
+# -----------------------------------------------------------------------------
+# Networks & volumes. A single private bridge; durable named volumes so canonical
+# store and object custody survive a restart (evidence/originals must be durable).
+# -----------------------------------------------------------------------------
+networks:
+  control-plane:
+    driver: bridge
+
+volumes:
+  postgres-data: {}
+  object-store-data: {}
+  nats-data: {}
+
+# -----------------------------------------------------------------------------
+# Reusable anchors.
+# -----------------------------------------------------------------------------
+x-bundle: &bundle
+  BUNDLE_ID: '36GCYGDJ15PTYP60F91QWRAY2M'
+  BUNDLE_CONTENT_HASH: 'af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b'
+
+# Common connection env every application service needs to reach the core substrate.
+x-core-env: &core-env
+  <<: *bundle
+  DATABASE_URL: 'postgres://trustcircle:trustcircle@postgres:5432/trustcircle'
+  NATS_URL: 'nats://nats:4222'
+  OPA_URL: 'http://opa:8181'
+  OBJECT_STORE_ENDPOINT: 'http://object-storage:9000'
+  OBJECT_STORE_BUCKET: 'trustcircle-evidence'
+  OBJECT_STORE_ACCESS_KEY: 'trustcircle'
+  OBJECT_STORE_SECRET_KEY: 'trustcircle-local-dev'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://collector:4317'
+  # NFR-010: the runtime profile a service enforces its degradation policy against.
+  COMPONENT_PROFILE: '/app/deploy/profiles/components.yaml'
+  RUNTIME_SET: 'core-required'
+
+x-app-build: &app-build
+  context: ..
+  dockerfile: deploy/compose/Dockerfile
+
+x-restart: &restart on-failure
+
+services:
+  # ===========================================================================
+  # startupIndex 0 — POSTGRES (infrastructure / core-required)
+  # Canonical governance store: inventory, decisions, evidence references, audit ledger.
+  # Backs the evidence / ownership / reconciliation prerequisites.
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: cp-postgres
+    restart: *restart
+    networks: [control-plane]
+    environment:
+      <<: *bundle
+      POSTGRES_USER: trustcircle
+      POSTGRES_PASSWORD: trustcircle
+      POSTGRES_DB: trustcircle
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U trustcircle -d trustcircle']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  # ===========================================================================
+  # startupIndex 1 — OBJECT-STORAGE (infrastructure / core-required)
+  # Durable, immutable/tamper-evident custody of original evidence and exports.
+  # Backs the evidence prerequisite and OPA's signed-bundle custody.
+  # ===========================================================================
+  object-storage:
+    image: minio/minio:latest
+    container_name: cp-object-storage
+    restart: *restart
+    networks: [control-plane]
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      <<: *bundle
+      MINIO_ROOT_USER: trustcircle
+      MINIO_ROOT_PASSWORD: trustcircle-local-dev
+    volumes:
+      - object-store-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'mc ready local || curl -fsS http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+
+  # ===========================================================================
+  # startupIndex 2 — NATS JetStream (infrastructure / core-required)
+  # Tenant-scoped delivery substrate for governance events and outbox publication.
+  # ===========================================================================
+  nats:
+    image: nats:2.10-alpine
+    container_name: cp-nats
+    restart: *restart
+    networks: [control-plane]
+    command: ['--jetstream', '--store_dir=/data', '--http_port=8222']
+    environment:
+      <<: *bundle
+    volumes:
+      - nats-data:/data
+      - ../nats/topology.json:/etc/nats/topology.json:ro
+    healthcheck:
+      # /healthz on the monitoring port; JetStream (js) must be enabled and healthy.
+      test:
+        ['CMD-SHELL', 'wget -q -O- http://localhost:8222/healthz?js-enabled-only=true || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+
+  # ===========================================================================
+  # startupIndex 3 — OPA (policy-engine / core-required)
+  # PDP evaluating authority; serves signed, revision-pinned bundles. OPA IS the
+  # `policy` prerequisite provider: if it is unavailable, policy is lost and all
+  # affected execution is blocked immediately (fail-closed authorization).
+  # dependsOn object-storage (required) — signed-bundle custody.
+  # ===========================================================================
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: cp-opa
+    restart: *restart
+    networks: [control-plane]
+    command:
+      - 'run'
+      - '--server'
+      - '--addr=0.0.0.0:8181'
+      - '--log-level=error'
+      - '--set=decision_logs.console=true'
+    environment:
+      <<: *bundle
+    depends_on:
+      object-storage:
+        condition: service_healthy
+    healthcheck:
+      # OPA has no shell/curl; use its own liveness/readiness diagnostic endpoints.
+      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:8181/health?bundle=false']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  # ===========================================================================
+  # startupIndex 4 — COLLECTOR (observability / core-required)
+  # OpenTelemetry collector — redacted signals. Telemetry is NEVER authoritative:
+  # every executing service instruments to it, but no service derives authority,
+  # health, or decisions from it. Brought up before instrumented services emit.
+  # ===========================================================================
+  collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: cp-collector
+    restart: *restart
+    networks: [control-plane]
+    command: ['--config=/etc/otelcol/config.yaml']
+    environment:
+      <<: *bundle
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    healthcheck:
+      test: ['CMD', '/otelcol-contrib', 'components']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  # ===========================================================================
+  # startupIndex 5 — API (control-plane / core-required, mayExecute:true)
+  # Authenticated, tenant-scoped decision surface and read API. Consequential:
+  # record-decision, dispatch-command. Loss of ANY prerequisite (authority, policy,
+  # evidence, ownership, reconciliation) blocks its affected execution IMMEDIATELY —
+  # realized as HARD `service_healthy` edges to every required substrate. Exposes the
+  # fail-visible `/v1/readiness` picture and `/v1/health` liveness.
+  # ===========================================================================
+  api:
+    build:
+      <<: *app-build
+      target: api
+    image: trustcircle/api:local
+    container_name: cp-api
+    restart: *restart
+    networks: [control-plane]
+    environment:
+      <<: *core-env
+      SERVICE_NAME: api
+      API_PORT: '3000'
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+      object-storage:
+        condition: service_healthy
+      collector:
+        condition: service_started
+    healthcheck:
+      test:
+        ['CMD', 'node', '/app/deploy/compose/healthcheck.mjs', 'http://localhost:3000/v1/health']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # ===========================================================================
+  # startupIndex 6 — COMMAND-WORKER (worker / core-required, mayExecute:true)
+  # Executes governed commands (repair/expiry/audit-export) under lease + checkpointing.
+  # Same five prerequisites as the API → same HARD service_healthy substrate edges.
+  # ===========================================================================
+  command-worker:
+    build:
+      <<: *app-build
+      target: command-worker
+    image: trustcircle/command-worker:local
+    container_name: cp-command-worker
+    restart: *restart
+    networks: [control-plane]
+    environment:
+      <<: *core-env
+      SERVICE_NAME: command-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+      object-storage:
+        condition: service_healthy
+      collector:
+        condition: service_started
+    healthcheck:
+      test:
+        ['CMD', 'node', '/app/deploy/compose/healthcheck.mjs', 'file:///app/.health/command-worker']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # ===========================================================================
+  # startupIndex 7 — PROJECTOR (projector / core-required, mayExecute:false)
+  # Builds read-model projections from durable cursors; signals stale state, never
+  # infers health. Reconciliation is a hard prerequisite. Depends on postgres + nats.
+  # Being "up" grants it NO execution authority.
+  # ===========================================================================
+  projector:
+    build:
+      <<: *app-build
+      target: projector
+    image: trustcircle/projector:local
+    container_name: cp-projector
+    restart: *restart
+    networks: [control-plane]
+    environment:
+      <<: *core-env
+      SERVICE_NAME: projector
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      collector:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'node', '/app/deploy/compose/healthcheck.mjs', 'file:///app/.health/projector']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # ===========================================================================
+  # startupIndex 8 — DISCOVERY-AGENT (discovery / core-required, mayExecute:false)
+  # Least-privilege machine-wide source discovery within the declared boundary; evidence
+  # sink. Prerequisites authority + ownership. Depends on postgres + nats + opa.
+  # ===========================================================================
+  discovery-agent:
+    build:
+      <<: *app-build
+      target: discovery-agent
+    image: trustcircle/discovery-agent:local
+    container_name: cp-discovery-agent
+    restart: *restart
+    networks: [control-plane]
+    environment:
+      <<: *core-env
+      SERVICE_NAME: discovery-agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+      collector:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '/app/deploy/compose/healthcheck.mjs',
+          'file:///app/.health/discovery-agent',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # ===========================================================================
+  # startupIndex 9 — WEB (web / core-required, mayExecute:false)
+  # Operator-facing governance UI. Read-only VISIBILITY and ESCALATION remain available
+  # when the core is degraded: it depends ONLY on `api` reachability (service_started,
+  # NOT service_healthy) so it comes up and stays up to render the fail-visible readiness
+  # picture even while a core executor is blocked. Brought up LAST.
+  # ===========================================================================
+  web:
+    build:
+      <<: *app-build
+      target: web
+    image: trustcircle/web:local
+    container_name: cp-web
+    restart: *restart
+    networks: [control-plane]
+    environment:
+      <<: *core-env
+      SERVICE_NAME: web
+      API_BASE_URL: 'http://api:3000'
+      WEB_PORT: '8080'
+    ports:
+      - '8080:8080'
+    depends_on:
+      api:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'node', '/app/deploy/compose/healthcheck.mjs', 'http://localhost:8080/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s

@@ -1,0 +1,55 @@
+# deploy/compose/otel-collector.yaml
+# =============================================================================
+# OpenTelemetry Collector configuration for the control-plane core profile.
+# Phase 54 / task T054.
+#
+# Telemetry is NEVER authoritative (NFR / observability role in
+# deploy/profiles/components.yaml): the collector only receives redacted signals from
+# instrumented services. No governance decision, health verdict, or authority is derived
+# from this pipeline. The `redaction` processor is a defense-in-depth reminder that
+# sensitive evidence must never enter telemetry (see tests/security/telemetry-redaction).
+# =============================================================================
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+  # Defense-in-depth: strip any attribute that could carry sensitive evidence. Services
+  # are already responsible for not emitting it; this is a belt-and-braces filter.
+  attributes/redact:
+    actions:
+      - key: evidence.payload
+        action: delete
+      - key: authorization
+        action: delete
+      - key: secret
+        action: delete
+
+exporters:
+  # Local-dev: log to the collector's own stdout. Telemetry sink only.
+  debug:
+    verbosity: normal
+
+service:
+  telemetry:
+    logs:
+      level: warn
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes/redact, batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [attributes/redact, batch]
+      exporters: [debug]
