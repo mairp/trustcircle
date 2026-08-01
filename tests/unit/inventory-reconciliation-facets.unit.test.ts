@@ -74,7 +74,10 @@ const reconciler = (seed = 1) =>
     disappearanceCycles: 2,
   });
 
-function rec(externalKey: string, o: Partial<Parameters<typeof makeSourceRecord>[0]> = {}): SourceRecord {
+function rec(
+  externalKey: string,
+  o: Partial<Parameters<typeof makeSourceRecord>[0]> = {},
+): SourceRecord {
   return makeSourceRecord({
     id: o.id ?? id(20_000 + externalKey.length),
     tenantId: TENANT,
@@ -107,7 +110,10 @@ function asset(assetId: Uuid, owner?: Uuid): { asset: GovernedAsset; fields: rea
     fields: ['status'] as readonly string[],
   };
 }
-function entry(entryId: Uuid, o: Partial<Parameters<typeof makeSourceCatalogEntry>[0]> = {}): SourceCatalogEntry {
+function entry(
+  entryId: Uuid,
+  o: Partial<Parameters<typeof makeSourceCatalogEntry>[0]> = {},
+): SourceCatalogEntry {
   return makeSourceCatalogEntry({
     id: entryId,
     tenantId: TENANT,
@@ -225,7 +231,11 @@ describe('AC2 coverage-gap anchors', () => {
     const r = reconciler(400);
     // An observation referencing an asset id that NO governed asset claims → orphaned → visible gap.
     const ghost = id(1099);
-    r.reconcile({ observations: [rec('kanban:orphan:9', { assetId: ghost })], assets: [], at: at(0) });
+    r.reconcile({
+      observations: [rec('kanban:orphan:9', { assetId: ghost })],
+      assets: [],
+      at: at(0),
+    });
     const gap = r.openGaps().find((g) => g.reason === 'orphaned')!;
     expect(gap).toBeDefined();
     expect(gap.gapClass).toBeDefined(); // gap class
@@ -272,23 +282,45 @@ describe('AC3 drill-down anchors', () => {
   it('exposes contested/differingSources, dependencies, and authoritative fields by name', () => {
     const r = reconciler(650);
     const a = id(1004);
-    const k = rec('kanban:card:x', { assetId: a, sourceClass: 'platform_kanban', observedState: { status: 'operating' } });
-    const g = rec('agentctl:job:x', { assetId: a, sourceClass: 'agentctl', observedState: { status: 'degraded' } });
-    const w = rec('wf:run:x', { assetId: a, sourceClass: 'workflows_orchestration', observedState: { status: 'operating' } });
+    const k = rec('kanban:card:x', {
+      assetId: a,
+      sourceClass: 'platform_kanban',
+      observedState: { status: 'operating' },
+    });
+    const g = rec('agentctl:job:x', {
+      assetId: a,
+      sourceClass: 'agentctl',
+      observedState: { status: 'degraded' },
+    });
+    const w = rec('wf:run:x', {
+      assetId: a,
+      sourceClass: 'workflows_orchestration',
+      observedState: { status: 'operating' },
+    });
     r.reconcile({ observations: [k, g, w], assets: [asset(a)], at: at(0) });
 
     const inv = r.currentInventory();
     const depRel = makeInventoryRelationship({
-      id: id(6001), tenantId: TENANT,
-      fromKind: 'source_record', fromId: w.id,
-      toKind: 'source_record', toId: k.id,
-      relationship: 'depends_on', fieldName: 'status', createdAt: at(0),
+      id: id(6001),
+      tenantId: TENANT,
+      fromKind: 'source_record',
+      fromId: w.id,
+      toKind: 'source_record',
+      toId: k.id,
+      relationship: 'depends_on',
+      fieldName: 'status',
+      createdAt: at(0),
     });
     const authRel = makeInventoryRelationship({
-      id: id(6002), tenantId: TENANT,
-      fromKind: 'source_record', fromId: k.id,
-      toKind: 'governed_asset', toId: a,
-      relationship: 'authoritative_for', fieldName: 'status', createdAt: at(0),
+      id: id(6002),
+      tenantId: TENANT,
+      fromKind: 'source_record',
+      fromId: k.id,
+      toKind: 'governed_asset',
+      toId: a,
+      relationship: 'authoritative_for',
+      fieldName: 'status',
+      createdAt: at(0),
     });
     inv.ingestRelationship(depRel, a);
     inv.ingestRelationship(authRel, a);
@@ -312,8 +344,16 @@ describe('AC3 drill-down anchors', () => {
     const r = reconciler(660);
     const a = id(1005);
     // Two records that share ONE identity (same externalKey) but disagree on status → conflict.
-    const c1 = rec('kanban:card:cf', { assetId: a, status: 'active', observedState: { status: 'operating' } });
-    const c2 = rec('kanban:card:cf', { assetId: a, status: 'conflicting', observedState: { status: 'retired' } });
+    const c1 = rec('kanban:card:cf', {
+      assetId: a,
+      status: 'active',
+      observedState: { status: 'operating' },
+    });
+    const c2 = rec('kanban:card:cf', {
+      assetId: a,
+      status: 'conflicting',
+      observedState: { status: 'retired' },
+    });
     r.reconcile({ observations: [c1, c2], assets: [asset(a)], at: at(0) });
     const view = r.conflicts()[0]!;
     expect(view.identity).toBeDefined(); // correlation on one identity
