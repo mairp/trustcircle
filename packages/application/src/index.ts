@@ -23,3 +23,12 @@ export * from './source-registry.ts';
 // candidate classification, stale-aware metadata reads, and coverage/governed-source gap
 // synthesis (AC1–AC6).
 export * from './discovery-ports.ts';
+
+// Re-exports the current-inventory assembly service (Phase 70): a fleet-level aggregate that
+// composes the domain's single-item correlation into a collection where each governed asset renders
+// ONCE with its full facet set (type / owner / lifecycle / risk / coverage / evidence / health /
+// last-observation / unresolved issues), keeps discovered-but-ungoverned components + sources
+// VISIBLE as coverage / governed-source gaps, drills down into distinct source records + status
+// differences + dependencies + authoritative fields, refuses to infer current health from stale
+// data, and catalogs unregistered sources. Additive, backward-compatible (AC1–AC6).
+export * from './inventory-service.ts';
