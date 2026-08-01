@@ -179,7 +179,11 @@ describe('source-catalog state machine (AC5 discovery→catalog, AC6 governed-so
       // Durable-effect witness: the source appears ONCE and its lifecycle is reconstructable
       // from the append-only history (discovered→classified→onboarding→onboarded).
       const hist = last.instance.history.map((h) => `${h.from}->${h.to}`);
-      expect(hist).toEqual(['discovered->classified', 'classified->onboarding', 'onboarding->onboarded']);
+      expect(hist).toEqual([
+        'discovered->classified',
+        'classified->onboarding',
+        'onboarding->onboarded',
+      ]);
       expect(last.instance.state).toBe('onboarded');
       expect(last.instance.version).toBe(4);
       // Independent re-read of the digest (mutation response is not proof).
@@ -214,7 +218,9 @@ describe('source-catalog state machine (AC5 discovery→catalog, AC6 governed-so
     if (refused.outcome === 'rejected') {
       expect(refused.code).toBe('guard-denied');
       // The rejection is RECORDED AND EXPLAINED (reason carries WHY: unsupported / etc).
-      expect(refused.reason.code).toMatch(/catalog\.(unsupported|inaccessible|unowned|evidence_missing)/);
+      expect(refused.reason.code).toMatch(
+        /catalog\.(unsupported|inaccessible|unowned|evidence_missing)/,
+      );
       // Not onboarded — the source did NOT disappear or look healthy.
       expect(classified.instance.state).toBe('classified');
     }
@@ -295,14 +301,23 @@ type BoundaryState =
 const noHealthFromStaleGuard: Guard<BoundaryState, Ctx> = ({ context }) => {
   if (context.freshObservation === true) return allow();
   return deny(
-    makeReason('boundary.stale_no_health', 'cannot infer current health from stale/unavailable data'),
+    makeReason(
+      'boundary.stale_no_health',
+      'cannot infer current health from stale/unavailable data',
+    ),
   );
 };
 
 function inventoryBoundaryMachine(): StateMachine<BoundaryState, Ctx> {
   return defineStateMachine<BoundaryState, Ctx>({
     governance: governance({ id: ID(2) }),
-    states: ['in-boundary-fresh', 'in-boundary-stale', 'unavailable', 'coverage-gap', 'reconciled-out'],
+    states: [
+      'in-boundary-fresh',
+      'in-boundary-stale',
+      'unavailable',
+      'coverage-gap',
+      'reconciled-out',
+    ],
     initial: 'in-boundary-fresh',
     terminal: ['reconciled-out'],
     transitions: [
@@ -374,7 +389,8 @@ describe('inventory-boundary state machine (AC2 coverage gap, AC4 staleness/no-h
         context: { freshObservation: true },
       });
       expect(recovered.outcome).toBe('applied');
-      if (recovered.outcome === 'applied') expect(recovered.instance.state).toBe('in-boundary-fresh');
+      if (recovered.outcome === 'applied')
+        expect(recovered.instance.state).toBe('in-boundary-fresh');
     }
   });
 
@@ -470,7 +486,9 @@ const requiredFacets = [
 const currentStateViewGuard: Guard<AssetState, Ctx> = ({ context }) => {
   const missing = requiredFacets.filter((f) => context[f] === undefined || context[f] === null);
   if (missing.length > 0) {
-    return deny(makeReason('asset.facet_missing', `current-state view missing: ${missing.join(',')}`));
+    return deny(
+      makeReason('asset.facet_missing', `current-state view missing: ${missing.join(',')}`),
+    );
   }
   return allow();
 };
@@ -614,9 +632,12 @@ type CorrelationState =
 const safeCorrelationGuard: Guard<CorrelationState, Ctx> = ({ context }) => {
   const sources = Array.isArray(context.sources) ? (context.sources as string[]) : [];
   const distinct = new Set(sources);
-  if (distinct.size < 2) return deny(makeReason('corr.too_few_sources', 'need ≥2 distinct sources'));
+  if (distinct.size < 2)
+    return deny(makeReason('corr.too_few_sources', 'need ≥2 distinct sources'));
   if (context.safeCanonical !== true) {
-    return deny(makeReason('corr.ambiguous', 'no safe canonical relationship; keep originals separate'));
+    return deny(
+      makeReason('corr.ambiguous', 'no safe canonical relationship; keep originals separate'),
+    );
   }
   return allow();
 };

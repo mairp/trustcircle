@@ -3,7 +3,7 @@
  *
  * Source contract : specs/001-governance-control-plane/contracts/governance-api.openapi.yaml
  * Contract kind   : openapi
- * Source sha256   : 8b339a0334c776b9be20f9d4d50676c9622e3ab03bc79de562efb1ae02131135
+ * Source sha256   : a1981ba6475778451da81cc506eab64a47c6b6c64910f5bf0525dff09bcd1d4f
  *
  * Regenerate with : npm run contracts:generate
  * Verify (CI)     : npm run contracts:check
@@ -129,6 +129,19 @@ export interface GovernanceApiControllerPage {
   metadata: GovernanceApiPageMetadata;
 }
 
+// schemas/CoverageGapDetail
+export interface GovernanceApiCoverageGapDetail {
+  age_millis: number;
+  expires_at?: string | null;
+  gap_class: "component" | "governed_source";
+  gap_id: string;
+  impact: "low" | "medium" | "high" | "critical" | "unknown";
+  reason: string;
+  required_action: string;
+  required_owner?: string | null;
+  review_at?: string | null;
+}
+
 // schemas/CreateControllerOperation
 export interface GovernanceApiCreateControllerOperation {
   controller_id: string;
@@ -252,7 +265,10 @@ export interface GovernanceApiDelegationRequest {
 // schemas/GovernedAsset
 export interface GovernanceApiGovernedAsset {
   asset_type: string;
+  confidence?: number;
   coverage: string;
+  coverage_gaps?: Array<GovernanceApiCoverageGapDetail>;
+  evidence_state?: "current" | "stale" | "incomplete";
   health: string;
   id: string;
   last_observed_at?: string;
@@ -261,6 +277,7 @@ export interface GovernanceApiGovernedAsset {
   owner_principal_id?: string | null;
   risk_tier: string;
   tenant_id: string;
+  unresolved_issues?: number;
   version: number;
 }
 
@@ -414,7 +431,13 @@ export interface GovernanceApiRemediationCommand {
 // schemas/SourceCatalogEntry
 export interface GovernanceApiSourceCatalogEntry {
   access_state: string;
+  confidence?: number;
+  correlation?: Array<GovernanceApiSourceStatusDifference>;
   coverage_gap_ids?: Array<string>;
+  coverage_gaps?: Array<GovernanceApiCoverageGapDetail>;
+  dependencies?: Array<GovernanceApiSourceDependency>;
+  discovery_evidence?: string;
+  evidence_state?: "current" | "stale" | "absent";
   first_seen_at: string;
   health_state: string;
   id: string;
@@ -422,14 +445,33 @@ export interface GovernanceApiSourceCatalogEntry {
   observed_locations?: Array<string>;
   onboarding_state: string;
   owner_principal_id?: string | null;
+  sensitivity: "normal" | "sensitive" | "restricted";
   source_class: string;
   tenant_id: string;
+  unresolved_issues?: number;
 }
 
 // schemas/SourceCatalogPage
 export interface GovernanceApiSourceCatalogPage {
   items: Array<GovernanceApiSourceCatalogEntry>;
   metadata: GovernanceApiPageMetadata;
+}
+
+// schemas/SourceDependency
+export interface GovernanceApiSourceDependency {
+  field_name?: string | null;
+  from_id: string;
+  relationship_id: string;
+  to_id: string;
+}
+
+// schemas/SourceStatusDifference
+export interface GovernanceApiSourceStatusDifference {
+  field: string;
+  values: Array<{
+    record_ids: Array<string>;
+    value: unknown;
+  }>;
 }
 
 // schemas/StandardPublication

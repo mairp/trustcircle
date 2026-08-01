@@ -286,6 +286,10 @@ export interface AppContext {
     readonly path: string;
     readonly url: string;
     header(name: string): string | undefined;
+    /** Parse the request body as JSON (for POST/PUT/PATCH handlers). Rejects if the body is
+     *  absent or not valid JSON — the handler is expected to translate that to a 400. Reads the
+     *  underlying Fetch `Request` body exactly once. */
+    json(): Promise<unknown>;
   };
   /** Populated by the context middleware once identity is verified; undefined on public routes. */
   ctx?: RequestContext;
@@ -484,6 +488,7 @@ async function dispatch(
       path,
       url: request.url,
       header: (name: string) => request.headers.get(name) ?? undefined,
+      json: () => request.json(),
     };
     const c: AppContext = {
       req: reqView,

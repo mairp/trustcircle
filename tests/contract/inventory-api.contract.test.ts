@@ -544,6 +544,7 @@ describe('AC3 · distinct source records correlate with status differences', () 
     onboarding_state: 'onboarded',
     access_state: 'connected',
     health_state: 'healthy',
+    sensitivity: 'normal',
     coverage_gap_ids: [],
     first_seen_at: T0,
     last_seen_at: T1,
@@ -665,6 +666,8 @@ describe('AC5 · discovery catalogs an unregistered source with classification +
     onboarding_state: 'discovered', // onboarding state
     access_state: 'reachable', // access status
     health_state: 'unknown',
+    sensitivity: 'restricted', // AC5 sensitivity classification (non-default → triage first)
+    discovery_evidence: '018f0000-0000-7000-8000-0000000000ac', // AC5 provenance of the observation
     coverage_gap_ids: [GAP_A],
     first_seen_at: T1,
     last_seen_at: T1,
@@ -684,12 +687,20 @@ describe('AC5 · discovery catalogs an unregistered source with classification +
     expect(UUID_RE.test(ACCEPTED.correlation_id)).toBe(true);
   });
 
-  it('the discovered entry is catalogued with class, location, access, ownership, onboarding state', () => {
+  it('the discovered entry is catalogued with class, location, access, sensitivity, discovery-evidence, ownership, onboarding state', () => {
     expectValid(entrySchema, DISCOVERED_ENTRY);
     expect(DISCOVERED_ENTRY.source_class).toBe('unknown'); // classification
     expect(DISCOVERED_ENTRY.observed_locations.length).toBeGreaterThan(0); // location
     expect(DISCOVERED_ENTRY.onboarding_state).toBe('discovered'); // onboarding state
     expect(DISCOVERED_ENTRY.owner_principal_id).toBeNull(); // ownership status
+    expect(DISCOVERED_ENTRY.sensitivity).toBe('restricted'); // AC5 sensitivity classification
+    expect(UUID_RE.test(DISCOVERED_ENTRY.discovery_evidence)).toBe(true); // AC5 provenance
+    // sensitivity is a required, governed-vocabulary field: dropping it is contract-INVALID.
+    expectInvalid(
+      entrySchema,
+      omit(DISCOVERED_ENTRY, 'sensitivity'),
+      /missing required property "sensitivity"/,
+    );
   });
 
   it('NEGATIVE CONTROL: a discovery request without a boundary_version_id is rejected', () => {
@@ -728,6 +739,7 @@ describe('AC6 · unsupported/inaccessible/excluded discovered source stays a vis
     onboarding_state: 'excluded', // excluded from onboarding
     access_state: 'inaccessible', // inaccessible
     health_state: 'unknown',
+    sensitivity: 'restricted', // a restricted, ungoverned source — the highest-priority gap
     coverage_gap_ids: [GAP_A, GAP_B], // the governed-source gap references (reason/impact/review)
     first_seen_at: T0,
     last_seen_at: T0,
@@ -761,6 +773,202 @@ describe('AC6 · unsupported/inaccessible/excluded discovered source stays a vis
       entrySchema,
       { ...EXCLUDED_ENTRY, coverage_gap_ids: ['nope'] },
       /coverage_gap_ids\[0\]: not a uuid/,
+    );
+  });
+});
+
+// ===========================================================================
+// ENUMERATED CONTENT FACETS — the schema carries the AC1/AC2/AC3/AC4/AC6 facet
+// fields as NAMED, typed contract shapes (never a status blob). These pin the
+// full-content obligations the critic required into the contract itself.
+// ===========================================================================
+
+describe('enumerated content facets are contract-typed', () => {
+  const assetSchema = resolveRef('#/components/schemas/GovernedAsset');
+  const entrySchema = resolveRef('#/components/schemas/SourceCatalogEntry');
+  const gapSchema = resolveRef('#/components/schemas/CoverageGapDetail');
+  const diffSchema = resolveRef('#/components/schemas/SourceStatusDifference');
+  const depSchema = resolveRef('#/components/schemas/SourceDependency');
+
+  /** A full-content component gap (AC2): reason, age, impact, required owner action. */
+  const COMPONENT_GAP = {
+    gap_id: GAP_A,
+    gap_class: 'component',
+    reason: 'orphaned',
+    impact: 'high',
+    age_millis: 10_800_000,
+    required_action: 'assign an owner and onboard the batch job under a control',
+    required_owner: OWNER,
+  };
+  /** A full-content governed-source gap (AC6): + a review-or-expiry deadline. */
+  const GOVERNED_GAP = {
+    gap_id: GAP_B,
+    gap_class: 'governed_source',
+    reason: 'excluded',
+    impact: 'high',
+    age_millis: 0,
+    required_action: 'document the exclusion and schedule a governance review',
+    review_at: T1,
+  };
+
+  it('AC1: GovernedAsset carries evidence_state, unresolved_issues, confidence, and structured coverage_gaps', () => {
+    const asset = {
+      ...HEALTHY_ASSET,
+      evidence_state: 'current',
+      unresolved_issues: 0,
+      confidence: 1,
+      coverage_gaps: [],
+    };
+    expectValid(assetSchema, asset);
+    // A gap asset carries an incomplete evidence state + a concrete open-issue count + its gaps.
+    const gapAsset = {
+      ...HEALTHY_ASSET,
+      id: '018f0000-0000-7000-8000-000000000011',
+      evidence_state: 'incomplete',
+      unresolved_issues: 1,
+      confidence: 0,
+      coverage_gaps: [COMPONENT_GAP],
+    };
+    expectValid(assetSchema, gapAsset);
+  });
+
+  it('AC1 NEGATIVE CONTROL: evidence_state is a fixed vocabulary — "healthy" is not an evidence state', () => {
+    expectInvalid(
+      assetSchema,
+      { ...HEALTHY_ASSET, evidence_state: 'healthy' },
+      /evidence_state.*not in enum/,
+    );
+  });
+
+  it('AC2: a CoverageGapDetail names reason, age, impact, and required owner action (never a bare id)', () => {
+    expectValid(gapSchema, COMPONENT_GAP);
+    // Every enumerated AC2 facet is a required, present field.
+    for (const facet of [
+      'gap_id',
+      'gap_class',
+      'reason',
+      'impact',
+      'age_millis',
+      'required_action',
+    ]) {
+      expect(facet in COMPONENT_GAP).toBe(true);
+    }
+  });
+
+  it('AC2 NEGATIVE CONTROL: a gap detail missing its required_action is contract-invalid', () => {
+    expectInvalid(
+      gapSchema,
+      omit(COMPONENT_GAP, 'required_action'),
+      /missing required property "required_action"/,
+    );
+  });
+
+  it('AC2 NEGATIVE CONTROL: a gap detail with a non-integer age is contract-invalid', () => {
+    expectInvalid(
+      gapSchema,
+      { ...COMPONENT_GAP, age_millis: 'soon' },
+      /age_millis: expected type integer/,
+    );
+  });
+
+  it('AC2 NEGATIVE CONTROL: a gap_class outside the fixed vocabulary is contract-invalid', () => {
+    expectInvalid(gapSchema, { ...COMPONENT_GAP, gap_class: 'made-up' }, /gap_class.*not in enum/);
+  });
+
+  it('AC3: SourceStatusDifference names a field + each distinct value with its record ids', () => {
+    const diff = {
+      field: 'status',
+      values: [
+        { value: 'active', record_ids: ['018f0000-0000-7000-8000-000000000301'] },
+        { value: 'inactive', record_ids: ['018f0000-0000-7000-8000-000000000302'] },
+      ],
+    };
+    expectValid(diffSchema, diff);
+  });
+
+  it('AC3: SourceDependency names a depends_on edge (relationship/from/to)', () => {
+    const dep = {
+      relationship_id: '018f0000-0000-7000-8000-000000000401',
+      from_id: '018f0000-0000-7000-8000-000000000021',
+      to_id: '018f0000-0000-7000-8000-000000000022',
+      field_name: 'deployment_target',
+    };
+    expectValid(depSchema, dep);
+  });
+
+  it('AC3: a SourceCatalogEntry carries its correlation + dependencies inline', () => {
+    const entry = {
+      id: '018f0000-0000-7000-8000-000000000021',
+      tenant_id: TENANT,
+      source_class: 'kanban',
+      observed_locations: ['kanban://board/eng'],
+      owner_principal_id: OWNER,
+      onboarding_state: 'onboarded',
+      access_state: 'connected',
+      health_state: 'healthy',
+      sensitivity: 'normal',
+      evidence_state: 'current',
+      unresolved_issues: 0,
+      confidence: 1,
+      coverage_gap_ids: [],
+      correlation: [
+        {
+          field: 'status',
+          values: [
+            { value: 'active', record_ids: [GAP_A] },
+            { value: 'inactive', record_ids: [GAP_B] },
+          ],
+        },
+      ],
+      dependencies: [
+        {
+          relationship_id: GAP_A,
+          from_id: '018f0000-0000-7000-8000-000000000021',
+          to_id: '018f0000-0000-7000-8000-000000000022',
+        },
+      ],
+      first_seen_at: T0,
+      last_seen_at: T1,
+    };
+    expectValid(entrySchema, entry);
+  });
+
+  it('AC4: SourceCatalogEntry + GovernedAsset carry a confidence in [0,1]', () => {
+    expectValid(entrySchema, {
+      id: '018f0000-0000-7000-8000-000000000051',
+      tenant_id: TENANT,
+      source_class: 'warehouse',
+      onboarding_state: 'discovered',
+      access_state: 'unreachable',
+      health_state: 'unknown',
+      sensitivity: 'sensitive',
+      evidence_state: 'stale',
+      confidence: 0,
+      first_seen_at: T0,
+      last_seen_at: T0,
+    });
+    // Non-vacuity: a non-numeric confidence is contract-invalid (a typed field, not a free blob).
+    expectInvalid(
+      assetSchema,
+      { ...HEALTHY_ASSET, confidence: 'high' },
+      /confidence: expected type number/,
+    );
+  });
+
+  it('AC6: a governed-source gap detail carries reason, impact, owner action, and a review-or-expiry', () => {
+    expectValid(gapSchema, GOVERNED_GAP);
+    // AC6 "review or expiry": this governed-source gap carries a scheduled review deadline.
+    expect(typeof GOVERNED_GAP.review_at).toBe('string');
+    // And the schema also ACCEPTS an expiry-only governed gap (either satisfies the obligation).
+    const expiryOnly = { ...omit(GOVERNED_GAP, 'review_at'), expires_at: T1 };
+    expectValid(gapSchema, expiryOnly);
+  });
+
+  it('AC6 NEGATIVE CONTROL: an unknown facet on a gap detail is rejected (additionalProperties:false)', () => {
+    expectInvalid(
+      gapSchema,
+      { ...COMPONENT_GAP, sneaky: true },
+      /additional property "sneaky" is forbidden/,
     );
   });
 });

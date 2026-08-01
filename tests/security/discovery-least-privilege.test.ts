@@ -568,7 +568,10 @@ function buildInventoryAgent(over: {
   targetList: readonly ScanTarget[];
   probe: (t: ScanTarget) => ProbeResult;
   grantedScopes: ReadonlySet<string>;
-  authorize?: (t: ScanTarget) => { kind: 'authorized' | 'denied' | 'indeterminate'; reason: string };
+  authorize?: (t: ScanTarget) => {
+    kind: 'authorized' | 'denied' | 'indeterminate';
+    reason: string;
+  };
 }) {
   const clock = manualClock();
   const leaseStore = memoryLeaseStore();
@@ -585,9 +588,7 @@ function buildInventoryAgent(over: {
   });
   const authorizer = {
     async authorize(t: ScanTarget) {
-      const d = over.authorize
-        ? over.authorize(t)
-        : { kind: 'authorized' as const, reason: 'ok' };
+      const d = over.authorize ? over.authorize(t) : { kind: 'authorized' as const, reason: 'ok' };
       return d;
     },
   };
@@ -613,7 +614,12 @@ describe('SPEC criterion 1 — current-state view: each item appears once with i
   // Two healthy connected sources across distinct source types, plus a re-observation of the first
   // (same targetId observed twice) to prove reconciliation dedup — each item appears exactly ONCE.
   const targets: readonly ScanTarget[] = [
-    { targetId: 'kanban:board-42', scope: 'kanban', location: 'host://svc/kanban', registered: true },
+    {
+      targetId: 'kanban:board-42',
+      scope: 'kanban',
+      location: 'host://svc/kanban',
+      registered: true,
+    },
     {
       targetId: 'agentctl:agent-7',
       scope: 'agentctl',
@@ -752,7 +758,10 @@ describe('SPEC criterion 2 — discovered-but-unmanaged/unreachable/excluded rem
     expect(healthy.gapReason).toBeNull();
 
     // The gaps() read path returns EXACTLY the two gap entries, never hiding them.
-    const gapIds = catalog.gaps().map((g) => g.targetId).sort();
+    const gapIds = catalog
+      .gaps()
+      .map((g) => g.targetId)
+      .sort();
     expect(gapIds).toEqual(['agentctl:down', 'wiggum:excluded']);
     // Gaps carry no secret in any field.
     for (const g of catalog.gaps()) assertNoSecretAnywhere(g);
@@ -967,7 +976,12 @@ describe('SPEC criterion 6 — unsupported/inaccessible/sensitive/unowned/exclud
   const targets: readonly ScanTarget[] = [
     { targetId: 'kanban:ok', scope: 'kanban', location: 'host://svc/kanban', registered: true },
     // unsupported: scope not in the grant → out_of_scope gap (least-privilege refusal).
-    { targetId: 'netbox:unsupported', scope: 'netbox', location: 'host://svc/netbox', registered: false },
+    {
+      targetId: 'netbox:unsupported',
+      scope: 'netbox',
+      location: 'host://svc/netbox',
+      registered: false,
+    },
     // inaccessible: probe throws → probe_failed gap.
     {
       targetId: 'agentctl:inaccessible',
@@ -995,7 +1009,8 @@ describe('SPEC criterion 6 — unsupported/inaccessible/sensitive/unowned/exclud
     return { reachable: true, classification: t.scope, evidence: { note: 'metadata only' } };
   };
   const authorize = (t: ScanTarget) => {
-    if (t.targetId === 'wiggum:unowned') return { kind: 'indeterminate' as const, reason: 'no_owner' };
+    if (t.targetId === 'wiggum:unowned')
+      return { kind: 'indeterminate' as const, reason: 'no_owner' };
     if (t.targetId === 'workflows_orchestration:excluded')
       return { kind: 'denied' as const, reason: 'excluded_intentionally' };
     return { kind: 'authorized' as const, reason: 'ok' };
