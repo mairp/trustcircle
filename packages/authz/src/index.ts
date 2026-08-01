@@ -7,3 +7,4 @@
 export * from './separation-of-duties.ts';
 export * from './oidc.ts';
 export * from './workload-identity.ts';
+export * from './authority.ts';
