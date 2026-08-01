@@ -56,6 +56,13 @@
       "digest": "6f547883c9ad8c798cebf5a5cadc47a01a5ad39ba7ab90f03220cabf57ec484b"
     },
     {
+      "path": "db/migrations/0003_idempotency.sql",
+      "status": "present",
+      "vo": "VO-3cc80819915c2d5e64ba",
+      "exists": true,
+      "digest": "b795aa322db5e7bd13c3c6e1e6555baf4a08f4697d6ac27ca5c62f42449c3e33"
+    },
+    {
       "path": "docs/development/bootstrap.md",
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
@@ -186,7 +193,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "a827f7c4158765b0608d99888956756ef5a1b57b12b2e3fa6aa8c65c80b1fd95"
+      "digest": "4df751abcb83d4e4ab8cba88eed6cd2f2d3e526b1da8d2f7dae90d0e0e72648c"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -275,6 +282,14 @@
       "digest": "ff97039f5c83e31bb32edc26a0d8cd8fd4829384c035f99002566e5942711e7f"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE22-EVIDENCE.md",
+      "digest": "c0541d54d8ba9f7bb5d8c881832900de8d61daad0da551598583260af5266365"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE23-EVIDENCE.md",
+      "digest": "f3978adac7778247df9fc0b37e5ae4be64baa4cd9fd63248f8bbbf5c1a7b6008"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE3-EVIDENCE.md",
       "digest": "330e1bd52be74c79e3f38bf574fd9979f65c1c25d051aa1b9e8d17255f12d12a"
     },
@@ -303,5 +318,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "6daee25ad97809f68f69c77cef841a886123afdde469aee50a1b766e015c9ad4"
+  "inventoryDigest": "3b733b5074bcd98c5770886bc0c2c43672ac27cd9eb98a06b4fbc3e8d6953533"
 }

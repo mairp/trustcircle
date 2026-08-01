@@ -97,7 +97,11 @@ describe('0002_tenant_rls migration — forced RLS (independent read path)', () 
   it('enables AND forces row-level security on every tenant-scoped table', async () => {
     const { db, driver } = newDb();
     const report = await applyAll(db);
-    expect(report.applied.map((a) => a.id)).toEqual(['0001', '0002']);
+    // 0002 applies, ordered strictly after 0001. (Later governed migrations — 0003
+    // idempotency, ... — also apply from disk; assert order, not an exact two-element set.)
+    const appliedIds = report.applied.map((a) => a.id);
+    expect(appliedIds).toEqual(expect.arrayContaining(['0001', '0002']));
+    expect(appliedIds.indexOf('0001')).toBeLessThan(appliedIds.indexOf('0002'));
 
     const rls = driver.__catalog.rls;
     for (const t of TENANT_TABLES) {

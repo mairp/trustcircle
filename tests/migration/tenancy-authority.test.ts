@@ -188,7 +188,12 @@ describe('0001_tenancy_authority migration — file & loader', () => {
 describe('0001_tenancy_authority migration — applied effect (independent read path)', () => {
   it('applying the migration creates the seven authority tables with their required columns', async () => {
     const { db, driver } = newDbWithCatalog();
-    const migrations = await loadMigrationsFromDisk(MIGRATIONS_DIR);
+    // Scope the exact-set assertion to what 0001 itself creates: apply ONLY 0001 so that
+    // later governed migrations (0002 RLS, 0003 idempotency, ...) do not count as "accidental
+    // extras from this migration".
+    const migrations = (await loadMigrationsFromDisk(MIGRATIONS_DIR)).filter(
+      (m) => m.id === '0001',
+    );
     const report = await runMigrations(db, migrations);
     expect(report.applied.map((a) => a.id)).toContain('0001');
 
