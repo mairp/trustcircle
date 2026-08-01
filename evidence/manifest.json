@@ -70,6 +70,20 @@
       "digest": "b57bc2f6ee4c3729d102ad0ccabc2232c9a60561f50fc397cac4a86ab295f5d6"
     },
     {
+      "path": "deploy/nats/topology.json",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "0fcf681187988ed7a3ce5d35ae887e40476eab2e45a2c7e28bf222de70d87ac2"
+    },
+    {
+      "path": "deploy/nats/topology.schema.json",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "9b5a9b2eb79365becd7e4bca2948382f76131521ce9fae471efba8fd228a5a82"
+    },
+    {
       "path": "docs/development/bootstrap.md",
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
@@ -200,7 +214,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "3cb08cacf0a1f1ad6e4d851729224f9f33316d7306b41b23c9c105f3f6d6c1ca"
+      "digest": "0bfedf8ba3c0081f585e58b95e0aa1b1ebd44633272bb0e0c4b3adb68f76647f"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -297,6 +311,10 @@
       "digest": "ac62a97a87694f87de5465259dfb0ba6ce701c25c2f010042d7c10c30eaa3ac7"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE24-EVIDENCE.md",
+      "digest": "881ad56fab23dfb7da41995960cb3a39b853804752f1b7ce52ca231a6db6cdec"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE3-EVIDENCE.md",
       "digest": "330e1bd52be74c79e3f38bf574fd9979f65c1c25d051aa1b9e8d17255f12d12a"
     },
@@ -325,5 +343,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "2ac95ea79fad4547e196cc32b55f0a3ea46cd26260a24155a68208bf010aa9bb"
+  "inventoryDigest": "6805067e6c703213c42d91b48b0c1d14f194a6acd35815f71faddbf428863f37"
 }

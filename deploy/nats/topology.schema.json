@@ -1,0 +1,185 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://trustcircle.governance/deploy/nats/topology.schema.json",
+  "title": "NATS JetStream Governance Topology",
+  "description": "Versioned, validated declaration of tenant-scoped JetStream streams, subjects, retention, durable consumers, and dead-letter routing for the governance control plane. The schema is the 'versioned and validated' half of VO-52d0780c11bcc6fd7583 for the delivery topology contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "topologyVersion",
+    "bundle",
+    "obligation",
+    "conventions",
+    "streams",
+    "consumers",
+    "deadLetterRouting"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "kind": { "const": "NatsJetStreamTopology" },
+    "topologyVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the topology contract (versioned)."
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "contentHash", "workItem"],
+      "properties": {
+        "id": { "type": "string", "const": "36GCYGDJ15PTYP60F91QWRAY2M" },
+        "contentHash": {
+          "type": "string",
+          "const": "af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b"
+        },
+        "workItem": { "type": "string", "const": "5GZ6W7VCKC0R01Z5SAKEH3QVKT" }
+      }
+    },
+    "obligation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["vo", "oracle"],
+      "properties": {
+        "vo": { "type": "string", "const": "VO-52d0780c11bcc6fd7583" },
+        "oracle": { "type": "string", "minLength": 1 }
+      }
+    },
+    "conventions": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["subjectPrefix", "tenantScoped", "subjectTemplate", "tenantToken"],
+      "properties": {
+        "subjectPrefix": { "type": "string", "const": "governance" },
+        "tenantScoped": { "const": true },
+        "subjectTemplate": {
+          "type": "string",
+          "pattern": "^governance\\.\\{tenantId\\}\\."
+        },
+        "tenantToken": { "type": "string", "const": "{tenantId}" }
+      }
+    },
+    "streams": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/definitions/stream" }
+    },
+    "consumers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/consumer" }
+    },
+    "deadLetterRouting": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "subjectTemplate",
+        "targetStream",
+        "preserveOriginalEvidence",
+        "replayAuthorizationRequired"
+      ],
+      "properties": {
+        "subjectTemplate": {
+          "type": "string",
+          "const": "governance.{tenantId}.deadletter.recorded"
+        },
+        "targetStream": { "type": "string", "minLength": 1 },
+        "preserveOriginalEvidence": { "const": true },
+        "replayAuthorizationRequired": { "const": true }
+      }
+    }
+  },
+  "definitions": {
+    "retention": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["policy", "discard", "maxAge"],
+      "properties": {
+        "policy": { "enum": ["limits", "interest", "workqueue"] },
+        "discard": {
+          "enum": ["new", "old"],
+          "description": "discard:new fails writes visibly rather than silently evicting oldest."
+        },
+        "maxAge": {
+          "type": ["string", "null"],
+          "description": "null => resolved from the governed retention schedule at deploy time, never invented here."
+        },
+        "maxBytes": { "type": "integer" },
+        "maxMsgs": { "type": "integer" }
+      }
+    },
+    "stream": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "tenantScoped",
+        "subjects",
+        "retention",
+        "replicas",
+        "denyDelete",
+        "denyPurge"
+      ],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "tenantScoped": { "const": true },
+        "subjects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^governance\\.",
+            "description": "Every subject filter is rooted at the governance prefix and tenant-scoped (governance.<tenant>.<domain>.<event>)."
+          }
+        },
+        "retention": { "$ref": "#/definitions/retention" },
+        "replicas": { "type": "integer", "minimum": 1 },
+        "duplicateWindow": { "type": "string" },
+        "denyDelete": { "const": true },
+        "denyPurge": { "const": true }
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "stream",
+        "durable",
+        "type",
+        "filterSubject",
+        "deliverPolicy",
+        "ackPolicy",
+        "maxDeliver"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "stream": { "type": "string", "minLength": 1 },
+        "durable": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["pull", "push"] },
+        "filterSubject": { "type": "string", "pattern": "^governance\\." },
+        "deliverPolicy": { "enum": ["all", "last", "new", "by_start_sequence", "by_start_time"] },
+        "ackPolicy": {
+          "const": "explicit",
+          "description": "Explicit ack is required so redelivery/retry is deterministic and reconcilable."
+        },
+        "ackWait": { "type": "string" },
+        "maxDeliver": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Bounded redelivery budget (retry-bounded), mirroring outbox/inbox max_attempts."
+        },
+        "deadLetter": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "afterMaxDeliver": { "type": "boolean" },
+            "route": { "type": "string" },
+            "targetStream": { "type": "string" },
+            "preserveOriginal": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

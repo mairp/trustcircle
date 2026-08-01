@@ -1,0 +1,284 @@
+{
+  "$schema": "./topology.schema.json",
+  "kind": "NatsJetStreamTopology",
+  "topologyVersion": "1.0.0",
+  "bundle": {
+    "id": "36GCYGDJ15PTYP60F91QWRAY2M",
+    "contentHash": "af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b",
+    "workItem": "5GZ6W7VCKC0R01Z5SAKEH3QVKT"
+  },
+  "obligation": {
+    "vo": "VO-52d0780c11bcc6fd7583",
+    "oracle": "Every onboarded source contract MUST be versioned and validated; mutating operations MUST be correlated, deduplicated, reconcilable, retry-bounded, and safe under duplicate, delayed, partial, conflicting, and uncertain outcomes.",
+    "grounding": {
+      "subjectTaxonomy": "specs/001-governance-control-plane/contracts/governance-events.asyncapi.yaml",
+      "deliverySubstrate": "db/migrations/0004_delivery.sql",
+      "retentionPolicy": "specs/001-governance-control-plane/research.md#decision-9-evidence-retention"
+    }
+  },
+  "conventions": {
+    "subjectPrefix": "governance",
+    "tenantScoped": true,
+    "subjectTemplate": "governance.{tenantId}.{domain}.{eventName}",
+    "tenantToken": "{tenantId}",
+    "note": "Every subject is tenant-scoped: the second token is the tenant id, mirroring the AsyncAPI channel addresses governance.{tenantId}.<domain>.<eventName>. A stream's subject filters therefore isolate one tenant's namespace and MUST NOT capture a bare cross-tenant wildcard at the tenant position."
+  },
+  "streams": [
+    {
+      "name": "GOVERNANCE_EVENTS",
+      "description": "Tenant-scoped durable governance domain events. Publish-side mirror of the transactional outbox (0004_delivery.outbox_message): every mutating governance effect is published here exactly once per (tenant, dedup_key).",
+      "tenantScoped": true,
+      "subjects": [
+        "governance.*.inventory.*",
+        "governance.*.decision.*",
+        "governance.*.integrity.*",
+        "governance.*.controller.*",
+        "governance.*.integration.*",
+        "governance.*.evidence.*",
+        "governance.*.compliance.*",
+        "governance.*.audit.recorded"
+      ],
+      "retention": {
+        "policy": "limits",
+        "discard": "new",
+        "discardReason": "discard:new refuses NEW writes once a configured limit is reached rather than silently dropping the OLDEST retained events — data loss is fail-visible (a publish is rejected and surfaced) instead of a silent eviction that would make source history unreconstructable.",
+        "maxAge": null,
+        "maxAgeReason": "maxAge is intentionally unset (null). Retention duration is NOT invented here; it is resolved from the longest applicable approved organizational/contractual/regulatory retention schedule and any active legal hold (research.md Decision 9). A concrete value is injected at deploy time from that resolved schedule; a hard-coded age here would silently override governed retention.",
+        "maxBytes": -1,
+        "maxMsgs": -1,
+        "maxMsgSize": 8388608,
+        "maxMsgsPerSubject": -1
+      },
+      "storage": "file",
+      "replicas": 3,
+      "replicasReason": "R>=3 gives quorum durability so a single node loss does not lose committed governance events (safe under partial/uncertain outcomes).",
+      "duplicateWindow": "2m",
+      "duplicateWindowReason": "JetStream transport-level dedup on the per-message Nats-Msg-Id (the outbox dedup_key). A duplicate publish inside the window is deduplicated by the broker; application idempotency (0003_idempotency ledger) remains authoritative beyond the window. Deduplicated under duplicate/delayed redelivery.",
+      "allowRollup": false,
+      "denyDelete": true,
+      "denyPurge": true,
+      "tamperEvidenceReason": "denyDelete + denyPurge make the stream append-only from clients: retained governance events cannot be individually deleted or the stream purged, so source history remains reconstructable and tamper-evident.",
+      "ordering": {
+        "perSubject": true,
+        "note": "Per-subject (per-aggregate) publish order is preserved by the outbox ordering_key mapped to the subject; JetStream assigns a monotonic stream sequence so out-of-order arrival is reconciled by sequence, never by wall-clock."
+      }
+    },
+    {
+      "name": "GOVERNANCE_DLQ",
+      "description": "Tenant-scoped dead-letter stream. Receives events whose consumer redelivery budget (maxDeliver) is exhausted or that terminally fail processing. Mirrors 0004_delivery.dead_letter_record: retains the ORIGINAL message evidence before any transformation/replay, with paired replay authorization.",
+      "tenantScoped": true,
+      "subjects": ["governance.*.deadletter.recorded"],
+      "retention": {
+        "policy": "limits",
+        "discard": "new",
+        "discardReason": "Dead letters are evidence; discard:new refuses to silently evict the oldest failed-message evidence.",
+        "maxAge": null,
+        "maxAgeReason": "Dead-letter retention is resolved from the governed evidence-retention schedule (research.md Decision 9), never invented here.",
+        "maxBytes": -1,
+        "maxMsgs": -1,
+        "maxMsgSize": 8388608,
+        "maxMsgsPerSubject": -1
+      },
+      "storage": "file",
+      "replicas": 3,
+      "duplicateWindow": "2m",
+      "allowRollup": false,
+      "denyDelete": true,
+      "denyPurge": true,
+      "tamperEvidenceReason": "Dead-letter evidence is append-only and tamper-evident; a failed message's original payload cannot be deleted or purged before human reconciliation."
+    }
+  ],
+  "consumers": [
+    {
+      "name": "governance-inventory-projector",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-inventory-projector",
+      "type": "pull",
+      "filterSubject": "governance.*.inventory.*",
+      "deliverPolicy": "all",
+      "deliverPolicyReason": "deliver:all is replayable from the beginning — the correlated governance projection can be rebuilt deterministically (reconcilable).",
+      "ackPolicy": "explicit",
+      "ackWait": "30s",
+      "maxDeliver": 8,
+      "maxDeliverReason": "Bounded redelivery budget mirrors outbox/inbox max_attempts (default 8) in 0004_delivery — retry is bounded; the 9th failure is dead-lettered, never retried forever.",
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 512,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true,
+        "reason": "On maxDeliver exhaustion the ORIGINAL message (payload + correlation_id + headers) is routed to the tenant's dead-letter subject and captured in GOVERNANCE_DLQ / dead_letter_record before any transformation, with replay authorization required to re-drive it."
+      }
+    },
+    {
+      "name": "governance-decision-projector",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-decision-projector",
+      "type": "pull",
+      "filterSubject": "governance.*.decision.*",
+      "deliverPolicy": "all",
+      "ackPolicy": "explicit",
+      "ackWait": "30s",
+      "maxDeliver": 8,
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 512,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true
+      }
+    },
+    {
+      "name": "governance-integrity-projector",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-integrity-projector",
+      "type": "pull",
+      "filterSubject": "governance.*.integrity.*",
+      "deliverPolicy": "all",
+      "ackPolicy": "explicit",
+      "ackWait": "30s",
+      "maxDeliver": 8,
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 512,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true
+      }
+    },
+    {
+      "name": "governance-controller-projector",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-controller-projector",
+      "type": "pull",
+      "filterSubject": "governance.*.controller.*",
+      "deliverPolicy": "all",
+      "ackPolicy": "explicit",
+      "ackWait": "30s",
+      "maxDeliver": 8,
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 512,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true
+      }
+    },
+    {
+      "name": "governance-integration-projector",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-integration-projector",
+      "type": "pull",
+      "filterSubject": "governance.*.integration.*",
+      "deliverPolicy": "all",
+      "ackPolicy": "explicit",
+      "ackWait": "30s",
+      "maxDeliver": 8,
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 512,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true
+      }
+    },
+    {
+      "name": "governance-evidence-projector",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-evidence-projector",
+      "type": "pull",
+      "filterSubject": "governance.*.evidence.*",
+      "deliverPolicy": "all",
+      "ackPolicy": "explicit",
+      "ackWait": "30s",
+      "maxDeliver": 8,
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 512,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true
+      }
+    },
+    {
+      "name": "governance-compliance-projector",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-compliance-projector",
+      "type": "pull",
+      "filterSubject": "governance.*.compliance.*",
+      "deliverPolicy": "all",
+      "ackPolicy": "explicit",
+      "ackWait": "30s",
+      "maxDeliver": 8,
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 512,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true
+      }
+    },
+    {
+      "name": "governance-audit-recorder",
+      "stream": "GOVERNANCE_EVENTS",
+      "durable": "governance-audit-recorder",
+      "type": "pull",
+      "filterSubject": "governance.*.audit.recorded",
+      "deliverPolicy": "all",
+      "ackPolicy": "explicit",
+      "ackWait": "60s",
+      "maxDeliver": 8,
+      "backoff": ["1s", "5s", "15s", "30s", "1m", "5m", "10m"],
+      "maxAckPending": 1024,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": true,
+        "route": "governance.{tenantId}.deadletter.recorded",
+        "targetStream": "GOVERNANCE_DLQ",
+        "preserveOriginal": true
+      }
+    },
+    {
+      "name": "governance-deadletter-triage",
+      "stream": "GOVERNANCE_DLQ",
+      "durable": "governance-deadletter-triage",
+      "type": "pull",
+      "filterSubject": "governance.*.deadletter.recorded",
+      "deliverPolicy": "all",
+      "deliverPolicyReason": "Dead-letter triage replays every retained failed message so an owner can reconcile it; no auto-drop.",
+      "ackPolicy": "explicit",
+      "ackWait": "5m",
+      "maxDeliver": 1,
+      "maxDeliverReason": "Dead letters are NOT auto-retried (maxDeliver:1). A human/owned triage flow reconciles them; unsafe automatic re-drive is blocked, and there is no onward dead-letter (a DLQ has no DLQ).",
+      "maxAckPending": 256,
+      "flowControl": true,
+      "deadLetter": {
+        "afterMaxDeliver": false,
+        "reason": "The dead-letter stream is terminal; exhausted triage stays visible and owned rather than being routed onward."
+      }
+    }
+  ],
+  "deadLetterRouting": {
+    "subjectTemplate": "governance.{tenantId}.deadletter.recorded",
+    "targetStream": "GOVERNANCE_DLQ",
+    "trigger": "consumer maxDeliver exhausted OR terminal processing failure",
+    "preserveOriginalEvidence": true,
+    "replayAuthorizationRequired": true,
+    "substrate": "db/migrations/0004_delivery.sql#dead_letter_record",
+    "note": "Every domain consumer routes exhausted redeliveries to the tenant's deadletter subject, captured durably in GOVERNANCE_DLQ. This mirrors the dead_letter_record table (origin, origin_message_id, correlation_id, original evidence, paired replay authorization) so a failed mutating operation is neither lost nor silently retried: it becomes an owned, reconcilable, tamper-evident record."
+  }
+}
