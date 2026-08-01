@@ -9,6 +9,7 @@
   "dependencies": {
     "@trustcircle/application": "*",
     "@trustcircle/contracts": "*",
+    "@trustcircle/domain": "*",
     "@trustcircle/observability": "*"
   },
   "scripts": {

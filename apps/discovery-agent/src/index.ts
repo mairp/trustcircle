@@ -6,3 +6,5 @@ export * from './main.ts';
 export * from './scanners/filesystem.ts';
 // Phase 68: least-privilege runtime metadata discovery (processes/services/containers/ports/manifests).
 export * from './scanners/runtime.ts';
+// Phase 69: core-architecture candidate classifier (two-axis, advisory — never auto-onboards).
+export * from './classifiers/core-architecture.ts';
