@@ -41,7 +41,6 @@ const {
   CONTINUITY_MODES,
   SAFE_NEXT_ACTIONS,
   BUDGET_AXES,
-  realSleeper,
 } = main;
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -69,7 +68,13 @@ function memoryLeaseStore() {
     async clear(resource, holder, fencingToken) {
       const cur = rows.get(resource);
       if (cur && cur.holder === holder && cur.fencingToken === fencingToken) {
-        rows.set(resource, { resource, holder: null, fencingToken, expiresAt: null, updatedAt: cur.updatedAt });
+        rows.set(resource, {
+          resource,
+          holder: null,
+          fencingToken,
+          expiresAt: null,
+          updatedAt: cur.updatedAt,
+        });
         return true;
       }
       return false;
@@ -120,10 +125,21 @@ function scriptedAuthorizer(decideFor) {
     },
   };
 }
-const allowAll = () => ({ authorizer: { async authorize() { return { kind: 'authorized', reason: 'ok' }; } }, calls: [] });
+const allowAll = () => ({
+  authorizer: {
+    async authorize() {
+      return { kind: 'authorized', reason: 'ok' };
+    },
+  },
+  calls: [],
+});
 
 function scriptedTargets(list) {
-  return { async listTargets() { return list; } };
+  return {
+    async listTargets() {
+      return list;
+    },
+  };
 }
 
 function scriptedProbe(behaviorFor) {
@@ -138,7 +154,9 @@ function scriptedProbe(behaviorFor) {
     },
   };
 }
-const reachable = (cls = 'unknown') => () => ({ reachable: true, classification: cls, evidence: { ok: true } });
+const reachable =
+  (cls = 'unknown') =>
+  () => ({ reachable: true, classification: cls, evidence: { ok: true } });
 
 const GOOD_ENV = Object.freeze({
   DEPLOYMENT_STAGE: 'development',
@@ -195,7 +213,18 @@ function buildAgent(over = {}) {
     idleDelayMs: over.idleDelayMs ?? 5,
     renewAtFraction: over.renewAtFraction ?? 0.5,
   });
-  return { agent, clock, leaseStore, checkpoints, sinkPair, evidence, catalog, lease, authorizerPair, probePair };
+  return {
+    agent,
+    clock,
+    leaseStore,
+    checkpoints,
+    sinkPair,
+    evidence,
+    catalog,
+    lease,
+    authorizerPair,
+    probePair,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -283,7 +312,10 @@ test('A3 bootstrap validates budget bounds eagerly (non-positive bound is a boot
       grantedScopes: ['kanban'],
       budgetLimits,
     });
-  assert.throws(mk({ maxTargetsPerSweep: 0, maxSweepDurationMs: 1000, maxNewSourcesPerSweep: 1 }), RangeError);
+  assert.throws(
+    mk({ maxTargetsPerSweep: 0, maxSweepDurationMs: 1000, maxNewSourcesPerSweep: 1 }),
+    RangeError,
+  );
   // NEGATIVE control: a valid budget does NOT throw.
   assert.doesNotThrow(mk(DEFAULT_BUDGET));
 });
@@ -345,7 +377,11 @@ test('B3 assertLive throws LeaseLostError once the lease expires; health flips t
 test('C1 resolveScanAuthorization denies out-of-scope targets WITHOUT consulting the authorizer (least privilege first)', async () => {
   const auth = scriptedAuthorizer(() => ({ kind: 'authorized', reason: 'ok' }));
   const granted = new Set(['kanban']);
-  const decision = await resolveScanAuthorization(auth.authorizer, granted, target({ scope: 'secrets' }));
+  const decision = await resolveScanAuthorization(
+    auth.authorizer,
+    granted,
+    target({ scope: 'secrets' }),
+  );
   assert.equal(decision.kind, 'denied');
   assert.equal(decision.reason, 'out_of_scope');
   assert.equal(auth.calls.length, 0, 'authorizer must NOT be consulted for an out-of-scope scope');
@@ -356,21 +392,38 @@ test('C1 resolveScanAuthorization denies out-of-scope targets WITHOUT consulting
 });
 
 test('C2 a throwing authorizer maps to indeterminate (fail-closed), never authorized', async () => {
-  const boom = { async authorize() { throw new Error('authz down'); } };
-  const decision = await resolveScanAuthorization(boom, new Set(['kanban']), target({ scope: 'kanban' }));
+  const boom = {
+    async authorize() {
+      throw new Error('authz down');
+    },
+  };
+  const decision = await resolveScanAuthorization(
+    boom,
+    new Set(['kanban']),
+    target({ scope: 'kanban' }),
+  );
   assert.equal(decision.kind, 'indeterminate');
   assert.match(decision.reason, /authorizer_error/);
   // NEGATIVE control: a well-behaved authorizer authorizes.
-  const good = { async authorize() { return { kind: 'authorized', reason: 'ok' }; } };
-  assert.equal((await resolveScanAuthorization(good, new Set(['kanban']), target({ scope: 'kanban' }))).kind, 'authorized');
+  const good = {
+    async authorize() {
+      return { kind: 'authorized', reason: 'ok' };
+    },
+  };
+  assert.equal(
+    (await resolveScanAuthorization(good, new Set(['kanban']), target({ scope: 'kanban' }))).kind,
+    'authorized',
+  );
 });
 
 test('C3 a sweep NEVER probes an unauthorized/out-of-scope target; each becomes a visible coverage gap in the reconciled catalog', async () => {
   const authorizerPair = scriptedAuthorizer((t) =>
-    t.targetId === 'denied-1' ? { kind: 'denied', reason: 'policy_block' } : { kind: 'authorized', reason: 'ok' },
+    t.targetId === 'denied-1'
+      ? { kind: 'denied', reason: 'policy_block' }
+      : { kind: 'authorized', reason: 'ok' },
   );
   const probePair = scriptedProbe(reachable('kanban'));
-  const { agent, catalog, clock } = buildAgent({
+  const { agent, catalog } = buildAgent({
     grantedScopes: ['kanban'],
     authorizerPair,
     probePair,
@@ -411,7 +464,10 @@ test('C4 an empty grant set means the agent scans NOTHING — every target is an
   const { agent, catalog } = buildAgent({
     grantedScopes: [],
     probePair,
-    targetList: [target({ targetId: 'a', scope: 'kanban' }), target({ targetId: 'b', scope: 'agentctl' })],
+    targetList: [
+      target({ targetId: 'a', scope: 'kanban' }),
+      target({ targetId: 'b', scope: 'agentctl' }),
+    ],
   });
   await agent.start();
   await agent.runOnce();
@@ -419,7 +475,11 @@ test('C4 an empty grant set means the agent scans NOTHING — every target is an
   assert.equal(catalog.get('b').gapReason, 'out_of_scope');
   assert.equal(probePair.calls.length, 0, 'nothing probed under an empty grant');
   // NEGATIVE control: granting 'kanban' lets 'a' through.
-  const c = buildAgent({ grantedScopes: ['kanban'], probePair: scriptedProbe(reachable()), targetList: [target({ targetId: 'a', scope: 'kanban' })] });
+  const c = buildAgent({
+    grantedScopes: ['kanban'],
+    probePair: scriptedProbe(reachable()),
+    targetList: [target({ targetId: 'a', scope: 'kanban' })],
+  });
   await c.agent.start();
   await c.agent.runOnce();
   assert.notEqual(c.catalog.get('a').onboarding, 'gap');
@@ -456,7 +516,16 @@ test('D1 the RATE (targets) budget stops the sweep; remaining targets are record
   assert.equal(st.budget.exhaustedAxis, 'targets');
   assert.equal(st.healthy, false, 'a budget-exhausted agent is NOT healthy');
   // NEGATIVE control: a generous budget scans all four with no exhausted axis.
-  const gen = buildAgent({ budgetLimits: DEFAULT_BUDGET, probePair: scriptedProbe(reachable()), targetList: [target({ targetId: 'a' }), target({ targetId: 'b' }), target({ targetId: 'c' }), target({ targetId: 'd' })] });
+  const gen = buildAgent({
+    budgetLimits: DEFAULT_BUDGET,
+    probePair: scriptedProbe(reachable()),
+    targetList: [
+      target({ targetId: 'a' }),
+      target({ targetId: 'b' }),
+      target({ targetId: 'c' }),
+      target({ targetId: 'd' }),
+    ],
+  });
   await gen.agent.start();
   const r2 = await gen.agent.runOnce();
   assert.equal(r2.stoppedByBudget, null);
@@ -466,13 +535,15 @@ test('D1 the RATE (targets) budget stops the sweep; remaining targets are record
 test('D2 the TIME (duration) budget stops the sweep before the first target when already elapsed', async () => {
   // Clock jumps past the duration budget between ScanBudget construction and the first check.
   const clock = manualClock();
-  let firstCheck = true;
   const probePair = scriptedProbe(reachable());
   // Use a tiny duration budget and advance the clock via the probe/target hooks.
   const targets = {
     async listTargets() {
       clock.advance(100); // consume all of the 50ms budget before any target check
-      return [target({ targetId: 'a', scope: 'kanban' }), target({ targetId: 'b', scope: 'kanban' })];
+      return [
+        target({ targetId: 'a', scope: 'kanban' }),
+        target({ targetId: 'b', scope: 'kanban' }),
+      ];
     },
   };
   const { agent, catalog, checkpoints } = buildAgent({
@@ -488,7 +559,12 @@ test('D2 the TIME (duration) budget stops the sweep before the first target when
   assert.equal(catalog.get('a').gapReason, 'budget_duration');
   assert.equal(checkpoints.latest.get('source-discovery').budget.exhaustedAxis, 'duration');
   // NEGATIVE control: a large time budget scans normally.
-  const ok = buildAgent({ clock: manualClock(), budgetLimits: DEFAULT_BUDGET, probePair: scriptedProbe(reachable()), targetList: [target({ targetId: 'a' })] });
+  const ok = buildAgent({
+    clock: manualClock(),
+    budgetLimits: DEFAULT_BUDGET,
+    probePair: scriptedProbe(reachable()),
+    targetList: [target({ targetId: 'a' })],
+  });
   await ok.agent.start();
   assert.equal((await ok.agent.runOnce()).stoppedByBudget, null);
 });
@@ -508,13 +584,20 @@ test('D3 the BLAST-RADIUS budget caps NEW unregistered sources per sweep; regist
   const report = await agent.runOnce();
   assert.equal(catalog.get('new-1').onboarding, 'discovered');
   assert.equal(catalog.get('new-2').gapReason, 'budget_blast', 'second NEW source is a blast gap');
-  assert.equal(catalog.get('reg-1').onboarding, 'registered', 'registered source unaffected by blast cap');
+  assert.equal(
+    catalog.get('reg-1').onboarding,
+    'registered',
+    'registered source unaffected by blast cap',
+  );
   assert.equal(report.stoppedByBudget, 'blast');
   // NEGATIVE control: a larger blast budget onboards both new sources.
   const gen = buildAgent({
     budgetLimits: { maxTargetsPerSweep: 100, maxSweepDurationMs: 60_000, maxNewSourcesPerSweep: 5 },
     probePair: scriptedProbe(reachable()),
-    targetList: [target({ targetId: 'new-1', registered: false }), target({ targetId: 'new-2', registered: false })],
+    targetList: [
+      target({ targetId: 'new-1', registered: false }),
+      target({ targetId: 'new-2', registered: false }),
+    ],
   });
   await gen.agent.start();
   await gen.agent.runOnce();
@@ -523,13 +606,19 @@ test('D3 the BLAST-RADIUS budget caps NEW unregistered sources per sweep; regist
 
 test('D4 ScanBudget meter is deterministic and pure given the injected clock', () => {
   const clock = manualClock();
-  const b = new ScanBudget({ maxTargetsPerSweep: 2, maxSweepDurationMs: 100, maxNewSourcesPerSweep: 1 }, clock);
+  const b = new ScanBudget(
+    { maxTargetsPerSweep: 2, maxSweepDurationMs: 100, maxNewSourcesPerSweep: 1 },
+    clock,
+  );
   assert.equal(b.checkBeforeTarget(), null);
   b.recordTargetConsidered();
   b.recordTargetConsidered();
   assert.equal(b.checkBeforeTarget().axis, 'targets'); // rate hit
   // NEGATIVE control: fresh meter with room says null.
-  const fresh = new ScanBudget({ maxTargetsPerSweep: 5, maxSweepDurationMs: 100, maxNewSourcesPerSweep: 1 }, manualClock());
+  const fresh = new ScanBudget(
+    { maxTargetsPerSweep: 5, maxSweepDurationMs: 100, maxNewSourcesPerSweep: 1 },
+    manualClock(),
+  );
   assert.equal(fresh.checkBeforeTarget(), null);
   // Time axis: advancing past the duration exhausts it.
   clock.advance(200);
@@ -543,7 +632,10 @@ test('E1 discovery observations are buffered then flushed to the durable sink; b
   const sinkPair = capturingSink();
   const { agent, evidence, clock } = buildAgent({
     sinkPair,
-    targetList: [target({ targetId: 'a', scope: 'kanban' }), target({ targetId: 'b', scope: 'kanban' })],
+    targetList: [
+      target({ targetId: 'a', scope: 'kanban' }),
+      target({ targetId: 'b', scope: 'kanban' }),
+    ],
   });
   await agent.start();
   await agent.runOnce();
@@ -564,7 +656,13 @@ test('E1 discovery observations are buffered then flushed to the durable sink; b
 test('E2 a failed flush RETAINS the records (nothing lost) and returns false — fail-visible, never silent drop', async () => {
   const sinkPair = capturingSink({ failTimes: 1 });
   const evidence = new EvidenceBuffer(sinkPair.sink);
-  evidence.buffer({ kind: 'source_discovered', targetId: 'x', correlationId: 'c', payload: {}, bufferedAt: 1 });
+  evidence.buffer({
+    kind: 'source_discovered',
+    targetId: 'x',
+    correlationId: 'c',
+    payload: {},
+    bufferedAt: 1,
+  });
   const first = await evidence.flush();
   assert.equal(first, false, 'flush reports failure');
   assert.equal(evidence.size, 1, 'record RETAINED after failed flush — nothing lost');
@@ -578,7 +676,10 @@ test('E2 a failed flush RETAINS the records (nothing lost) and returns false —
 
 test('E3 shutdown with an unflushable sink ends DEGRADED with reconcile as the safe next action (fail-visible terminal)', async () => {
   const sinkPair = capturingSink({ failTimes: 999 }); // always fails
-  const { agent, checkpoints, clock } = buildAgent({ sinkPair, targetList: [target({ targetId: 'a', scope: 'kanban' })] });
+  const { agent, checkpoints } = buildAgent({
+    sinkPair,
+    targetList: [target({ targetId: 'a', scope: 'kanban' })],
+  });
   await agent.start();
   await agent.runOnce(); // buffers evidence
   agent.requestStop();
@@ -592,7 +693,10 @@ test('E3 shutdown with an unflushable sink ends DEGRADED with reconcile as the s
   assert.ok(cp.bufferedEvidence >= 1, 'unflushed evidence is visible in the checkpoint');
   // NEGATIVE control: a healthy sink shuts down cleanly with an emptied buffer.
   const okPair = capturingSink();
-  const ok = buildAgent({ sinkPair: okPair, targetList: [target({ targetId: 'a', scope: 'kanban' })] });
+  const ok = buildAgent({
+    sinkPair: okPair,
+    targetList: [target({ targetId: 'a', scope: 'kanban' })],
+  });
   await ok.agent.start();
   await ok.agent.runOnce();
   ok.agent.requestStop();
@@ -611,7 +715,10 @@ test('F1 a throwing probe becomes a probe_failed coverage gap; the target is NOT
   });
   const { agent, catalog } = buildAgent({
     probePair,
-    targetList: [target({ targetId: 'ok', scope: 'kanban' }), target({ targetId: 'boom', scope: 'kanban' })],
+    targetList: [
+      target({ targetId: 'ok', scope: 'kanban' }),
+      target({ targetId: 'boom', scope: 'kanban' }),
+    ],
   });
   await agent.start();
   const report = await agent.runOnce();
@@ -620,7 +727,10 @@ test('F1 a throwing probe becomes a probe_failed coverage gap; the target is NOT
   assert.equal(catalog.get('boom').gapReason, 'probe_failed');
   assert.equal(report.probeFailures, 1);
   // NEGATIVE control: had the probe not thrown, 'boom' would be a source.
-  const ok = buildAgent({ probePair: scriptedProbe(reachable()), targetList: [target({ targetId: 'boom', scope: 'kanban' })] });
+  const ok = buildAgent({
+    probePair: scriptedProbe(reachable()),
+    targetList: [target({ targetId: 'boom', scope: 'kanban' })],
+  });
   await ok.agent.start();
   await ok.agent.runOnce();
   assert.equal(ok.catalog.get('boom').onboarding, 'discovered');
@@ -635,19 +745,22 @@ test('F2 a sweep that throws is captured, counted as a RETRY in the durable chec
       return [target({ targetId: 'a', scope: 'kanban' })];
     },
   };
-  const { agent, checkpoints, clock } = buildAgent({ targets, idleDelayMs: 1 });
+  const { agent, checkpoints } = buildAgent({ targets, idleDelayMs: 1 });
   await agent.start();
   // Drive two loop iterations: first sweep throws (retry), second succeeds, then stop.
   const runP = agent.run();
   // Let the loop run; requestStop after a microtask so the second iteration completes.
   await Promise.resolve();
   agent.requestStop();
-  const report = await runP;
+  await runP;
   // INDEPENDENT read path: retries recorded in the durable checkpoint.
   const cp = checkpoints.latest.get('source-discovery');
   assert.ok(cp.totals.retries >= 1, 'a failed sweep increments the durable retry counter');
   // NEGATIVE control: a never-throwing target source records zero retries.
-  const ok = buildAgent({ targetList: [target({ targetId: 'a', scope: 'kanban' })], idleDelayMs: 1 });
+  const ok = buildAgent({
+    targetList: [target({ targetId: 'a', scope: 'kanban' })],
+    idleDelayMs: 1,
+  });
   await ok.agent.start();
   const okP = ok.agent.run();
   await Promise.resolve();
@@ -662,11 +775,23 @@ test('F2 a sweep that throws is captured, counted as a RETRY in the durable chec
 test('G1 losing the lease mid-run pauses at a safe checkpoint: state lost_lease, continuity paused, reconcile action (fail-closed)', async () => {
   const store = memoryLeaseStore();
   const clock = manualClock();
-  const { agent, checkpoints } = buildAgent({ leaseStore: store, clock, ttlMs: 10_000, idleDelayMs: 1, holder: 'agent-A' });
+  const { agent, checkpoints } = buildAgent({
+    leaseStore: store,
+    clock,
+    ttlMs: 10_000,
+    idleDelayMs: 1,
+    holder: 'agent-A',
+  });
   await agent.start();
   // Simulate a stolen lease: another holder overwrites the durable row with a higher token.
   const cur = store.rows.get('source-discovery');
-  store.rows.set('source-discovery', { resource: 'source-discovery', holder: 'agent-B', fencingToken: cur.fencingToken + 1, expiresAt: clock() + 10_000, updatedAt: clock() });
+  store.rows.set('source-discovery', {
+    resource: 'source-discovery',
+    holder: 'agent-B',
+    fencingToken: cur.fencingToken + 1,
+    expiresAt: clock() + 10_000,
+    updatedAt: clock(),
+  });
   clock.advance(6_000); // pass renew-at (half of 10s) so run() renews and detects the loss
   const runP = agent.run();
   const report = await runP;
@@ -699,8 +824,20 @@ test('H1 re-observing the same target updates its catalog entry in place — rec
   const clock = manualClock();
   // First sweep: 'a' is a gap (denied). Second sweep: 'a' becomes authorized+reachable.
   let allow = false;
-  const authorizerPair = { calls: [], authorizer: { async authorize() { return allow ? { kind: 'authorized', reason: 'ok' } : { kind: 'denied', reason: 'p' }; } } };
-  const { agent } = buildAgent({ catalog, clock, authorizerPair, targetList: [target({ targetId: 'a', scope: 'kanban' })] });
+  const authorizerPair = {
+    calls: [],
+    authorizer: {
+      async authorize() {
+        return allow ? { kind: 'authorized', reason: 'ok' } : { kind: 'denied', reason: 'p' };
+      },
+    },
+  };
+  const { agent } = buildAgent({
+    catalog,
+    clock,
+    authorizerPair,
+    targetList: [target({ targetId: 'a', scope: 'kanban' })],
+  });
   await agent.start();
   await agent.runOnce();
   assert.equal(catalog.get('a').onboarding, 'gap');
@@ -712,8 +849,24 @@ test('H1 re-observing the same target updates its catalog entry in place — rec
   assert.equal(catalog.get('a').onboarding, 'discovered');
   // NEGATIVE control: a distinct targetId creates a genuinely new entry.
   const c2 = new SourceCatalog();
-  c2.upsert({ targetId: 'a', scope: 'k', location: 'l', onboarding: 'gap', gapReason: 'out_of_scope', detail: null, observedAt: 1 });
-  c2.upsert({ targetId: 'b', scope: 'k', location: 'l', onboarding: 'gap', gapReason: 'out_of_scope', detail: null, observedAt: 1 });
+  c2.upsert({
+    targetId: 'a',
+    scope: 'k',
+    location: 'l',
+    onboarding: 'gap',
+    gapReason: 'out_of_scope',
+    detail: null,
+    observedAt: 1,
+  });
+  c2.upsert({
+    targetId: 'b',
+    scope: 'k',
+    location: 'l',
+    onboarding: 'gap',
+    gapReason: 'out_of_scope',
+    detail: null,
+    observedAt: 1,
+  });
   assert.equal(c2.size, 2);
 });
 
@@ -748,11 +901,18 @@ test('I1 status() exposes catalog+inventory+gaps+state+ownership+health+failures
   assert.equal(st.observedAt, clock()); // current
   // NEGATIVE control: mutating the returned entries array does NOT corrupt the catalog (defensive copy).
   st.catalog.entries.push({ targetId: 'INJECT' });
-  assert.equal(agent.status(clock()).catalog.entries.some((e) => e.targetId === 'INJECT'), false);
+  assert.equal(
+    agent.status(clock()).catalog.entries.some((e) => e.targetId === 'INJECT'),
+    false,
+  );
 });
 
 test('I2 vocabulary + terminal-state helpers are coherent (states/modes/actions/axes are the fail-visible surface)', () => {
-  assert.ok(AGENT_STATES.includes('degraded') && AGENT_STATES.includes('lost_lease') && AGENT_STATES.includes('budget_exhausted'));
+  assert.ok(
+    AGENT_STATES.includes('degraded') &&
+      AGENT_STATES.includes('lost_lease') &&
+      AGENT_STATES.includes('budget_exhausted'),
+  );
   assert.deepEqual([...CONTINUITY_MODES], ['normal', 'continue_under_lease', 'paused']);
   assert.ok(SAFE_NEXT_ACTIONS.includes('reconcile') && SAFE_NEXT_ACTIONS.includes('raise_budget'));
   assert.deepEqual([...BUDGET_AXES], ['targets', 'duration', 'blast']);
@@ -766,7 +926,10 @@ test('I2 vocabulary + terminal-state helpers are coherent (states/modes/actions/
 // J. CLEAN shutdown path (contrast for the fail-visible terminals above).
 // ═══════════════════════════════════════════════════════════════════════════
 test('J1 an uncontested agent drains, flushes evidence, releases the lease, and stops clean; the durable lease row is cleared', async () => {
-  const { agent, checkpoints, leaseStore, clock } = buildAgent({ targetList: [target({ targetId: 'a', scope: 'kanban' })], idleDelayMs: 1 });
+  const { agent, checkpoints, leaseStore } = buildAgent({
+    targetList: [target({ targetId: 'a', scope: 'kanban' })],
+    idleDelayMs: 1,
+  });
   await agent.start();
   const runP = agent.run();
   await Promise.resolve();

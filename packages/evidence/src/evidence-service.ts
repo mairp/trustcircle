@@ -186,7 +186,9 @@ export class EvidenceService {
   readonly #execution = new Map<string, ExecutionState>();
   readonly #newStore: () => ContentAddressedObjectStore;
 
-  constructor(newStore: () => ContentAddressedObjectStore = () => new InMemoryImmutableObjectStore()) {
+  constructor(
+    newStore: () => ContentAddressedObjectStore = () => new InMemoryImmutableObjectStore(),
+  ) {
     this.#newStore = newStore;
   }
 
@@ -280,7 +282,9 @@ export class EvidenceService {
       throw new EvidenceCommitError('parent-quarantined', handleKey(input.parent));
     }
     // CLASSIFICATION: no down-classification through a derivation.
-    if (classificationRank(input.classification) < classificationRank(parent.metadata.classification)) {
+    if (
+      classificationRank(input.classification) < classificationRank(parent.metadata.classification)
+    ) {
       throw new EvidenceCommitError(
         'derived-cannot-downclassify',
         `${input.classification} < ${parent.metadata.classification}`,
@@ -405,7 +409,11 @@ export class EvidenceService {
    * Returns the ordered chain [self, …, original]. Proves derived artifacts retain a
    * reconstructable link to the immutable original.
    */
-  provenanceChain(handle: EvidenceHandle, by: Authorization, now: EpochMillis): readonly StoredObject[] {
+  provenanceChain(
+    handle: EvidenceHandle,
+    by: Authorization,
+    now: EpochMillis,
+  ): readonly StoredObject[] {
     const chain: StoredObject[] = [];
     const seen = new Set<string>();
     let current: EvidenceHandle | null = handle;

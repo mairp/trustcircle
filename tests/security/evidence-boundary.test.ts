@@ -477,7 +477,12 @@ describe('legal hold enforcement (disposition + deletion blocked while held)', (
 
     // Even with a bypass flag, COMPLIANCE mode cannot be bypassed.
     expect(() =>
-      store.delete({ digest: put.digest, by: AUTH, now: T0 + DAY, bypassGovernanceRetention: true }),
+      store.delete({
+        digest: put.digest,
+        by: AUTH,
+        now: T0 + DAY,
+        bypassGovernanceRetention: true,
+      }),
     ).toThrow(ImmutableObjectError);
     expect(store.exists(put.digest)).toBe(true);
   });

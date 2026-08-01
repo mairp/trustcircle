@@ -139,7 +139,13 @@ export const CONTINUITY_MODES = ['normal', 'continue_under_lease', 'paused'] as 
 export type ContinuityMode = (typeof CONTINUITY_MODES)[number];
 
 /** The single safe next action an operator/automation should take given the current state. */
-export const SAFE_NEXT_ACTIONS = ['none', 'retry', 'reconcile', 'escalate', 'raise_budget'] as const;
+export const SAFE_NEXT_ACTIONS = [
+  'none',
+  'retry',
+  'reconcile',
+  'escalate',
+  'raise_budget',
+] as const;
 export type SafeNextAction = (typeof SAFE_NEXT_ACTIONS)[number];
 
 /** Terminal states — no further governed action happens after these. */
@@ -253,9 +259,11 @@ export interface ScanBudgetLimits {
 }
 
 /** Why a budget check refused to continue (null when the sweep may continue). */
-export type BudgetRefusal =
-  | null
-  | { readonly axis: BudgetAxis; readonly limit: number; readonly observed: number };
+export type BudgetRefusal = null | {
+  readonly axis: BudgetAxis;
+  readonly limit: number;
+  readonly observed: number;
+};
 
 /**
  * A per-sweep budget meter. It is consulted BEFORE each target is probed and after each new source
@@ -998,7 +1006,9 @@ export class GovernedDiscoveryAgent {
    */
   async runOnce(): Promise<SweepReport> {
     if (this.#state !== 'scanning') {
-      throw new Error(`runOnce() requires state "scanning" (call start() first); state=${this.#state}`);
+      throw new Error(
+        `runOnce() requires state "scanning" (call start() first); state=${this.#state}`,
+      );
     }
     this.#lease.assertLive(this.#clock()); // fail-closed guard
     const budget = new ScanBudget(this.#budgetLimits, this.#clock);
@@ -1019,7 +1029,11 @@ export class GovernedDiscoveryAgent {
         // Record EVERY remaining target as a visible budget gap — coverage is never overstated.
         for (let j = i; j < targets.length; j++) {
           const rem = targets[j]!;
-          this.#recordGap(rem, before.axis === 'duration' ? 'budget_duration' : 'budget_targets', `limit=${before.limit}`);
+          this.#recordGap(
+            rem,
+            before.axis === 'duration' ? 'budget_duration' : 'budget_targets',
+            `limit=${before.limit}`,
+          );
           gapsRecorded += 1;
         }
         break;
@@ -1027,7 +1041,11 @@ export class GovernedDiscoveryAgent {
       budget.recordTargetConsidered();
 
       // (3b) fail-closed scan authorization: least privilege scope, then the authorizer.
-      const decision = await resolveScanAuthorization(this.#authorizer, this.#grantedScopes, target);
+      const decision = await resolveScanAuthorization(
+        this.#authorizer,
+        this.#grantedScopes,
+        target,
+      );
       if (decision.kind !== 'authorized') {
         const reason: GapReason =
           decision.reason === 'out_of_scope'
@@ -1106,7 +1124,14 @@ export class GovernedDiscoveryAgent {
     }
     await this.#writeCheckpoint();
 
-    return { targetsConsidered: budget.targetsConsidered, sourcesDiscovered, gapsRecorded, refusals, probeFailures, stoppedByBudget };
+    return {
+      targetsConsidered: budget.targetsConsidered,
+      sourcesDiscovered,
+      gapsRecorded,
+      refusals,
+      probeFailures,
+      stoppedByBudget,
+    };
   }
 
   /**
@@ -1119,7 +1144,10 @@ export class GovernedDiscoveryAgent {
     // `scanning` is the normal entry; `draining`/`budget_exhausted` are accepted when a stop was
     // already requested before run() (the loop is skipped and we go straight to a safe drain). Any
     // other state means start() was never called — fail loudly rather than run ungoverned.
-    if (this.#state !== 'scanning' && !(this.#stopRequested && (this.#state === 'draining' || this.#state === 'budget_exhausted'))) {
+    if (
+      this.#state !== 'scanning' &&
+      !(this.#stopRequested && (this.#state === 'draining' || this.#state === 'budget_exhausted'))
+    ) {
       throw new Error(`run() requires state "scanning" (call start() first); state=${this.#state}`);
     }
     while (!this.#stopRequested) {
@@ -1214,7 +1242,13 @@ export class GovernedDiscoveryAgent {
       kind,
       targetId: target.targetId,
       correlationId: this.#nextCorrelationId(),
-      payload: { scope: target.scope, location: target.location, classification: result.classification, evidence: result.evidence, registered: target.registered },
+      payload: {
+        scope: target.scope,
+        location: target.location,
+        classification: result.classification,
+        evidence: result.evidence,
+        registered: target.registered,
+      },
       bufferedAt: this.#clock(),
     });
   }
@@ -1224,7 +1258,12 @@ export class GovernedDiscoveryAgent {
       kind: 'target_refused',
       targetId: target.targetId,
       correlationId: this.#nextCorrelationId(),
-      payload: { scope: target.scope, location: target.location, decision: decision.kind, reason: decision.reason },
+      payload: {
+        scope: target.scope,
+        location: target.location,
+        decision: decision.kind,
+        reason: decision.reason,
+      },
       bufferedAt: this.#clock(),
     });
   }
@@ -1234,7 +1273,12 @@ export class GovernedDiscoveryAgent {
       kind: 'coverage_gap',
       targetId: target.targetId,
       correlationId: this.#nextCorrelationId(),
-      payload: { scope: target.scope, location: target.location, reason: 'probe_failed', detail: describeError(err) },
+      payload: {
+        scope: target.scope,
+        location: target.location,
+        reason: 'probe_failed',
+        detail: describeError(err),
+      },
       bufferedAt: this.#clock(),
     });
   }

@@ -1,2 +1,2 @@
 // @trustcircle/observability package boundary entry point.
-export {};
+export * from './instrumentation.ts';

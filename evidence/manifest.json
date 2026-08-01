@@ -245,6 +245,13 @@
       "digest": "5325797a43f11939741e185d41dbe49668d5f2f2123f3843070896f751f63d87"
     },
     {
+      "path": "packages/observability/src/instrumentation.ts",
+      "status": "present",
+      "vo": "VO-6acaf6470d0810df4c93",
+      "exists": true,
+      "digest": "d139bbae7c3af0312e816aadb95a950437376aa1d70bddea94dfb53081001e5d"
+    },
+    {
       "path": "packages/persistence/src/database.ts",
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
@@ -298,7 +305,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "307a70e67e25df73ee3ddaa2a0372f3a9187561c4b34d7ab28a158421af84da2"
+      "digest": "c2a7bf9e161423def249f6c2cd69f3c3ad43d53e447e7611653961dc30f9c966"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -313,6 +320,13 @@
       "vo": "VO-perf-config",
       "exists": true,
       "digest": "37974dfa3c7c2c71a6aeb9ff0ceff8f5a3189eb2ae8f05d038d514ce7f003f9e"
+    },
+    {
+      "path": "tests/security/telemetry-redaction.test.ts",
+      "status": "present",
+      "vo": "VO-53a014009bdfebd7af13",
+      "exists": true,
+      "digest": "967e124f8d98f3cbfabf509016fb5d91b284001118fced0cb17476e40e418406"
     },
     {
       "path": "tests/security/tenant-rls.test.ts",
@@ -459,5 +473,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "c05b0347b86ed28cbd0dd645b86791b0336ccd6f02c2926aa2e524e82fbd64df"
+  "inventoryDigest": "3f6ea880286bcbecf8b8a9e1412dcedb9d021468ecadc4120d91c7a5a5b4f9cd"
 }

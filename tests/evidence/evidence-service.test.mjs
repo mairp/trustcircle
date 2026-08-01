@@ -143,8 +143,7 @@ test('derived artifact retains provenance, authorization, and retention; origina
 test('a declared expected digest that does not match the bytes is rejected (tamper-evident)', () => {
   const svc = new EvidenceService();
   assert.throws(
-    () =>
-      commitOriginalDefaults(svc, { expectedDigest: sha('WRONG-DIGEST') }),
+    () => commitOriginalDefaults(svc, { expectedDigest: sha('WRONG-DIGEST') }),
     (e) => e instanceof EvidenceCommitError && e.reason === 'digest-mismatch',
   );
   // Negative control: the correct expected digest is accepted.
@@ -159,7 +158,10 @@ test('verifyDigest independently confirms/denies content vs handle', () => {
   // Negative control: different bytes fail verification.
   assert.equal(svc.verifyDigest(res.handle, Buffer.from('tampered')), false);
   // Pure helper agrees.
-  assert.equal(digestEquals(evidenceDigest(Buffer.from('original-evidence')), res.handle.digest), true);
+  assert.equal(
+    digestEquals(evidenceDigest(Buffer.from('original-evidence')), res.handle.digest),
+    true,
+  );
   assert.equal(digestEquals(evidenceDigest(Buffer.from('x')), res.handle.digest), false);
 });
 
@@ -239,7 +241,10 @@ test('unknown classification is rejected on commit', () => {
 
 test('quarantined original stays visible/inspectable but cannot be a derivation parent', () => {
   const svc = new EvidenceService();
-  const q = commitOriginalDefaults(svc, { execution: 'quarantined', content: Buffer.from('unsafe-item') });
+  const q = commitOriginalDefaults(svc, {
+    execution: 'quarantined',
+    content: Buffer.from('unsafe-item'),
+  });
   // Visible & inspectable: reads succeed.
   assert.equal(svc.executionState(q.handle), 'quarantined');
   assert.equal(svc.isExecutable(q.handle), false);
@@ -290,7 +295,10 @@ test('quarantine after commit blocks derivation; original remains readable', () 
 
 test('derived artifact may not down-classify below its parent', () => {
   const svc = new EvidenceService();
-  const original = commitOriginalDefaults(svc, { classification: 'restricted', content: Buffer.from('rst') });
+  const original = commitOriginalDefaults(svc, {
+    classification: 'restricted',
+    content: Buffer.from('rst'),
+  });
   assert.throws(
     () =>
       svc.commitDerived({
@@ -371,9 +379,17 @@ test('disposition is blocked under active legal hold and before retention elapse
   const svc = new EvidenceService();
   const o = commitOriginalDefaults(svc);
   const policies = [
-    { policyId: 'p1', tenantId: 'tenant-a', appliesToClassifications: [], durationMillis: 10_000, approved: true },
+    {
+      policyId: 'p1',
+      tenantId: 'tenant-a',
+      appliesToClassifications: [],
+      durationMillis: 10_000,
+      approved: true,
+    },
   ];
-  const activeHold = [{ holdId: 'h1', tenantId: 'tenant-a', scopeEvidenceIds: [], status: 'active' }];
+  const activeHold = [
+    { holdId: 'h1', tenantId: 'tenant-a', scopeEvidenceIds: [], status: 'active' },
+  ];
 
   // canDispose is false while retention has not elapsed.
   assert.equal(
@@ -400,7 +416,13 @@ test('disposition succeeds when eligible and yields a tenant-checked signed reco
   const svc = new EvidenceService();
   const o = commitOriginalDefaults(svc);
   const policies = [
-    { policyId: 'p1', tenantId: 'tenant-a', appliesToClassifications: [], durationMillis: 10_000, approved: true },
+    {
+      policyId: 'p1',
+      tenantId: 'tenant-a',
+      appliesToClassifications: [],
+      durationMillis: 10_000,
+      approved: true,
+    },
   ];
   assert.equal(
     svc.canDispose({ item: evItem(), policies, holds: [], authorization: auth, now: 20_000 }),
