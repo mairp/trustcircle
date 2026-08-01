@@ -17,10 +17,20 @@ import {
   MUTATING_METHODS,
   NON_DECISION_CONTEXT_ROLES,
   CONTEXT_HEADERS,
+  toRoleKey,
+  enforceSeparationOfDuties,
+  enforceCentralReviewerDistinctness,
   type RequestLike,
   type VerifiedIdentity,
   type ContextRole,
+  type RequestContext,
 } from '../../apps/api/src/middleware/context.ts';
+import type {
+  DutyAssignment,
+  SoDConstraint,
+  CrossTenantAction,
+  CentralReviewer,
+} from '../../packages/authz/src/separation-of-duties.ts';
 
 // ---- Fixtures --------------------------------------------------------------
 
@@ -215,5 +225,165 @@ describe('disclosure-safe errors', () => {
       const s = JSON.stringify(r.error);
       expect(s).not.toMatch(/super-secret-session|tenant-a|user-1/);
     }
+  });
+});
+
+// ---- 6. Separation-of-duties enforcement at the HTTP boundary (VO-e4323651) --
+//
+// The phase's SOLE acceptance criterion: request/review/approval/execution/evidence-admin/
+// control-ownership/assurance MUST be separated where conflicts exist; platform administration
+// alone MUST NOT grant decision authority; and the independent central reviewer for a
+// cross-tenant action MUST NOT hold an incompatible action role. The boundary delegates to the
+// REAL authz evaluator (packages/authz/src/separation-of-duties.ts) — proven here end-to-end,
+// each clause paired with a negative control.
+
+function ctx(overrides: Partial<RequestContext> = {}): RequestContext {
+  return {
+    principalId: 'requester-1',
+    tenantId: 'tenant-a',
+    roles: ['governance_officer'],
+    hasDecisionAuthority: true,
+    correlationId: 'corr-boundary01',
+    causationId: 'caus-boundary01',
+    ...overrides,
+  };
+}
+
+const tenantConstraint: SoDConstraint = {
+  sodConstraintId: 'sod-1',
+  tenantId: 'tenant-a',
+  actionClass: 'consequential-change',
+  incompatibleRoles: [],
+  incompatibleRelationships: [],
+  minimumDistinctPrincipals: 2,
+  status: 'active',
+};
+
+const requester: DutyAssignment = {
+  principalId: 'requester-1',
+  duty: 'request',
+  roles: ['governance_officer'],
+  relationships: ['requester'],
+  tenantId: 'tenant-a',
+};
+const approver: DutyAssignment = {
+  principalId: 'approver-1',
+  duty: 'approval',
+  roles: ['authorized_approver'],
+  relationships: ['approver'],
+  tenantId: 'tenant-a',
+};
+
+describe('SoD enforcement at the HTTP boundary', () => {
+  it('the ContextRole/RoleKey bridge is identity (boundary and core agree on roles)', () => {
+    for (const role of [
+      'governance_officer',
+      'platform_admin',
+      'authorized_approver',
+      'central_governance_reviewer',
+      'automation_principal',
+    ] as ContextRole[]) {
+      expect(toRoleKey(role)).toBe(role);
+    }
+  });
+
+  it('POSITIVE: separated request+approval by distinct principals is permitted', () => {
+    const r = enforceSeparationOfDuties(ctx(), {
+      constraint: tenantConstraint,
+      assignments: [requester, approver],
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('NEGATIVE: self-approval (one principal requests AND approves) is FORBIDDEN', () => {
+    const selfApprove: DutyAssignment = { ...approver, principalId: 'requester-1' };
+    const r = enforceSeparationOfDuties(ctx(), {
+      constraint: tenantConstraint,
+      assignments: [requester, selfApprove],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.status).toBe(403);
+      expect(r.error.body.error).toBe('FORBIDDEN');
+      // disclosure-safe: never names the implicated principal or the reason
+      expect(JSON.stringify(r.error)).not.toMatch(/requester-1|self|approval/i);
+    }
+  });
+
+  it('NEGATIVE: platform administration alone cannot approve (no decision authority)', () => {
+    const adminApprover: DutyAssignment = {
+      ...approver,
+      principalId: 'admin-only',
+      roles: ['platform_admin'],
+    };
+    const r = enforceSeparationOfDuties(ctx(), {
+      constraint: tenantConstraint,
+      assignments: [requester, adminApprover],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.body.error).toBe('FORBIDDEN');
+  });
+
+  it('NEGATIVE: an incompatible role forbidden by the constraint is FORBIDDEN', () => {
+    const constraint: SoDConstraint = { ...tenantConstraint, incompatibleRoles: ['operator'] };
+    const conflicted: DutyAssignment = {
+      ...approver,
+      roles: ['authorized_approver', 'operator'],
+    };
+    const r = enforceSeparationOfDuties(ctx(), {
+      constraint,
+      assignments: [requester, conflicted],
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  it('NEGATIVE: fewer than the minimum distinct principals is FORBIDDEN', () => {
+    const r = enforceSeparationOfDuties(ctx(), {
+      constraint: tenantConstraint, // minimumDistinctPrincipals: 2
+      assignments: [requester], // only one principal
+    });
+    expect(r.ok).toBe(false);
+  });
+});
+
+describe('cross-tenant central-reviewer distinctness at the boundary', () => {
+  const action: CrossTenantAction = {
+    requesterPrincipalId: 'requester-1',
+    operatorPrincipalId: 'operator-1',
+    controlOwnerPrincipalId: 'owner-1',
+    tenantApproverPrincipalIds: ['approver-a', 'approver-b'],
+  };
+
+  it('POSITIVE: a distinct reviewer with only the reviewer role is permitted', () => {
+    const reviewer: CentralReviewer = {
+      principalId: 'central-1',
+      roles: ['central_governance_reviewer'],
+    };
+    const r = enforceCentralReviewerDistinctness('corr-x1', action, reviewer);
+    expect(r.ok).toBe(true);
+  });
+
+  it('NEGATIVE: reviewer coinciding with an action principal is FORBIDDEN', () => {
+    const reviewer: CentralReviewer = {
+      principalId: 'approver-a', // also a tenant approver
+      roles: ['central_governance_reviewer'],
+    };
+    const r = enforceCentralReviewerDistinctness('corr-x2', action, reviewer);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.status).toBe(403);
+      expect(r.error.body.error).toBe('FORBIDDEN');
+      expect(JSON.stringify(r.error)).not.toMatch(/approver-a|reviewer/i);
+    }
+  });
+
+  it('NEGATIVE: reviewer holding an incompatible action role is FORBIDDEN', () => {
+    const reviewer: CentralReviewer = {
+      principalId: 'central-2',
+      roles: ['central_governance_reviewer', 'authorized_approver'], // incompatible
+    };
+    const r = enforceCentralReviewerDistinctness('corr-x3', action, reviewer);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.body.error).toBe('FORBIDDEN');
   });
 });

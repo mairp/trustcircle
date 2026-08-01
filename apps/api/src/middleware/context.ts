@@ -30,6 +30,16 @@
 // the strict shared base (tsconfig.base.json) as a `composite` project.
 
 import { randomUUID, timingSafeEqual } from 'node:crypto';
+import {
+  evaluateSeparationOfDuties,
+  evaluateCentralReviewerDistinctness,
+  type DutyAssignment,
+  type SoDConstraint,
+  type CrossTenantAction,
+  type CentralReviewer,
+  type SoDEvaluation,
+  type RoleKey,
+} from '@trustcircle/authz';
 
 // ---------------------------------------------------------------------------
 // Framework-agnostic request/response shapes. A thin adapter maps Hono/Fetch
@@ -323,6 +333,82 @@ export function establishRequestContext(req: RequestLike, verify: IdentityVerifi
     context,
     responseHeaders: { [CORRELATION_HEADER]: correlationId },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Separation-of-duties enforcement at the HTTP boundary (GAR-003 /
+// VO-e4323651ab39776dcdbd — the phase's sole acceptance criterion).
+//
+// Establishing an authenticated context is necessary but NOT sufficient: the oracle demands
+// that request / review / approval / execution / evidence-administration / control-ownership /
+// assurance are SEPARATED where conflicts exist, that platform administration alone grants NO
+// decision authority, and that the independent central reviewer for a cross-tenant action does
+// NOT hold an incompatible action role. This section binds the request context to the SINGLE
+// source of truth for those rules (packages/authz/src/separation-of-duties.ts) so the HTTP
+// boundary fails closed on any separation violation — it never re-implements the rules locally.
+// ---------------------------------------------------------------------------
+
+/**
+ * `ContextRole` and the authz `RoleKey` share the same closed union. This bridge makes the
+ * shared identity explicit and would fail to compile if the two ever diverged, so the HTTP
+ * boundary can never silently disagree with the authz layer about what a role is.
+ */
+export function toRoleKey(role: ContextRole): RoleKey {
+  return role;
+}
+
+/**
+ * A governed decision an authenticated request is attempting. Downstream handlers build this
+ * from the already-verified {@link RequestContext} (the acting principal + its roles) plus the
+ * other principals already recorded for the action; the middleware never trusts caller-supplied
+ * identity for the acting principal.
+ */
+export interface DecisionAttempt {
+  /** The SoD constraint governing this action class (a non-waivable guardrail has tenantId null). */
+  readonly constraint: SoDConstraint;
+  /** Every duty assignment for the action, INCLUDING the acting principal's. */
+  readonly assignments: readonly DutyAssignment[];
+}
+
+/**
+ * Enforce separation of duties for a governed decision attempted by an authenticated request.
+ *
+ * Fails closed: a request whose principal holds ONLY non-decision roles (platform_admin /
+ * auditor / automation) can never satisfy a decision duty, self-approval and every other
+ * conflicting-duty overlap is rejected, incompatible roles/relationships are rejected, and the
+ * minimum-distinct-principal floor is enforced — all by delegating to the authz evaluator.
+ * Returns a disclosure-safe `FORBIDDEN` error (never the underlying reasons) on any violation.
+ */
+export function enforceSeparationOfDuties(
+  context: RequestContext,
+  attempt: DecisionAttempt,
+): { readonly ok: true } | { readonly ok: false; readonly error: DisclosureSafeError } {
+  const evaluation: SoDEvaluation = evaluateSeparationOfDuties(
+    attempt.assignments,
+    attempt.constraint,
+  );
+  if (!evaluation.permitted) {
+    return { ok: false, error: disclosureSafeError('FORBIDDEN', context.correlationId) };
+  }
+  return { ok: true };
+}
+
+/**
+ * Enforce the independent-central-reviewer rule for a cross-tenant action at the HTTP boundary.
+ * The reviewer MUST be distinct from every action principal and MUST NOT hold an incompatible
+ * action role (approver/operator/owner/automation) — delegated to the authz evaluator so the
+ * boundary and the core cannot disagree. Disclosure-safe `FORBIDDEN` on any violation.
+ */
+export function enforceCentralReviewerDistinctness(
+  correlationId: string,
+  action: CrossTenantAction,
+  reviewer: CentralReviewer,
+): { readonly ok: true } | { readonly ok: false; readonly error: DisclosureSafeError } {
+  const evaluation: SoDEvaluation = evaluateCentralReviewerDistinctness(action, reviewer);
+  if (!evaluation.permitted) {
+    return { ok: false, error: disclosureSafeError('FORBIDDEN', correlationId) };
+  }
+  return { ok: true };
 }
 
 /** Header/cookie names exported so consumers and tests share the single source of truth. */

@@ -32,7 +32,7 @@
       "status": "present",
       "vo": "VO-e4323651ab39776dcdbd",
       "exists": true,
-      "digest": "31729dcfad3f8ed3c9f6af61a034e631f15eb7f96b7d2f39e70e1d1066c4d5f7"
+      "digest": "d28e67ac85d825fae697e30c3d8586d21183f3130a955bb09315c56bfd07664c"
     },
     {
       "path": "apps/projector/src/inbox-consumer.ts",
@@ -431,5 +431,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "7f8e22f3e5f5f4e84ed280e4eb9bcccebd2b174e4f7d15d0230f3fd2ba734fca"
+  "inventoryDigest": "6738fa375c50ab99b7ac9d7cf733ff749a39a481a913e2f5816e39251d9b59c4"
 }
