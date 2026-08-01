@@ -73,6 +73,11 @@ import {
   type EnvironmentIssue,
   type RawEnvironment,
 } from '@trustcircle/application';
+import {
+  isRedactedKey,
+  looksLikeSecretValue,
+  REDACTED_PLACEHOLDER,
+} from '@trustcircle/observability';
 
 // ===========================================================================
 // 0. Small injected primitives (deterministic testability)
@@ -704,6 +709,155 @@ export interface TargetProbe {
 }
 
 // ===========================================================================
+// 7b. Metadata-only guard — the least-privilege DISCLOSURE boundary
+// ===========================================================================
+//
+// Least privilege has two faces. Section 2 (scan authorization) governs WHICH targets the agent may
+// reach. This section governs WHAT the agent is allowed to KEEP once it has reached one: discovery is
+// metadata-only. A discovery sweep observes that a source EXISTS and classifies it — it does NOT read,
+// carry, or persist the source's protected CONTENT, its CREDENTIALS, or any SECRET VALUE. The
+// authorizer could be perfectly satisfied and the probe perfectly reachable, yet the durable record
+// the agent writes must still be provably free of protected content.
+//
+// The guard enforces this STRUCTURALLY, not by trusting the probe's `evidence` field's "disclosure
+// safe" docstring:
+//   1. Only an explicit ALLOW-LIST of metadata keys ever survives into the catalog detail and the
+//      evidence sink payload. The arbitrary `ProbeResult.evidence` object is NEVER persisted verbatim
+//      — it is reduced to a bounded shape summary (a count/type tag), so an evidence body containing
+//      a document, a row dump, or a config file cannot ride along.
+//   2. Every metadata VALUE that does survive is passed through the same secret detectors the
+//      observability layer uses (`isRedactedKey` / `looksLikeSecretValue`), so a credential that leaks
+//      into a benign-looking metadata field (e.g. a `location` that is actually a DSN with an inline
+//      password, or a classification string carrying a PEM/JWT/AWS key) is replaced with
+//      `[REDACTED]` before it is durably written.
+// The result is that the INDEPENDENT read paths (the reconciled catalog and the durable evidence
+// sink) can be inspected after a sweep and shown to contain metadata only — never the protected
+// content, credentials, or secret values the probe happened to see.
+
+/** The closed allow-list of metadata keys a discovery record may carry. Anything else is dropped. */
+export const METADATA_ONLY_KEYS = [
+  'scope',
+  'location',
+  'classification',
+  'onboarding',
+  'registered',
+  'reachable',
+] as const;
+export type MetadataOnlyKey = (typeof METADATA_ONLY_KEYS)[number];
+
+/** A metadata value after the disclosure guard: a redacted primitive, never a content object. */
+export type SafeMetadataValue = string | number | boolean | null;
+
+/** The bounded, disclosure-safe metadata envelope that is the ONLY thing ever persisted. */
+export type MetadataOnlyRecord = Readonly<Record<MetadataOnlyKey, SafeMetadataValue>> & {
+  /** A shape tag for whatever the probe returned as `evidence` — its size/type, never its contents. */
+  readonly evidenceShape: string;
+};
+
+const MAX_METADATA_STRING = 256;
+
+/**
+ * Reduce an arbitrary probe evidence value to a SHAPE TAG — its type and (for arrays/objects) its
+ * cardinality — so the durable record proves "something was observed" WITHOUT ever carrying what was
+ * observed. Strings are described by length, never by content; a secret-shaped string is reported as
+ * such so the tag itself never leaks a value.
+ */
+export function describeEvidenceShape(evidence: unknown): string {
+  if (evidence === null || evidence === undefined) return 'none';
+  if (Array.isArray(evidence)) return `array:${evidence.length}`;
+  const t = typeof evidence;
+  if (t === 'object') return `object:keys=${Object.keys(evidence as object).length}`;
+  if (t === 'string') {
+    const s = evidence as string;
+    if (looksLikeSecretValue(s)) return 'string:secret-shaped';
+    return `string:len=${s.length}`;
+  }
+  return t; // 'number' | 'boolean' | 'bigint' | 'symbol' | 'function'
+}
+
+/**
+ * Redact a single metadata value: a secret-shaped string collapses to the placeholder; any non-scalar
+ * (object/array/function) is NEVER passed through (it could be a content body) and becomes a shape tag;
+ * over-long strings are truncated. Pure; input never mutated.
+ */
+export function redactMetadataValue(raw: unknown): SafeMetadataValue {
+  if (raw === null || raw === undefined) return null;
+  const t = typeof raw;
+  if (t === 'boolean') return raw as boolean;
+  if (t === 'number') return Number.isFinite(raw as number) ? (raw as number) : null;
+  if (t === 'bigint') return `${raw as bigint}`;
+  if (t === 'string') {
+    const s = raw as string;
+    if (looksLikeSecretValue(s)) return REDACTED_PLACEHOLDER;
+    return s.length > MAX_METADATA_STRING ? `${s.slice(0, MAX_METADATA_STRING)}…[truncated]` : s;
+  }
+  if (Array.isArray(raw)) return `[array:${raw.length}]`;
+  return '[object]';
+}
+
+/**
+ * Build the metadata-only record persisted for a probed target. This is the single chokepoint every
+ * durable discovery write goes through, so the metadata-only guarantee is enforced in exactly one
+ * place and cannot be bypassed by a caller passing a richer object.
+ *
+ * Keys are drawn ONLY from `METADATA_ONLY_KEYS`; each surviving value is redacted; a key whose name
+ * itself denotes a secret (per `isRedactedKey`) is replaced with the placeholder even though the key
+ * is on the allow-list; the arbitrary probe `evidence` is reduced to a shape tag. Callers may pass a
+ * bag with extra keys (e.g. a leaked `password`/`apiKey`) — those keys are simply not copied.
+ */
+export function toMetadataOnlyRecord(input: {
+  readonly scope: ScanScope;
+  readonly location: string;
+  readonly classification: string;
+  readonly onboarding: OnboardingState | 'gap';
+  readonly registered: boolean;
+  readonly reachable?: boolean;
+  /** The raw probe evidence — reduced to a shape tag, NEVER persisted verbatim. */
+  readonly evidence?: unknown;
+}): MetadataOnlyRecord {
+  const source: Record<MetadataOnlyKey, unknown> = {
+    scope: input.scope,
+    location: input.location,
+    classification: input.classification,
+    onboarding: input.onboarding,
+    registered: input.registered,
+    reachable: input.reachable ?? null,
+  };
+  const out = {} as Record<MetadataOnlyKey, SafeMetadataValue>;
+  for (const key of METADATA_ONLY_KEYS) {
+    // A key that itself names a secret must not carry its value even if on the allow-list.
+    out[key] = isRedactedKey(key) ? REDACTED_PLACEHOLDER : redactMetadataValue(source[key]);
+  }
+  return Object.freeze({
+    ...out,
+    evidenceShape: describeEvidenceShape(input.evidence),
+  });
+}
+
+/**
+ * Structural predicate: true iff `value` is a metadata-only record with NO forbidden shape. Used by
+ * tests and by the runtime as a defensive post-condition — a record that fails this is never written.
+ * Fails if any value is a non-scalar object/array (a possible content body) or if any string value
+ * still looks like a secret.
+ */
+export function isMetadataOnly(value: unknown): boolean {
+  if (value === null || typeof value !== 'object') return false;
+  const rec = value as Record<string, unknown>;
+  const allowed = new Set<string>([...METADATA_ONLY_KEYS, 'evidenceShape']);
+  for (const [k, v] of Object.entries(rec)) {
+    if (!allowed.has(k)) return false; // an unexpected key means non-metadata rode along
+    if (v === null) continue;
+    const t = typeof v;
+    if (t === 'object' || t === 'function') return false; // a content body / callable is forbidden
+    if (t === 'string') {
+      const s = v as string;
+      if (s !== REDACTED_PLACEHOLDER && looksLikeSecretValue(s)) return false; // an un-redacted secret
+    }
+  }
+  return true;
+}
+
+// ===========================================================================
 // 8. Checkpointing — durable, resumable, fail-visible sweep progress
 // ===========================================================================
 
@@ -1214,13 +1368,25 @@ export class GovernedDiscoveryAgent {
   // --- catalog + evidence recording --------------------------------------
 
   #recordSource(target: ScanTarget, result: ProbeResult): void {
+    // METADATA-ONLY GUARD (section 7b): even the catalog `detail` is disclosure-safe — the
+    // classification string is redacted so a probe that reports a secret-shaped classification (or a
+    // location that is really a credentialed DSN) cannot leak a value into the reconciled catalog.
+    const safe = toMetadataOnlyRecord({
+      scope: target.scope,
+      location: target.location,
+      classification: result.classification,
+      onboarding: target.registered ? 'registered' : 'discovered',
+      registered: target.registered,
+      reachable: result.reachable,
+      evidence: result.evidence,
+    });
     this.#catalog.upsert({
       targetId: target.targetId,
       scope: target.scope,
-      location: target.location,
+      location: safe.location as string,
       onboarding: target.registered ? 'registered' : 'discovered',
       gapReason: null,
-      detail: `classification=${result.classification}`,
+      detail: `classification=${safe.classification}`,
       observedAt: this.#clock(),
     });
   }
@@ -1238,17 +1404,24 @@ export class GovernedDiscoveryAgent {
   }
 
   #recordSourceEvidence(target: ScanTarget, result: ProbeResult, kind: string): void {
+    // METADATA-ONLY GUARD (section 7b): the durable sink NEVER receives the probe's arbitrary
+    // `result.evidence` verbatim. It is reduced to a bounded, secret-redacted metadata record whose
+    // only content-derived field is a shape tag. This is the single chokepoint that makes discovery
+    // provably metadata-only through the independent read path (the evidence sink).
+    const payload = toMetadataOnlyRecord({
+      scope: target.scope,
+      location: target.location,
+      classification: result.classification,
+      onboarding: target.registered ? 'registered' : 'discovered',
+      registered: target.registered,
+      reachable: result.reachable,
+      evidence: result.evidence,
+    });
     this.#evidence.buffer({
       kind,
       targetId: target.targetId,
       correlationId: this.#nextCorrelationId(),
-      payload: {
-        scope: target.scope,
-        location: target.location,
-        classification: result.classification,
-        evidence: result.evidence,
-        registered: target.registered,
-      },
+      payload,
       bufferedAt: this.#clock(),
     });
   }
