@@ -1,4 +1,4 @@
--- 0010_projector_state — Durable projection-worker OWNERSHIP LEASE, resumable projection
+-- 0011_projector_state — Durable projection-worker OWNERSHIP LEASE, resumable projection
 -- CHECKPOINT, and REBUILD audit trail for the governed projection-worker bootstrap
 -- (Phase 48 / work item T2KV3HBNG3BGWSEXZ58RXEHQ3T / VO-6acaf6470d0810df4c93,
 -- VO-53a014009bdfebd7af13).

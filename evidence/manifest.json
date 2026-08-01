@@ -105,11 +105,18 @@
       "digest": "73719095846ebcd7257939e21fd5a987ffc2c4709bc806d51e0ba78698568533"
     },
     {
-      "path": "db/migrations/0010_projector_state.sql",
+      "path": "db/migrations/0010_inventory.sql",
+      "status": "present",
+      "vo": "VO-ec575c4ce42b548bfb4d",
+      "exists": true,
+      "digest": "474ae546f8aceff406ed2f9af27026f2961e663fa64f86bd4db2c9337fd07cbc"
+    },
+    {
+      "path": "db/migrations/0011_projector_state.sql",
       "status": "present",
       "vo": "VO-6acaf6470d0810df4c93",
       "exists": true,
-      "digest": "4fcafa13cce88e9b41bfaa101328c23edd5368c6cb50bf7d8c6856f285c65467"
+      "digest": "fba842c31e2c9faeb62557f93c52db6db161e9f89161b9e45f8f570b87695fd4"
     },
     {
       "path": "deploy/nats/topology.json",
@@ -305,7 +312,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "c2a7bf9e161423def249f6c2cd69f3c3ad43d53e447e7611653961dc30f9c966"
+      "digest": "8dc98b67f716840260f3d13a24b1b0a17ade7c013582be7faa6b7ee824eca977"
     },
     {
       "path": "tests/integration/core-only-profile.test.ts",
@@ -480,5 +487,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "fe4e9148a4f8ed59581012cd1b7347decb9d86035cae2bbfc44de2c0f7aff210"
+  "inventoryDigest": "50cfba3f6ae4f849b654e77bfc401c5653ac19b70bd2546dcd7d139a9e378e73"
 }

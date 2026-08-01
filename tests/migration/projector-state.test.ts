@@ -1,6 +1,6 @@
 // Projector-state migration suite — Phase 48.
 //
-// Verifies db/migrations/0010_projector_state.sql: the durable, fenced, time-bounded
+// Verifies db/migrations/0011_projector_state.sql: the durable, fenced, time-bounded
 // projection-worker OWNERSHIP LEASE (projector_lease), the resumable, FAIL-VISIBLE projection
 // CHECKPOINT (projector_checkpoint), and the append-only REBUILD audit trail (projector_rebuild)
 // that the governed projection-worker bootstrap (apps/projector/src/main.ts) reads and writes so
@@ -55,7 +55,7 @@ import { createDdlRecordingDriver } from './ddl-recording-driver.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = join(HERE, '..', '..', 'db', 'migrations');
-const MIGRATION_FILE = '0010_projector_state.sql';
+const MIGRATION_FILE = '0011_projector_state.sql';
 const SQL_PATH = join(MIGRATIONS_DIR, MIGRATION_FILE);
 const SQL = readFileSync(SQL_PATH, 'utf8');
 
@@ -123,14 +123,14 @@ const REQUIRED_INDEXES = [
 // ───────────────────────────────────────────────────────────────────────────
 // File & loader
 // ───────────────────────────────────────────────────────────────────────────
-describe('0010_projector_state migration — file & loader', () => {
+describe('0011_projector_state migration — file & loader', () => {
   it('exists at the phase-declared path and is non-empty', () => {
     expect(SQL.length).toBeGreaterThan(0);
   });
 
   it('is discovered by the disk loader under its authored filename', async () => {
     const migrations = await loadMigrationsFromDisk(MIGRATIONS_DIR);
-    const mine = migrations.find((m) => m.id === '0010');
+    const mine = migrations.find((m) => m.id === '0011');
     expect(mine).toBeDefined();
     expect(mine!.name).toBe('projector_state');
     expect(mine!.kind).toBe('expand'); // expand-only (GAR-010 compatibility)
@@ -140,8 +140,8 @@ describe('0010_projector_state migration — file & loader', () => {
   });
 
   it('parses the authored filename form — negative control', () => {
-    expect(parseMigrationFilename('0010_projector_state.sql')).toEqual({
-      id: '0010',
+    expect(parseMigrationFilename('0011_projector_state.sql')).toEqual({
+      id: '0011',
       name: 'projector_state',
       kind: 'expand',
     });
@@ -153,20 +153,20 @@ describe('0010_projector_state migration — file & loader', () => {
 // ───────────────────────────────────────────────────────────────────────────
 // Applied effect (independent read path = the physical-schema catalog)
 // ───────────────────────────────────────────────────────────────────────────
-describe('0010_projector_state migration — applied effect (independent read path)', () => {
+describe('0011_projector_state migration — applied effect (independent read path)', () => {
   it('is applied by the checksum-pinned runner as part of the full disk chain', async () => {
     const { db } = newDbWithCatalog();
     const report = await applyAll(db);
-    expect(report.applied.map((a) => a.id)).toContain('0010');
-    // Independent read path: the runner history records 0010 as applied.
+    expect(report.applied.map((a) => a.id)).toContain('0011');
+    // Independent read path: the runner history records 0011 as applied.
     const history = await readMigrationHistory(db);
-    expect(history.map((h) => h.id)).toContain('0010');
+    expect(history.map((h) => h.id)).toContain('0011');
   });
 
   it('creates the three projector tables with all required governance columns', async () => {
     const { db, driver } = newDbWithCatalog();
     const report = await applyAll(db);
-    expect(report.applied.map((a) => a.id)).toContain('0010');
+    expect(report.applied.map((a) => a.id)).toContain('0011');
 
     const cat = driver.__catalog;
     for (const [table, cols] of Object.entries(REQUIRED_TABLES)) {
@@ -200,7 +200,7 @@ describe('0010_projector_state migration — applied effect (independent read pa
 // ───────────────────────────────────────────────────────────────────────────
 // Fail-visible constraints (the migration text is the contract)
 // ───────────────────────────────────────────────────────────────────────────
-describe('0010_projector_state migration — fail-visible governance constraints', () => {
+describe('0011_projector_state migration — fail-visible governance constraints', () => {
   it('pins the projector lifecycle-state vocabulary (fail-visible states are storable)', () => {
     // Every fail-visible state must be an allowed CHECK value; a bad state must be rejected.
     for (const s of [
@@ -266,7 +266,7 @@ describe('0010_projector_state migration — fail-visible governance constraints
 // ───────────────────────────────────────────────────────────────────────────
 // Expand-only + checksum discipline (GAR-010)
 // ───────────────────────────────────────────────────────────────────────────
-describe('0010_projector_state migration — expand-only + checksum discipline', () => {
+describe('0011_projector_state migration — expand-only + checksum discipline', () => {
   it('is expand-only — no destructive DDL on existing objects', () => {
     expect(SQL).not.toMatch(/\bDROP\s+TABLE\b(?!\s+IF\s+EXISTS\s+legacy)/i);
     expect(SQL).not.toMatch(/\bDROP\s+COLUMN\b/i);
@@ -283,26 +283,26 @@ describe('0010_projector_state migration — expand-only + checksum discipline',
   it('re-applies as a no-op (idempotent) and is skipped on the second run', async () => {
     const { db } = newDbWithCatalog();
     const first = await applyAll(db);
-    expect(first.applied.map((a) => a.id)).toContain('0010');
+    expect(first.applied.map((a) => a.id)).toContain('0011');
     const second = await applyAll(db);
-    // Negative control: the second run does NOT re-apply 0010; it is skipped.
-    expect(second.applied.map((a) => a.id)).not.toContain('0010');
-    expect(second.skipped).toContain('0010');
+    // Negative control: the second run does NOT re-apply 0011; it is skipped.
+    expect(second.applied.map((a) => a.id)).not.toContain('0011');
+    expect(second.skipped).toContain('0011');
   });
 
-  it('rejects an in-place edit of an already-applied 0010 (checksum-pinned) — negative control', async () => {
+  it('rejects an in-place edit of an already-applied 0011 (checksum-pinned) — negative control', async () => {
     const { db } = newDbWithCatalog();
     const disk = await loadMigrationsFromDisk(MIGRATIONS_DIR);
     await runMigrations(db, disk);
 
-    // Tamper with 0010's body: the runner must reject the changed checksum, not silently accept.
+    // Tamper with 0011's body: the runner must reject the changed checksum, not silently accept.
     const tampered: Migration[] = disk.map((m) =>
-      m.id === '0010' ? { ...m, up: m.up + '\n-- tampered\n' } : m,
+      m.id === '0011' ? { ...m, up: m.up + '\n-- tampered\n' } : m,
     );
     await expect(runMigrations(db, tampered)).rejects.toBeInstanceOf(MigrationChecksumError);
 
     // Sanity: the untampered checksum is stable (positive control for the same predicate).
-    const mine = disk.find((m) => m.id === '0010')!;
+    const mine = disk.find((m) => m.id === '0011')!;
     expect(checksumMigration(mine)).toBe(checksumMigration(mine));
   });
 });
