@@ -12,6 +12,9 @@
     },
     {
       "path": "../application"
+    },
+    {
+      "path": "../authz"
     }
   ]
 }
