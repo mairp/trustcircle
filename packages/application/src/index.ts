@@ -16,3 +16,10 @@ export * from './concurrency.ts';
 // ownership-gap / coverage-gap synthesis over the domain inventory model. Additive, backward-
 // compatible — a single stable surface for the governed-source registry (AC1–AC6).
 export * from './source-registry.ts';
+
+// Re-exports the discovery ports (Phase 66): the SCAN / CANDIDATE / METADATA / ACCESS-LIMIT /
+// SCAN-GAP hexagonal boundary plus an in-memory reference implementation composing the domain
+// inventory model. Additive, backward-compatible — the stable surface for boundary discovery,
+// candidate classification, stale-aware metadata reads, and coverage/governed-source gap
+// synthesis (AC1–AC6).
+export * from './discovery-ports.ts';
