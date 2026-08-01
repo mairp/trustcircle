@@ -308,6 +308,13 @@
       "digest": "c2a7bf9e161423def249f6c2cd69f3c3ad43d53e447e7611653961dc30f9c966"
     },
     {
+      "path": "tests/integration/core-only-profile.test.ts",
+      "status": "present",
+      "vo": "VO-80051a0ad930b1560ff7",
+      "exists": true,
+      "digest": "ee45880ce2432f671edf17823618ec2b6d62d2ad0d545a98bf496d5c8749cea0"
+    },
+    {
       "path": "tests/integration/simulation-binding.test.ts",
       "status": "planned",
       "vo": "VO-a5205654a25746949236",
@@ -473,5 +480,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "3f6ea880286bcbecf8b8a9e1412dcedb9d021468ecadc4120d91c7a5a5b4f9cd"
+  "inventoryDigest": "9640b733b9ba90021653f4ede5849174836324e6bdf9563f9be9c1cdcd103b84"
 }
