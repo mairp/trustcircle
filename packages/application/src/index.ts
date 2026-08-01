@@ -42,3 +42,13 @@ export * from './inventory-service.ts';
 // inferring current health from stale data), and cataloguing unregistered sources. Additive,
 // backward-compatible (AC1–AC6).
 export * from './inventory-reconciliation.ts';
+
+// Re-exports the source-stewardship command service (Phase 72 / VO-fa865d78): the governed steward
+// commands over a discovered source — approve onboarding, assign ownership, declare authoritative
+// fields, request access, quarantine, defer, exclude — each requiring a mandatory structured
+// reason, an explicit scope, a forward-dated review date, and an immutable, independently-readable
+// AUDIT-TRAIL entry (actor / command / reason / scope / review / before→after digest). The lapsing
+// commands (quarantine / defer / exclude) keep the source VISIBLE as a governed-source coverage gap
+// carrying the review-or-expiry deadline (never deleting, never inferring health). Additive,
+// backward-compatible (AC1–AC6).
+export * from './source-stewardship.ts';

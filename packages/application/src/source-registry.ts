@@ -10,7 +10,9 @@
 //       action — never healthy, never disappearing → `coverageGaps()` + reconcile keeps the gap.
 //   AC3 (VO-e51f49c4…) Related work across registered sources (Kanban, agentctl,
 //       workflows_orchestration) → the registry keeps each source's DISTINCT records + contract +
-//       correlation, exposed by `sourceRecordsFor()` / `drillDown()`.
+//       correlation + per-field STATUS DIFFERENCES across those records + DEPENDENCY edges +
+//       authoritative fields, exposed by `sourceRecordsFor()` / `statusDifferencesFor()` /
+//       `dependenciesFor()` / `drillDown()`.
 //   AC4 (VO-d0485160…) A stale/unavailable source is marked with last-known time + confidence and
 //       current health/compliance is NOT inferred from stale data → `currentStateView()` folds a
 //       `staleness` verdict and refuses to report `healthy` when the source is stale/unavailable.
@@ -72,6 +74,12 @@ import {
   sourceRecordIdentity,
   sourceRecordFreshnessSuspect,
   sourceRecordDigest,
+  makeInventoryRelationship,
+  relationshipEdgeIdentity,
+  inventoryRelationshipDigest,
+  type InventoryRelationship,
+  type RelationshipKind,
+  type RelationshipEndpointKind,
 } from '@trustcircle/domain';
 import { createHash } from 'node:crypto';
 
@@ -200,6 +208,16 @@ export interface RegisteredSource {
   readonly records: readonly SourceRecord[];
 }
 
+/** One AC3 STATUS DIFFERENCE: a single field on which the DISTINCT records correlated to a source
+ * disagree, naming each distinct observed value and the record ids that reported it. */
+export interface StatusDifference {
+  readonly field: string;
+  readonly values: readonly {
+    readonly value: unknown;
+    readonly recordIds: readonly Uuid[];
+  }[];
+}
+
 export interface RegistryInput {
   readonly tenantId: TenantId;
   readonly newId: IdFactory;
@@ -223,6 +241,9 @@ export class SourceRegistry {
   private readonly entries = new Map<string, SourceCatalogEntry>();
   private readonly contractsBySource = new Map<string, SourceContract[]>();
   private readonly recordsBySource = new Map<string, Map<string, SourceRecord>>();
+  /** Correlation / dependency / authoritative-field EDGES anchored on a source (AC3), keyed by
+   * `relationshipEdgeIdentity` so a given edge is asserted exactly once (no duplicate edges). */
+  private readonly relationshipsBySource = new Map<string, Map<string, InventoryRelationship>>();
   private readonly gaps = new Map<string, CoverageGap>();
   /** Which coverage gaps belong to which source, for the read path + reconcile. */
   private readonly gapIdsBySource = new Map<string, Set<string>>();
@@ -318,6 +339,7 @@ export class SourceRegistry {
     this.externalKeys.set(input.externalKey, id);
     this.contractsBySource.set(this.key(id), []);
     this.recordsBySource.set(this.key(id), new Map());
+    this.relationshipsBySource.set(this.key(id), new Map());
     this.gapIdsBySource.set(this.key(id), new Set());
     return entry;
   }
@@ -470,6 +492,98 @@ export class SourceRegistry {
     const bucket = this.recordsBySource.get(this.key(entry.id))!;
     bucket.set(sourceRecordIdentity(record), record);
     return record;
+  }
+
+  /**
+   * Assert a correlation / dependency / authoritative-field EDGE anchored on `sourceId` (AC3).
+   * The edge is stored keyed by `relationshipEdgeIdentity`, so re-asserting the same edge is
+   * idempotent (a given `depends_on`/`correlates`/… edge is recorded once). The source is treated
+   * as the `from` endpoint (a `source_catalog_entry`); the `to` endpoint names the related object.
+   * Health/authority is NEVER inferred from an edge — an edge only records a declared relationship.
+   */
+  attachRelationship(input: {
+    sourceId: Uuid;
+    toId: Uuid;
+    relationship: RelationshipKind;
+    toKind?: RelationshipEndpointKind;
+    fieldName?: string;
+    at: EpochMillis;
+  }): InventoryRelationship {
+    const entry = this.requireEntry(input.sourceId, 'attachRelationship.sourceId');
+    assertUuid(input.toId, 'attachRelationship.toId');
+    assertEpoch(input.at, 'attachRelationship.at');
+    const edge = makeInventoryRelationship({
+      id: this.newId(),
+      tenantId: entry.tenantId,
+      fromKind: 'source_catalog_entry',
+      fromId: entry.id,
+      toKind: input.toKind ?? 'source_catalog_entry',
+      toId: input.toId,
+      relationship: input.relationship,
+      ...(input.fieldName !== undefined ? { fieldName: input.fieldName } : {}),
+      createdAt: input.at,
+    });
+    const bucket = this.relationshipsBySource.get(this.key(entry.id))!;
+    bucket.set(relationshipEdgeIdentity(edge), edge);
+    return edge;
+  }
+
+  /** Every relationship EDGE anchored on a source (AC3), sorted by edge identity. */
+  relationshipsFor(sourceId: Uuid): readonly InventoryRelationship[] {
+    const entry = this.requireEntry(sourceId, 'relationshipsFor.sourceId');
+    return [...(this.relationshipsBySource.get(this.key(entry.id))?.values() ?? [])].sort((a, b) =>
+      relationshipEdgeIdentity(a).localeCompare(relationshipEdgeIdentity(b)),
+    );
+  }
+
+  /** The DEPENDENCY edges of a source (AC3 dependencies) — the `depends_on` relationships only. */
+  dependenciesFor(sourceId: Uuid): readonly InventoryRelationship[] {
+    return this.relationshipsFor(sourceId).filter((r) => r.relationship === 'depends_on');
+  }
+
+  /**
+   * AC3 STATUS DIFFERENCES: the per-field status disagreements ACROSS the distinct records
+   * correlated to one source. Two records for the same source can report the same field with
+   * DIFFERENT values (e.g. Kanban says a work-item is `active` while agentctl says `inactive`) —
+   * a difference a human must reconcile, NOT one the registry silently collapses. Each returned
+   * entry names the field and the DISTINCT observed values with the records that hold them. Fields
+   * on which every record agrees (or that only one record reports) are NOT differences and are
+   * omitted. `status` (the record status enum) is always considered; observed-state keys are
+   * folded in too so differences on any correlated field surface.
+   */
+  statusDifferencesFor(sourceId: Uuid): readonly StatusDifference[] {
+    const records = this.sourceRecordsFor(sourceId);
+    if (records.length < 2) return [];
+    // Field → (stringified value → record ids reporting it).
+    const byField = new Map<string, Map<string, Uuid[]>>();
+    const note = (field: string, value: unknown, recordId: Uuid): void => {
+      const canonical = JSON.stringify(value ?? null);
+      const values = byField.get(field) ?? new Map<string, Uuid[]>();
+      const ids = values.get(canonical) ?? [];
+      ids.push(recordId);
+      values.set(canonical, ids);
+      byField.set(field, values);
+    };
+    for (const r of records) {
+      note('status', r.status, r.id);
+      for (const [k, v] of Object.entries(r.observedState)) note(`observedState.${k}`, v, r.id);
+    }
+    const differences: StatusDifference[] = [];
+    for (const [field, values] of byField) {
+      // A DIFFERENCE requires the SAME field reported by ≥2 records with ≥2 DISTINCT values.
+      const reportingCount = [...values.values()].reduce((n, ids) => n + ids.length, 0);
+      if (values.size < 2 || reportingCount < 2) continue;
+      differences.push({
+        field,
+        values: [...values.entries()]
+          .map(([canonical, recordIds]) => ({
+            value: JSON.parse(canonical) as unknown,
+            recordIds: [...recordIds].sort((a, b) => a.localeCompare(b)),
+          }))
+          .sort((a, b) => JSON.stringify(a.value).localeCompare(JSON.stringify(b.value))),
+      });
+    }
+    return differences.sort((a, b) => a.field.localeCompare(b.field));
   }
 
   // -------------------------------------------------------------------------
@@ -713,14 +827,20 @@ export class SourceRegistry {
   }
 
   /**
-   * AC3 drill-down: a source's DISTINCT records, its contract lineage, and its coverage gaps —
-   * the correlated-but-distinct view the officer sees when drilling into an item.
+   * AC3 drill-down: a source's DISTINCT records, its contract lineage, its coverage gaps, the
+   * per-field STATUS DIFFERENCES across those distinct records, and its DEPENDENCY edges — the
+   * correlated-but-distinct view the officer sees when drilling into an item. Distinct records are
+   * correlated (never merged); status differences surface where the records disagree; dependencies
+   * name the sources this one depends on; the authoritative fields live on the contracts.
    */
   drillDown(sourceId: Uuid): {
     entry: SourceCatalogEntry;
     contracts: readonly SourceContract[];
     records: readonly SourceRecord[];
     gaps: readonly CoverageGap[];
+    statusDifferences: readonly StatusDifference[];
+    dependencies: readonly InventoryRelationship[];
+    relationships: readonly InventoryRelationship[];
   } {
     const entry = this.requireEntry(sourceId, 'drillDown.sourceId');
     return {
@@ -728,6 +848,9 @@ export class SourceRegistry {
       contracts: this.contracts(entry.id),
       records: this.sourceRecordsFor(entry.id),
       gaps: this.gapsForSource(entry.id),
+      statusDifferences: this.statusDifferencesFor(entry.id),
+      dependencies: this.dependenciesFor(entry.id),
+      relationships: this.relationshipsFor(entry.id),
     };
   }
 
@@ -821,6 +944,7 @@ export class SourceRegistry {
       parts.push(sourceCatalogEntryDigest(entry));
       for (const c of this.contracts(entry.id)) parts.push(sourceContractDigest(c));
       for (const r of this.sourceRecordsFor(entry.id)) parts.push(sourceRecordDigest(r));
+      for (const e of this.relationshipsFor(entry.id)) parts.push(inventoryRelationshipDigest(e));
     }
     for (const g of this.coverageGaps()) parts.push(coverageGapDigest(g));
     return sha256(JSON.stringify(parts.sort()));
