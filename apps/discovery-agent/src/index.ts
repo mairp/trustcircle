@@ -4,3 +4,5 @@
 export * from './main.ts';
 // Phase 67: least-privilege repository & filesystem metadata discovery (no protected-content inspection).
 export * from './scanners/filesystem.ts';
+// Phase 68: least-privilege runtime metadata discovery (processes/services/containers/ports/manifests).
+export * from './scanners/runtime.ts';
