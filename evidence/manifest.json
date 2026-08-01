@@ -119,6 +119,13 @@
       "digest": "47dcd906dd3e90f0547fa27c1ded89d77934cdaecd9e1fcd1a25cb7378874d2b"
     },
     {
+      "path": "packages/audit-ledger/src/hash-chain.ts",
+      "status": "present",
+      "vo": "VO-d76c5d1293b91d26e094",
+      "exists": true,
+      "digest": "36ee6aad039f03723f2055f3ec8887c9e85f8360cceac8d27e1898230f37d9a0"
+    },
+    {
       "path": "packages/authz/src/separation-of-duties.ts",
       "status": "present",
       "vo": "VO-173f7afb7801f4ab3e29",
@@ -235,7 +242,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "bb6484af0e68f985017b92b8c6bb63c7c7f127b4439087df45fc5c7e262b4c56"
+      "digest": "dc3131f6ab1f2c8f5a0454dc8dd8b7641b0cff7e2e09280a9a870477ead5a4c4"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -352,6 +359,10 @@
       "digest": "aaaefd124a7c45f6eafba28860e86c7debda06dbb35dc3b9db863fe9c095b208"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE29-EVIDENCE.md",
+      "digest": "967bca791daaba9ecb8567e5f47f781798b21cf04062f681ea626ffa5ea458ac"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE3-EVIDENCE.md",
       "digest": "330e1bd52be74c79e3f38bf574fd9979f65c1c25d051aa1b9e8d17255f12d12a"
     },
@@ -380,5 +391,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "ae569dc7bc01987a4ae33d89e3d9bd37de771808233f27d654a9f9506673126c"
+  "inventoryDigest": "56c1f3818bb82194cf59c89ff5c3498ef757e61f4bdfedac64a0bba6d7549872"
 }
