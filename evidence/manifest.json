@@ -49,6 +49,13 @@
       "digest": "76dd84dd287389ef9112982ddbba0a057620ee50bcc3c433131f03f9fb859cab"
     },
     {
+      "path": "apps/projector/src/main.ts",
+      "status": "present",
+      "vo": "VO-6acaf6470d0810df4c93",
+      "exists": true,
+      "digest": "ed195090eb2bd681aa51ac3ba32fd5e02dfcc8e44626b26374fb527e839904f0"
+    },
+    {
       "path": "apps/web/src/features/controllers/OperationActions.tsx",
       "status": "planned",
       "vo": "VO-76455e2a60fbc99a2097",
@@ -96,6 +103,13 @@
       "vo": "VO-b9b935bf93be10bdecdd",
       "exists": true,
       "digest": "73719095846ebcd7257939e21fd5a987ffc2c4709bc806d51e0ba78698568533"
+    },
+    {
+      "path": "db/migrations/0010_projector_state.sql",
+      "status": "present",
+      "vo": "VO-6acaf6470d0810df4c93",
+      "exists": true,
+      "digest": "4fcafa13cce88e9b41bfaa101328c23edd5368c6cb50bf7d8c6856f285c65467"
     },
     {
       "path": "deploy/nats/topology.json",
@@ -284,7 +298,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "bba6781c1676d8ad67773cbb2dbefd435c752ccd92af0713a7342106f4498247"
+      "digest": "307a70e67e25df73ee3ddaa2a0372f3a9187561c4b34d7ab28a158421af84da2"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -445,5 +459,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "7ecb52c89c27aedf8685768d027c8b083be608413a193bd72cee44c3f5cd314c"
+  "inventoryDigest": "c05b0347b86ed28cbd0dd645b86791b0336ccd6f02c2926aa2e524e82fbd64df"
 }
