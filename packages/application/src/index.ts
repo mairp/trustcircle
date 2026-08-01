@@ -10,3 +10,9 @@ export * from './config/environment.ts';
 // (Phase 22 / VO-52d0780c11bcc6fd7583) — the transport-boundary half of the versioned,
 // deduplicated, conflict-safe mutating-operation guarantee. Additive, backward-compatible.
 export * from './concurrency.ts';
+
+// Re-exports the source-registry application service (Phase 65): source-contract registration
+// (versioned + validated), onboarding lifecycle, stewardship actions, exclusion reviews, and
+// ownership-gap / coverage-gap synthesis over the domain inventory model. Additive, backward-
+// compatible — a single stable surface for the governed-source registry (AC1–AC6).
+export * from './source-registry.ts';
