@@ -35,6 +35,7 @@
     "test:resilience": "vitest run --project resilience",
     "test:recovery": "vitest run --project recovery",
     "test:e2e": "playwright test",
+    "test:e2e:discovery": "TC_NO_WEBSERVER=1 playwright test --project=discovery",
     "test:accessibility": "playwright test --project=accessibility",
     "test:performance": "node tests/performance/config.ts",
     "test:boundaries": "node --test \"tests/boundaries/**/*.test.mjs\"",

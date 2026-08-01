@@ -74,6 +74,30 @@ export const PLAYWRIGHT_PROJECT_NAMES = [
 
 export type PlaywrightProjectName = (typeof PLAYWRIGHT_PROJECT_NAMES)[number];
 
+/**
+ * The browserless open-boundary DISCOVERY project (Phase 58 / discovery-open-boundary.spec.ts).
+ *
+ * The four WCAG capability projects above drive a real browser against apps/web. The discovery
+ * open-boundary journeys, by contrast, exercise the SENSING edge of the platform — the governed
+ * source-discovery agent's open-ended catalog, reconciled inventory, coverage gaps, stale/rename/
+ * disappearance handling, unsupported-source visibility, and explicit scan gaps — as PURE domain
+ * logic (`apps/discovery-agent/src/main.ts`) with fully injected, deterministic collaborators. No
+ * `page`, no browser, no web server: a `discovery-*.spec.ts` test never opens a browser context,
+ * so it runs on any host under `playwright test --project=discovery` even where a browser binary /
+ * the apps/web preview server is absent. Kept as its own project (not a WCAG capability project)
+ * so it neither depends on `setup` nor triggers the browser device profile, and so the WCAG
+ * project contract (PLAYWRIGHT_PROJECT_NAMES) is unchanged and non-breaking.
+ */
+export const DISCOVERY_PROJECT_NAME = 'discovery' as const;
+
+/**
+ * `playwright test` starts the apps/web preview server (see `webServer` below) so the WCAG
+ * journeys have a target. The browserless discovery suite needs no server; setting
+ * `TC_NO_WEBSERVER=1` (which the `test:e2e:discovery` script does) omits the `webServer` block
+ * entirely so the discovery project runs hermetically with zero external processes.
+ */
+const WEBSERVER_DISABLED = process.env.TC_NO_WEBSERVER === '1';
+
 // The web app under test. Overridable for CI/preview deployments; the default is the local
 // apps/web dev server. Importing this file never starts the server — `webServer` below is
 // only honoured when `playwright test` actually runs.
@@ -140,13 +164,27 @@ export default defineConfig({
         deviceScaleFactor: 1,
       },
     },
+
+    // (5) Open-boundary DISCOVERY — browserless pure-logic journeys over the governed
+    // source-discovery agent. No `setup` dependency, no browser device profile, no web server:
+    // a discovery-*.spec.ts test never touches `page`, so it runs anywhere.
+    {
+      name: DISCOVERY_PROJECT_NAME,
+      testMatch: /discovery-.*\.spec\.ts/,
+    },
   ],
 
-  // Only started when `playwright test` runs (never on import). Serves the built web app.
-  webServer: {
-    command: 'npm run --workspace @trustcircle/web preview',
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // Only started when `playwright test` runs (never on import). Serves the built web app for the
+  // WCAG capability projects. Omitted when TC_NO_WEBSERVER=1 so the browserless discovery suite
+  // runs with zero external processes.
+  ...(WEBSERVER_DISABLED
+    ? {}
+    : {
+        webServer: {
+          command: 'npm run --workspace @trustcircle/web preview',
+          url: BASE_URL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+        },
+      }),
 });
