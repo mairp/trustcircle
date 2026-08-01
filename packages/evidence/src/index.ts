@@ -6,3 +6,6 @@ export * from './object-store.ts';
 // Original-first evidence commits, digest verification, tenant namespaces, classification
 // checks (Phase 35 / GAR-006).
 export * from './evidence-service.ts';
+// Immutable provenance edges + signed ordered evidence manifests (Phase 36 / GAR-006 /
+// VO-4aeb030a32c9deebdb3b).
+export * from './provenance.ts';
