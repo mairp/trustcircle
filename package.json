@@ -45,6 +45,7 @@
     "test:traceability": "node scripts/spec/build-traceability.mjs --check && node --test \"tests/tooling/traceability.test.mjs\"",
     "test:persistence": "node --experimental-strip-types --test \"tests/persistence/**/*.test.mjs\"",
     "test:application": "node --experimental-strip-types --test \"tests/application/**/*.test.mjs\"",
+    "test:worker": "node --experimental-strip-types --test \"tests/worker/**/*.test.mjs\"",
     "db:migrate": "node --import tsx packages/persistence/src/database.ts migrate",
     "fixtures:seed": "node --import tsx tests/fixtures/seed.ts",
     "health": "node --import tsx apps/api/src/health-check.ts",
