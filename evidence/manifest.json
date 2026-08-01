@@ -84,6 +84,13 @@
       "digest": "914b2615fba96cd498e08232f480cf01a19cc39705595f8880c50567116d1f49"
     },
     {
+      "path": "db/migrations/0006_evidence.sql",
+      "status": "present",
+      "vo": "VO-b9b935bf93be10bdecdd",
+      "exists": true,
+      "digest": "73719095846ebcd7257939e21fd5a987ffc2c4709bc806d51e0ba78698568533"
+    },
+    {
       "path": "deploy/nats/topology.json",
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
@@ -249,7 +256,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "3f23ea382808138c2de879ccc6949e885521a80be7aa6f8803e7ddeda14b69ad"
+      "digest": "bba6781c1676d8ad67773cbb2dbefd435c752ccd92af0713a7342106f4498247"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -378,6 +385,14 @@
       "digest": "636e2d603f9e910eca07c9de189d8a26b7f0d20f684f0fd7e05d60aa5cce0a1d"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE31-EVIDENCE.md",
+      "digest": "8790fbbcb838ad3dce9d0c198aa8c3621db3f1dd07e3bd6a48eb79853176f112"
+    },
+    {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE32-EVIDENCE.md",
+      "digest": "8310d5f4251440a6b89f5ff73d75a434f260758185cf2106b1da55478c6b8ace"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE4-EVIDENCE.md",
       "digest": "a90b5a6824e18d556564ef541b83880ccf17374c5b2388f1e168ceafc8c38c5e"
     },
@@ -402,5 +417,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "d109ae01caa4c1939876f93d08e9aaf44a402ce60057ce8721f2fe715f27a106"
+  "inventoryDigest": "5c01abfb7168a623bf42a96f6a2ab5bcb8d083e521158c6b4bcb0774b17202d0"
 }

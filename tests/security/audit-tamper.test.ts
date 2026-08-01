@@ -54,7 +54,6 @@ import {
   verifyAppend,
   verifyLedger,
   assertLedgerIntact,
-  computeCheckpointRoot,
   type AccountabilityRecord,
   type ChainedAuditRecord,
 } from '../../packages/audit-ledger/src/hash-chain.ts';
@@ -132,7 +131,12 @@ function baseRecord(overrides: Partial<AccountabilityRecord> = {}): Accountabili
 function systemRecord(overrides: Partial<AccountabilityRecord> = {}): AccountabilityRecord {
   return baseRecord({
     eventType: 'reconcile.observed',
-    actor: { principalId: null, roleAssignmentId: null, isSystem: true, automationId: 'auto:reconciler' },
+    actor: {
+      principalId: null,
+      roleAssignmentId: null,
+      isSystem: true,
+      automationId: 'auto:reconciler',
+    },
     reason: { code: 'OBSERVE', text: null },
     outcome: 'uncertain',
     ...overrides,
@@ -277,7 +281,9 @@ describe('audit completeness — every accountability clause is required before 
     for (const o of ['succeeded', 'partial', 'failed', 'denied', 'uncertain']) {
       expect(AUDIT_OUTCOMES).toContain(o);
     }
-    expect(() => assertAccountable(baseRecord({ outcome: 'denied' } as Partial<AccountabilityRecord>))).not.toThrow();
+    expect(() =>
+      assertAccountable(baseRecord({ outcome: 'denied' } as Partial<AccountabilityRecord>)),
+    ).not.toThrow();
   });
 });
 
@@ -336,7 +342,10 @@ describe('reorder / update / delete detection — a tamper to any record is caug
 
   it('DETECTS A CROSS-LEDGER GRAFT — a record from another ledger cannot be spliced in', () => {
     const ledger = buildLedger(1);
-    const foreign = { ...ledger.records[0]!, tenantId: '99999999-9999-9999-9999-999999999999' } as ChainedAuditRecord;
+    const foreign = {
+      ...ledger.records[0]!,
+      tenantId: '99999999-9999-9999-9999-999999999999',
+    } as ChainedAuditRecord;
     const res = verifyAppend(
       { tenantId: TENANT, ledgerId: LEDGER, sequence: 1, previousDigest: GENESIS_PREVIOUS_DIGEST },
       foreign,
@@ -385,7 +394,9 @@ describe('reorder / update / delete detection — a tamper to any record is caug
   });
 
   it('the physical CHECKPOINT table is likewise append-only (signed range/root cannot be rewritten)', () => {
-    expect(/CREATE\s+TRIGGER\s+audit_checkpoint_append_only_update/i.test(AUDIT_MIGRATION)).toBe(true);
+    expect(/CREATE\s+TRIGGER\s+audit_checkpoint_append_only_update/i.test(AUDIT_MIGRATION)).toBe(
+      true,
+    );
     expect(/BEFORE\s+UPDATE\s+ON\s+audit_checkpoint/i.test(AUDIT_MIGRATION)).toBe(true);
   });
 });
@@ -616,7 +627,10 @@ describe('operation freeze behavior — an incomplete or tampered operation cann
       checkpoint: cp,
       records: tamperedRange,
       key: verificationKeyFor(key),
-      action: systemRecord({ eventType: 'checkpoint.verified', timing: { occurredAt: 1, recordedAt: 2 } }),
+      action: systemRecord({
+        eventType: 'checkpoint.verified',
+        timing: { occurredAt: 1, recordedAt: 2 },
+      }),
     });
     expect(r1.verification.result).toBe('tampered');
     expect(r1.checkpoint.status).toBe('tampered');
@@ -626,12 +640,18 @@ describe('operation freeze behavior — an incomplete or tampered operation cann
       checkpoint: r1.checkpoint,
       records: ledger.records,
       key: verificationKeyFor(key),
-      action: systemRecord({ eventType: 'checkpoint.verified', timing: { occurredAt: 3, recordedAt: 4 } }),
+      action: systemRecord({
+        eventType: 'checkpoint.verified',
+        timing: { occurredAt: 3, recordedAt: 4 },
+      }),
     });
     expect(r2.verification.result).toBe('verified'); // the pass itself is recorded truthfully
     expect(r2.checkpoint.status).toBe('tampered'); // …but the checkpoint remains frozen as tampered
     // Append-only history retains BOTH passes (nothing overwritten).
-    expect(r2.checkpoint.verificationHistory.map((v) => v.result)).toEqual(['tampered', 'verified']);
+    expect(r2.checkpoint.verificationHistory.map((v) => v.result)).toEqual([
+      'tampered',
+      'verified',
+    ]);
   });
 
   it('ANCHOR GATE: a tampered/unverified checkpoint cannot be promoted to anchored', () => {
@@ -653,7 +673,10 @@ describe('operation freeze behavior — an incomplete or tampered operation cann
       checkpoint: cp,
       records: ledger.records,
       key: verificationKeyFor(key),
-      action: systemRecord({ eventType: 'checkpoint.verified', timing: { occurredAt: 1, recordedAt: 2 } }),
+      action: systemRecord({
+        eventType: 'checkpoint.verified',
+        timing: { occurredAt: 1, recordedAt: 2 },
+      }),
     });
     expect(verified.status).toBe('verified');
     const anchored = anchorCheckpoint(verified, 'anchor://ref');
@@ -686,7 +709,10 @@ describe('operation freeze behavior — an incomplete or tampered operation cann
       checkpoint: cp,
       records: l1.records,
       key: verificationKeyFor(key),
-      action: systemRecord({ eventType: 'checkpoint.verified', timing: { occurredAt: 1, recordedAt: 2 } }),
+      action: systemRecord({
+        eventType: 'checkpoint.verified',
+        timing: { occurredAt: 1, recordedAt: 2 },
+      }),
     });
     const cp2 = appendVerification(cp, verification);
     expect(cp2).not.toBe(cp);
@@ -709,7 +735,10 @@ describe('operation freeze behavior — an incomplete or tampered operation cann
       checkpoint: cp,
       records: ledger.records,
       key: verificationKeyFor(key),
-      action: systemRecord({ eventType: 'checkpoint.verified', timing: { occurredAt: 1, recordedAt: 2 } }),
+      action: systemRecord({
+        eventType: 'checkpoint.verified',
+        timing: { occurredAt: 1, recordedAt: 2 },
+      }),
     });
     const cp1 = appendVerification(cp, v1);
     // Re-appending a verification at the SAME sequence (an overwrite) is refused.
