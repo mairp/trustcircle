@@ -35,6 +35,13 @@
       "digest": "d28e67ac85d825fae697e30c3d8586d21183f3130a955bb09315c56bfd07664c"
     },
     {
+      "path": "apps/api/src/server.ts",
+      "status": "present",
+      "vo": "VO-6acaf6470d0810df4c93",
+      "exists": true,
+      "digest": "83b05eb51d2940a838ec5890ffcc55fc17ede88f9c269565a151c6243d00e5d0"
+    },
+    {
       "path": "apps/projector/src/inbox-consumer.ts",
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
@@ -158,7 +165,7 @@
       "status": "present",
       "vo": "VO-173f7afb7801f4ab3e29",
       "exists": true,
-      "digest": "9a6e2771ad3f35ab4c26b664960dd7a833374f5e43d23cf54ae23e0057a33fb2"
+      "digest": "9dc3527a5103c3c5c5c51a8a1ab02527dc1a8003a53c9630461803ef02d6918b"
     },
     {
       "path": "packages/authz/src/workload-identity.ts",
@@ -438,5 +445,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "b5b41a19318c25bf9a04b39cf3f3e32b6d7a123c626652729c502ac68150e49e"
+  "inventoryDigest": "7ecb52c89c27aedf8685768d027c8b083be608413a193bd72cee44c3f5cd314c"
 }
