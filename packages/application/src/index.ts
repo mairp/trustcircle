@@ -32,3 +32,13 @@ export * from './discovery-ports.ts';
 // differences + dependencies + authoritative fields, refuses to infer current health from stale
 // data, and catalogs unregistered sources. Additive, backward-compatible (AC1–AC6).
 export * from './inventory-service.ts';
+
+// Re-exports the snapshot / observation reconciliation service (Phase 71): a fleet-level aggregate
+// that reconciles successive discovery/observation cycles against the prior known-source set and
+// classifies every deviation into one of ten named source-anomaly classes — missing, duplicate,
+// stale, conflicting, orphaned, changed, moved, split, merged, disappeared — keeping each anomaly
+// VISIBLE and OWNED (coverage / governed-source gaps), composing the current-inventory service for
+// the healthy render, marking stale/absent sources with last-known time + confidence (never
+// inferring current health from stale data), and cataloguing unregistered sources. Additive,
+// backward-compatible (AC1–AC6).
+export * from './inventory-reconciliation.ts';
