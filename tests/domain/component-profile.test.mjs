@@ -92,14 +92,24 @@ function makeExecProfile(overrides = {}) {
     contract,
     role: 'controller',
     dependencies: [{ componentId: idDep, role: 'policy-engine', required: true }],
-    authority: { mayExecute: true, consequentialActions: ['reconcile', 'rollback'], crossTenant: false },
+    authority: {
+      mayExecute: true,
+      consequentialActions: ['reconcile', 'rollback'],
+      crossTenant: false,
+    },
     activation: { requires: [...PREREQUISITES], manualApprovalRequired: true },
     approval,
     ...overrides,
   });
 }
 
-const allSat = { authority: true, policy: true, evidence: true, ownership: true, reconciliation: true };
+const allSat = {
+  authority: true,
+  policy: true,
+  evidence: true,
+  ownership: true,
+  reconciliation: true,
+};
 
 function availability(overrides = {}) {
   return {
@@ -141,8 +151,18 @@ test('A1 architecture roles and availability classes are separate closed vocabul
   assert.ok(isAvailabilityClass('on-demand') && !isAvailabilityClass('controller'));
   assert.ok(isRuntimeState('paused') && !isRuntimeState('nope'));
   assert.ok(isPrerequisite('reconciliation') && !isPrerequisite('health'));
-  assert.deepEqual([...PREREQUISITES], ['authority', 'policy', 'evidence', 'ownership', 'reconciliation']);
-  assert.deepEqual([...RUNTIME_STATES].sort(), ['activating', 'available', 'degraded', 'inactive', 'paused', 'unavailable']);
+  assert.deepEqual(
+    [...PREREQUISITES],
+    ['authority', 'policy', 'evidence', 'ownership', 'reconciliation'],
+  );
+  assert.deepEqual([...RUNTIME_STATES].sort(), [
+    'activating',
+    'available',
+    'degraded',
+    'inactive',
+    'paused',
+    'unavailable',
+  ]);
 });
 
 // =============================================================================================
@@ -158,11 +178,17 @@ test('B1 a well-formed architecture role profile validates (positive control)', 
 
 test('B2 owner approval requires a named approver, structured reason, and mandatory review date', () => {
   // No approver (negative control).
-  assert.throws(() => makeExecProfile({ approval: { ...approval, approvedBy: { ownerId: '', kind: 'team' } } }));
+  assert.throws(() =>
+    makeExecProfile({ approval: { ...approval, approvedBy: { ownerId: '', kind: 'team' } } }),
+  );
   // Empty reason (negative control).
-  assert.throws(() => makeExecProfile({ approval: { ...approval, reason: { code: '', text: '' } } }));
+  assert.throws(() =>
+    makeExecProfile({ approval: { ...approval, reason: { code: '', text: '' } } }),
+  );
   // Review date not after effective date (negative control) — a review date is MANDATORY and must be future.
-  assert.throws(() => makeExecProfile({ approval: { ...approval, reviewDate: approval.effectiveFrom } }));
+  assert.throws(() =>
+    makeExecProfile({ approval: { ...approval, reviewDate: approval.effectiveFrom } }),
+  );
   assert.throws(() => makeExecProfile({ approval: { ...approval, reviewDate: undefined } }));
 });
 
@@ -210,7 +236,9 @@ test('C1 runtime availability validates independently of the architecture role',
   // Negative controls.
   assert.throws(() => assertRuntimeAvailability(availability({ availabilityClass: 'controller' })));
   assert.throws(() => assertRuntimeAvailability(availability({ state: 'nope' })));
-  assert.throws(() => assertRuntimeAvailability(availability({ prerequisites: { authority: 'yes' } })));
+  assert.throws(() =>
+    assertRuntimeAvailability(availability({ prerequisites: { authority: 'yes' } })),
+  );
   assert.throws(() => assertRuntimeAvailability(availability({ prerequisites: { health: true } })));
   assert.throws(() => assertRuntimeAvailability(availability({ healthy: 'true' })));
 });
@@ -247,7 +275,12 @@ test('D2 continuity mode CANNOT rescue a lost prerequisite for an in-progress op
     prerequisites: { ...allSat, evidence: false },
     continuityLease: validLease(),
   });
-  const r = evaluateExecutionGate({ profile: p, availability: av, execution: 'in-progress', now: T0 });
+  const r = evaluateExecutionGate({
+    profile: p,
+    availability: av,
+    execution: 'in-progress',
+    now: T0,
+  });
   assert.equal(r.allowed, false, 'a lost prerequisite blocks even a valid-lease in-progress step');
   assert.ok(r.blocked.includes('prerequisite-lost'));
   assert.equal(r.continuity, false);
@@ -255,7 +288,12 @@ test('D2 continuity mode CANNOT rescue a lost prerequisite for an in-progress op
 
 test('D3 positive control — with all prerequisites satisfied, execution is permitted', () => {
   const p = makeExecProfile();
-  const r = evaluateExecutionGate({ profile: p, availability: availability(), execution: 'new', now: T0 });
+  const r = evaluateExecutionGate({
+    profile: p,
+    availability: availability(),
+    execution: 'new',
+    now: T0,
+  });
   assert.equal(r.allowed, true);
   assert.deepEqual(r.blocked, []);
   assert.equal(r.safeAction, 'proceed');
@@ -266,7 +304,10 @@ test('D3 positive control — with all prerequisites satisfied, execution is per
 // =============================================================================================
 test('E1 health or connectivity loss blocks NEW execution immediately', () => {
   const p = makeExecProfile();
-  for (const av of [availability({ healthy: false, state: 'unavailable' }), availability({ connected: false, state: 'unavailable' })]) {
+  for (const av of [
+    availability({ healthy: false, state: 'unavailable' }),
+    availability({ connected: false, state: 'unavailable' }),
+  ]) {
     const r = evaluateExecutionGate({ profile: p, availability: av, execution: 'new', now: T0 });
     assert.equal(r.allowed, false);
     assert.ok(r.blocked.includes('health-or-connectivity-lost'));
@@ -279,7 +320,12 @@ test('E1 health or connectivity loss blocks NEW execution immediately', () => {
 test('E2 in-progress WITH a valid unexpired lease + verifiable step continues under continuity', () => {
   const p = makeExecProfile();
   const av = availability({ healthy: false, state: 'degraded', continuityLease: validLease() });
-  const r = evaluateExecutionGate({ profile: p, availability: av, execution: 'in-progress', now: T0 });
+  const r = evaluateExecutionGate({
+    profile: p,
+    availability: av,
+    execution: 'in-progress',
+    now: T0,
+  });
   assert.equal(r.allowed, true, 'FR-046–FR-050 continuity permits the in-progress step');
   assert.equal(r.continuity, true);
   assert.equal(r.safeAction, 'continue-under-continuity');
@@ -290,7 +336,12 @@ test('E2 in-progress WITH a valid unexpired lease + verifiable step continues un
 test('E3 in-progress WITHOUT a valid lease pauses and requires reconciliation (negative control)', () => {
   const p = makeExecProfile();
   const av = availability({ healthy: false, state: 'unavailable' }); // no lease
-  const r = evaluateExecutionGate({ profile: p, availability: av, execution: 'in-progress', now: T0 });
+  const r = evaluateExecutionGate({
+    profile: p,
+    availability: av,
+    execution: 'in-progress',
+    now: T0,
+  });
   assert.equal(r.allowed, false);
   assert.equal(r.continuity, false);
   assert.ok(r.blocked.includes('continuity-lease-invalid'));
@@ -301,12 +352,22 @@ test('E4 an EXPIRED lease pauses (FR-050/NFR-012) — no automatic extension', (
   const p = makeExecProfile();
   const lease = validLease({ expiresAt: T0 }); // expires exactly at now
   const av = availability({ healthy: false, state: 'degraded', continuityLease: lease });
-  const r = evaluateExecutionGate({ profile: p, availability: av, execution: 'in-progress', now: T0 });
+  const r = evaluateExecutionGate({
+    profile: p,
+    availability: av,
+    execution: 'in-progress',
+    now: T0,
+  });
   assert.equal(r.allowed, false);
   assert.ok(r.blocked.includes('continuity-lease-expired'));
   assert.equal(r.safeAction, 'pause-and-reconcile');
   // Just before expiry, the same lease is still valid ⇒ proves the boundary is real.
-  const before = evaluateExecutionGate({ profile: p, availability: av, execution: 'in-progress', now: T0 - 1 });
+  const before = evaluateExecutionGate({
+    profile: p,
+    availability: av,
+    execution: 'in-progress',
+    now: T0 - 1,
+  });
   assert.equal(before.allowed, true);
   assert.equal(before.continuity, true);
 });
@@ -318,7 +379,12 @@ test('E5 a step that is NOT locally verifiable pauses (FR-048)', () => {
     state: 'degraded',
     continuityLease: validLease({ stepLocallyVerifiable: false }),
   });
-  const r = evaluateExecutionGate({ profile: p, availability: av, execution: 'in-progress', now: T0 });
+  const r = evaluateExecutionGate({
+    profile: p,
+    availability: av,
+    execution: 'in-progress',
+    now: T0,
+  });
   assert.equal(r.allowed, false);
   assert.ok(r.blocked.includes('step-not-locally-verifiable'));
   assert.equal(r.safeAction, 'pause-and-reconcile');
@@ -328,7 +394,11 @@ test('E6 a NEW operation never enters continuity even with a valid lease present
   const p = makeExecProfile();
   const av = availability({ healthy: false, state: 'degraded', continuityLease: validLease() });
   const r = evaluateExecutionGate({ profile: p, availability: av, execution: 'new', now: T0 });
-  assert.equal(r.allowed, false, 'FR-047: continuity applies ONLY to pre-failure in-progress operations');
+  assert.equal(
+    r.allowed,
+    false,
+    'FR-047: continuity applies ONLY to pre-failure in-progress operations',
+  );
   assert.equal(r.continuity, false);
   assert.ok(r.blocked.includes('health-or-connectivity-lost'));
 });
@@ -356,7 +426,12 @@ test('F1 read-only visibility and escalation are available in EVERY gate outcome
 
 test('F2 healthy+connected but not-activated blocks NEW execution (activation condition)', () => {
   const p = makeExecProfile();
-  const r = evaluateExecutionGate({ profile: p, availability: availability({ state: 'inactive' }), execution: 'new', now: T0 });
+  const r = evaluateExecutionGate({
+    profile: p,
+    availability: availability({ state: 'inactive' }),
+    execution: 'new',
+    now: T0,
+  });
   assert.equal(r.allowed, false);
   assert.ok(r.blocked.includes('not-activated'));
 });
@@ -376,13 +451,17 @@ test('G1 architecture-role digest is stable, re-derivable, and changes iff a gov
   // Changing the review date changes the digest (a governed approval facet).
   assert.notEqual(
     d1,
-    architectureRoleProfileDigest(makeExecProfile({ approval: { ...approval, reviewDate: approval.reviewDate + 1 } })),
+    architectureRoleProfileDigest(
+      makeExecProfile({ approval: { ...approval, reviewDate: approval.reviewDate + 1 } }),
+    ),
   );
   // Changing authority changes the digest.
   assert.notEqual(
     d1,
     architectureRoleProfileDigest(
-      makeExecProfile({ authority: { mayExecute: true, consequentialActions: ['reconcile'], crossTenant: true } }),
+      makeExecProfile({
+        authority: { mayExecute: true, consequentialActions: ['reconcile'], crossTenant: true },
+      }),
     ),
   );
 });

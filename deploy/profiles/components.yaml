@@ -1,0 +1,547 @@
+# deploy/profiles/components.yaml
+# =============================================================================
+# Deployment component profile — architecture-core relationships, runtime sets,
+# and startup order for the governance control plane.
+#
+# Phase 53 / task T053 / NFR-010 (VO-80051a0ad930b1560ff7 / VO-713cc2a06e03c63484b4).
+#
+# SOLE ACCEPTANCE ORACLE (NFR-010 "Safe Degradation"):
+#   "Loss of required authority, policy, evidence, ownership, or reconciliation MUST
+#    block affected execution immediately. Health or connectivity loss MUST block new
+#    execution immediately; an in-progress operation may continue only under FR-046
+#    through FR-050 while read-only visibility and escalation remain available."
+#
+# WHAT THIS FILE IS
+# -----------------
+# The deployment-time DECLARATION that binds each governed component to (1) its
+# owner-approved ARCHITECTURE ROLE and architecture-core dependency relationships, and
+# (2) its RUNTIME SET — the five sets the phase requires: `core-required`, `on-demand`,
+# `optional`, `external`, and `intentionally-inactive`. It also declares the deterministic
+# STARTUP ORDER of the core-required stack and the fail-closed DEGRADATION POLICY that
+# makes NFR-010 enforceable at the value level.
+#
+# The two axes are kept SEPARATE, exactly as packages/domain/src/component-profile.ts
+# models them (Phase 52): the architecture role is owner-approved DESIGN INTENT; the
+# runtime set is the deployment's OPERATIONAL classification of how essential a component
+# is to the running platform. Neither is silently inferred from the other. LISA and Wiggum
+# are architecture-CORE governed components whose default runtime availability is on-demand;
+# only the `core-required` runtime set must remain continuously available.
+#
+# WHY IT ENFORCES NFR-010
+# -----------------------
+#   * Every governed component names the governance PREREQUISITES whose loss blocks its
+#     affected execution IMMEDIATELY (authority / policy / evidence / ownership /
+#     reconciliation). These are hard authorization/integrity facts; continuity mode can
+#     NEVER rescue a lost prerequisite. `degradationPolicy.prerequisiteLoss` states this
+#     for both new AND in-progress execution.
+#   * Health / connectivity loss blocks NEW execution immediately; an IN-PROGRESS operation
+#     may continue ONLY under a valid FR-046–FR-050 continuity lease (<= 15 min, NFR-012),
+#     else it pauses at a safe checkpoint and requires reconciliation.
+#     `degradationPolicy.healthOrConnectivityLoss` states this.
+#   * In EVERY degraded state, read-only VISIBILITY and ESCALATION remain available
+#     (`degradationPolicy.alwaysAvailable`).
+#   * The five runtime sets keep the EXPECTED-OFFLINE state of optional / on-demand /
+#     external / intentionally-inactive components DISTINCT from degraded / stale /
+#     unreachable / failed states, so a non-running optional component is never reported
+#     as an incident and a stale core component is never reported as healthy.
+#
+# This file is Docker/orchestrator-agnostic policy: deploy/compose/control-plane.yml (T054)
+# stands up the `core-required` set in the declared `startupOrder`; the readiness service
+# and the AvailabilityProfiles UI consume the runtime sets and prerequisites here.
+# =============================================================================
+
+apiVersion: trustcircle.governance/v1
+kind: ComponentProfile
+profileVersion: '1.0.0'
+
+bundle:
+  id: '36GCYGDJ15PTYP60F91QWRAY2M'
+  contentHash: 'af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b'
+  workItem: 'KSM4N43A8R9PBWMHXKMMAN0MES'
+
+obligation:
+  vo: 'VO-80051a0ad930b1560ff7'
+  nfr: 'NFR-010'
+  oracle: >-
+    Loss of required authority, policy, evidence, ownership, or reconciliation MUST block
+    affected execution immediately. Health or connectivity loss MUST block new execution
+    immediately; an in-progress operation may continue only under FR-046 through FR-050
+    while read-only visibility and escalation remain available.
+  grounding:
+    domainModel: 'packages/domain/src/component-profile.ts'
+    coreComposeProfile: 'deploy/compose/control-plane.yml'
+    spec: 'specs/001-governance-control-plane/spec.md#nfr-010'
+
+# -----------------------------------------------------------------------------
+# Closed vocabularies. These MUST mirror the domain model
+# (packages/domain/src/component-profile.ts) so this declaration and the executable
+# gate cannot drift. The five runtime sets are the phase's required sets.
+# -----------------------------------------------------------------------------
+vocabularies:
+  # Owner-approved architecture roles (design intent) — ARCHITECTURE_ROLES in the domain.
+  architectureRoles:
+    - control-plane # API / decision surface
+    - controller # executes governed operations against a target
+    - connector # read/observe an external source
+    - worker # background command / repair / expiry worker
+    - projector # builds read-model projections
+    - discovery # machine-wide source discovery
+    - evidence-store # durable evidence / audit ledger custody
+    - policy-engine # PDP / OPA authority evaluation
+    - web # operator-facing UI
+    - observability # telemetry (never authoritative)
+    - infrastructure # backing datastore / broker / object store the core depends on
+
+  # The FIVE required RUNTIME SETS (the operational availability axis).
+  runtimeSets:
+    - core-required # MUST remain continuously available; loss blocks the feature it backs
+    - on-demand # activated only for a specific request/run; expected-offline otherwise
+    - optional # enhances governance; its loss degrades a feature but core keeps running
+    - external # a separate governed source outside the control plane's own lifecycle
+    - intentionally-inactive # approved but deliberately not running; expected-offline, not a gap
+
+  # Governance prerequisites whose loss blocks affected execution IMMEDIATELY — PREREQUISITES
+  # in the domain. Continuity mode can NEVER rescue a lost prerequisite.
+  prerequisites:
+    - authority
+    - policy
+    - evidence
+    - ownership
+    - reconciliation
+
+# -----------------------------------------------------------------------------
+# DEGRADATION POLICY — the executable statement of NFR-010. Every clause below is a
+# machine-checkable property (see tests/tooling/component-profiles.test.mjs).
+# -----------------------------------------------------------------------------
+degradationPolicy:
+  failClosed: true
+
+  # First sentence of NFR-010: loss of any required governance prerequisite blocks
+  # affected execution IMMEDIATELY — for BOTH new and in-progress operations. Continuity
+  # leases DO NOT apply to prerequisite loss.
+  prerequisiteLoss:
+    blocksNewExecution: true
+    blocksInProgressExecution: true
+    continuityLeaseApplies: false
+    prerequisites: [authority, policy, evidence, ownership, reconciliation]
+    rationale: >-
+      Authority, policy, evidence, ownership, and reconciliation are hard
+      authorization/integrity requirements, not health signals. Their loss blocks all
+      affected execution immediately; an in-progress operation cannot continue on a
+      continuity lease because the lease presupposes the governed decision remains valid.
+
+  # Second sentence of NFR-010: health/connectivity loss blocks NEW execution immediately;
+  # an IN-PROGRESS operation may continue ONLY under a valid FR-046–FR-050 continuity lease,
+  # else it pauses at a safe checkpoint and requires reconciliation.
+  healthOrConnectivityLoss:
+    blocksNewExecution: true
+    inProgressMayContinue: true
+    inProgressRequiresContinuityLease: true
+    continuityLease:
+      governedBy: [FR-046, FR-047, FR-048, FR-049, FR-050]
+      maxDurationMinutes: 15 # NFR-012 continuity ceiling
+      mustStartBeforeFailure: true # FR-047: continuity only for pre-failure operations
+      stepMustBeLocallyVerifiable: true # FR-048
+      evidenceBuffered: true # FR-046 / FR-049
+      renewalRequiresRestoredHealthAndReconciliation: true # NFR-012
+    onLeaseAbsentOrExpired:
+      action: pause-at-safe-checkpoint
+      thenRequire: reconciliation
+
+  # Third clause of NFR-010: read-only visibility and escalation remain available in EVERY
+  # degraded state.
+  alwaysAvailable:
+    readOnlyVisibility: true
+    escalation: true
+
+  # Expected-offline states MUST remain DISTINCT from degraded/stale/unreachable/failed so a
+  # non-running optional/on-demand/external/intentionally-inactive component is never reported
+  # as an incident, and a stale core component is never reported as healthy.
+  expectedOfflineStatesAreDistinct: true
+  expectedOfflineRuntimeSets: [on-demand, optional, external, intentionally-inactive]
+  nonHealthyStates: [degraded, stale, unreachable, failed]
+
+# -----------------------------------------------------------------------------
+# STARTUP ORDER — deterministic bring-up of the core-required stack. Each entry's
+# `after` dependencies MUST precede it (a topological order that the compose profile
+# T054 and the readiness gate honor). Only core-required components appear here; the
+# expected-offline sets are activated on demand / by owner promotion, never at boot.
+# -----------------------------------------------------------------------------
+startupOrder:
+  - postgres # canonical store first
+  - object-storage
+  - nats # event/delivery substrate
+  - opa # policy engine (authority evaluation) before any decision surface
+  - collector # observability sink up before instrumented services emit
+  - api # control-plane decision surface
+  - command-worker
+  - projector
+  - discovery-agent
+  - web # operator UI last; depends on the API being ready
+
+# -----------------------------------------------------------------------------
+# COMPONENTS. Each is placed on BOTH axes:
+#   role         — owner-approved architecture role (design intent)
+#   runtimeSet   — one of the five required runtime sets (operational availability)
+# plus its architecture-core `dependsOn` relationships, granted `authority`, the
+# `prerequisites` whose loss blocks it immediately, its `activation` conditions,
+# `availabilityTarget`, `owner`, `purpose`, and a mandatory `reviewDate` (CHK071).
+# -----------------------------------------------------------------------------
+components:
+  # ---- INFRASTRUCTURE (core-required backing services) --------------------
+  - id: postgres
+    role: infrastructure
+    runtimeSet: core-required
+    owner: platform/data
+    purpose: Canonical governance store — inventory, decisions, evidence references, audit ledger.
+    dependsOn: []
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: []
+    activation:
+      requires: []
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 0
+    reviewDate: '2027-02-01'
+
+  - id: object-storage
+    role: infrastructure
+    runtimeSet: core-required
+    owner: platform/data
+    purpose: Durable original-evidence and export object custody (immutable / tamper-evident).
+    dependsOn: []
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: []
+    activation:
+      requires: []
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 1
+    reviewDate: '2027-02-01'
+
+  - id: nats
+    role: infrastructure
+    runtimeSet: core-required
+    owner: platform/messaging
+    purpose: Tenant-scoped JetStream delivery substrate for governance events and outbox publication.
+    dependsOn: []
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: []
+    activation:
+      requires: []
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 2
+    reviewDate: '2027-02-01'
+
+  # ---- POLICY ENGINE ------------------------------------------------------
+  - id: opa
+    role: policy-engine
+    runtimeSet: core-required
+    owner: platform/governance
+    purpose: PDP evaluating authority; serves signed, revision-pinned OPA bundles.
+    dependsOn:
+      - { component: object-storage, required: true } # signed bundle custody
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    # Policy is itself a prerequisite provider; if OPA is lost, `policy` is lost and all
+    # affected execution is blocked immediately (fail-closed authorization).
+    prerequisites: [policy]
+    activation:
+      requires: [policy]
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 3
+    reviewDate: '2027-02-01'
+
+  # ---- OBSERVABILITY (never authoritative) --------------------------------
+  - id: collector
+    role: observability
+    runtimeSet: core-required
+    owner: platform/observability
+    purpose: OpenTelemetry collector — redacted signals; telemetry is NEVER a source of authority.
+    dependsOn: []
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: []
+    activation:
+      requires: []
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 4
+    reviewDate: '2027-02-01'
+
+  # ---- CONTROL PLANE ------------------------------------------------------
+  - id: api
+    role: control-plane
+    runtimeSet: core-required
+    owner: platform/governance
+    purpose: Authenticated, tenant-scoped decision surface and read API.
+    dependsOn:
+      - { component: postgres, required: true }
+      - { component: nats, required: true }
+      - { component: opa, required: true }
+      - { component: object-storage, required: true }
+    authority:
+      mayExecute: true
+      consequentialActions: [record-decision, dispatch-command]
+      crossTenant: false
+    # Loss of ANY of these blocks affected execution immediately (NFR-010 sentence 1).
+    prerequisites: [authority, policy, evidence, ownership, reconciliation]
+    activation:
+      requires: [authority, policy, evidence, ownership, reconciliation]
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 5
+    reviewDate: '2027-02-01'
+
+  # ---- WORKERS ------------------------------------------------------------
+  - id: command-worker
+    role: worker
+    runtimeSet: core-required
+    owner: platform/governance
+    purpose: Executes governed commands (repair/expiry/audit-export) under lease and checkpointing.
+    dependsOn:
+      - { component: postgres, required: true }
+      - { component: nats, required: true }
+      - { component: opa, required: true }
+      - { component: object-storage, required: true }
+    authority:
+      mayExecute: true
+      consequentialActions: [repair, expire, audit-export]
+      crossTenant: false
+    prerequisites: [authority, policy, evidence, ownership, reconciliation]
+    activation:
+      requires: [authority, policy, evidence, ownership, reconciliation]
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 6
+    reviewDate: '2027-02-01'
+
+  - id: projector
+    role: projector
+    runtimeSet: core-required
+    owner: platform/governance
+    purpose: Builds read-model projections from durable cursors; signals stale state, never infers health.
+    dependsOn:
+      - { component: postgres, required: true }
+      - { component: nats, required: true }
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    # Projections must not present stale data as current — reconciliation is a hard prerequisite.
+    prerequisites: [reconciliation]
+    activation:
+      requires: [reconciliation]
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 7
+    reviewDate: '2027-02-01'
+
+  - id: discovery-agent
+    role: discovery
+    runtimeSet: core-required
+    owner: platform/governance
+    purpose: Least-privilege machine-wide source discovery within the declared boundary; evidence sink.
+    dependsOn:
+      - { component: postgres, required: true }
+      - { component: nats, required: true }
+      - { component: opa, required: true }
+    authority:
+      mayExecute: false # discovery observes; it grants no mutation authority
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: [authority, ownership]
+    activation:
+      requires: [authority, ownership]
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 8
+    reviewDate: '2027-02-01'
+
+  # ---- WEB ----------------------------------------------------------------
+  - id: web
+    role: web
+    runtimeSet: core-required
+    owner: platform/experience
+    purpose: Operator-facing governance UI; read-only visibility and escalation remain available when degraded.
+    dependsOn:
+      - { component: api, required: true }
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: []
+    activation:
+      requires: []
+      manualApprovalRequired: false
+    availabilityTarget: continuous
+    startupIndex: 9
+    reviewDate: '2027-02-01'
+
+  # ---- ARCHITECTURE-CORE, DEFAULT ON-DEMAND (LISA / Wiggum) ---------------
+  # LISA and Wiggum ARE part of the core architecture (governed connectors), but their
+  # DEFAULT runtime availability is on-demand. Promotion to `core-required` needs an
+  # owner-approved profile version and evidence-backed review — NOT a runtime observation.
+  - id: lisa
+    role: connector
+    runtimeSet: on-demand
+    architectureCore: true
+    owner: governance/lisa
+    purpose: LISA governed source connector — activated on demand; expected-offline otherwise.
+    dependsOn:
+      - { component: api, required: true }
+      - { component: nats, required: true }
+    authority:
+      mayExecute: false # read/observe only until a pinned contract passes
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: [authority, ownership, reconciliation]
+    activation:
+      requires: [authority, ownership, reconciliation]
+      manualApprovalRequired: true # never self-activates into core-required
+      preflight: [contract-pinned, identity-revalidated, backlog-reconciled]
+    availabilityTarget: on-demand
+    promotionToCoreRequiresOwnerApprovedProfileVersion: true
+    reviewDate: '2027-02-01'
+
+  - id: wiggum
+    role: connector
+    runtimeSet: on-demand
+    architectureCore: true
+    owner: governance/wiggum
+    purpose: Wiggum feature-isolated state connector — activated on demand; expected-offline otherwise.
+    dependsOn:
+      - { component: api, required: true }
+      - { component: nats, required: true }
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: [authority, ownership, reconciliation]
+    activation:
+      requires: [authority, ownership, reconciliation]
+      manualApprovalRequired: true
+      preflight: [contract-pinned, identity-revalidated, backlog-reconciled]
+    availabilityTarget: on-demand
+    promotionToCoreRequiresOwnerApprovedProfileVersion: true
+    reviewDate: '2027-02-01'
+
+  # ---- OPTIONAL -----------------------------------------------------------
+  # Optional components enhance governance; their loss degrades a feature but the core keeps
+  # running. Expected-offline when not deployed — never a degraded/failed incident.
+  - id: audit-export-ui
+    role: web
+    runtimeSet: optional
+    owner: platform/experience
+    purpose: Optional auditor evidence-export surface; degrades gracefully when absent.
+    dependsOn:
+      - { component: api, required: true }
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: []
+    activation:
+      requires: []
+      manualApprovalRequired: false
+    availabilityTarget: best-effort
+    reviewDate: '2027-02-01'
+
+  # ---- EXTERNAL (separate governed sources) -------------------------------
+  # External components are governed SOURCES that live outside the control plane's own
+  # lifecycle. They are onboarded read-only until their pinned contracts and authority
+  # boundaries pass; discovery finding one grants NO mutation authority. Expected-offline
+  # from the control plane's perspective.
+  - id: kanban
+    role: connector
+    runtimeSet: external
+    owner: governance/kanban
+    purpose: Kanban board source — read-only observations through the owning API; no approval inference.
+    dependsOn:
+      - { component: api, required: true }
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: [authority, ownership]
+    activation:
+      requires: [authority, ownership]
+      manualApprovalRequired: true
+      preflight: [contract-pinned, identity-revalidated]
+    availabilityTarget: external
+    reviewDate: '2027-02-01'
+
+  - id: workflow-orchestration
+    role: connector
+    runtimeSet: external
+    owner: governance/workflows
+    purpose: workflow_orchestration source — read-only correlation; no governance authority.
+    dependsOn:
+      - { component: api, required: true }
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: [authority, ownership]
+    activation:
+      requires: [authority, ownership]
+      manualApprovalRequired: true
+      preflight: [contract-pinned, identity-revalidated]
+    availabilityTarget: external
+    reviewDate: '2027-02-01'
+
+  - id: agentctl
+    role: connector
+    runtimeSet: external
+    owner: governance/agentctl
+    purpose: agentctl source — read-only until pinned contract and authority boundary pass.
+    dependsOn:
+      - { component: api, required: true }
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: [authority, ownership]
+    activation:
+      requires: [authority, ownership]
+      manualApprovalRequired: true
+      preflight: [contract-pinned, identity-revalidated]
+    availabilityTarget: external
+    reviewDate: '2027-02-01'
+
+  # ---- INTENTIONALLY-INACTIVE --------------------------------------------
+  # Approved but deliberately NOT running. Its expected-offline state is DISTINCT from
+  # degraded/stale/unreachable/failed and MUST NOT be reported as a coverage gap or incident;
+  # it remains visible with its reason and a review/expiry date.
+  - id: legacy-jira-connector
+    role: connector
+    runtimeSet: intentionally-inactive
+    owner: governance/legacy
+    purpose: Legacy connector retained for provenance; intentionally deactivated pending migration.
+    inactiveReason: superseded-by-kanban-connector-migration
+    dependsOn: []
+    authority:
+      mayExecute: false
+      consequentialActions: []
+      crossTenant: false
+    prerequisites: []
+    activation:
+      requires: [authority, ownership, reconciliation]
+      manualApprovalRequired: true
+    availabilityTarget: intentionally-offline
+    reviewDate: '2027-02-01'
