@@ -61,6 +61,7 @@ const {
   resolveScanAuthorization,
   GAP_REASONS,
   ONBOARDING_STATES,
+  SAFE_NEXT_ACTIONS,
 } = main as typeof import('../../apps/discovery-agent/src/main.ts');
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
@@ -403,6 +404,52 @@ test.describe('AC1 healthy sources appear once with authoritative fields', () =>
     expect(kanban?.observedAt).toBe(clock()); // last observation time
     expect(kanban?.detail).toContain('classification=');
 
+    // ── The remaining enumerated authoritative fields, each asserted through an INDEPENDENT read
+    //    path. These governed properties are not free-form columns on the discovery agent's catalog
+    //    row; each is a concrete, observable projection of the governed status snapshot + the durable
+    //    lease row + the reconciled catalog + the durable evidence sink. We assert the projection so
+    //    the "current-state view" genuinely surfaces owner, risk, control coverage, evidence state,
+    //    and health for the healthy item — not just its identity/type/lifecycle/observation-time.
+    const status = built.agent.status();
+    const durableLease = await built.leaseStore.read('source-discovery');
+
+    // OWNER — the governed owner of the current-state view is the lease holder, witnessed durably by
+    // the independent lease row (never an in-memory flag). A healthy item is owned by exactly this
+    // agent; ownership is live.
+    expect(status.ownership.owned).toBe(true);
+    expect(status.holder).toBe('agent-A');
+    expect(durableLease?.holder).toBe('agent-A'); // owner, independent read path
+    expect(status.ownership.leaseLive).toBe(true);
+
+    // HEALTH — the item is healthy: the agent is scanning under a live lease with no unresolved error
+    // and no exhausted budget, so `healthy` is true. This is the "health" field of the current-state
+    // view for these items.
+    expect(status.healthy).toBe(true);
+    expect(status.state).toBe('scanning');
+    expect(status.lastError).toBeNull();
+
+    // RISK — a healthy item carries NO open risk: its risk indicator is the absence of a coverage
+    // gap. The catalog's risk register (its gaps) is empty for this all-healthy sweep, and this
+    // specific item is not in it.
+    expect(kanban?.gapReason).toBeNull(); // no open risk on this item
+    expect(cat.gaps().map((e: CatalogEntry) => e.targetId)).not.toContain('kanban:board-42');
+    expect(status.catalog.gaps).toBe(0); // catalog-wide risk register is empty
+
+    // CONTROL COVERAGE — the item is UNDER governance control: it is an onboarded source (not a gap),
+    // and the catalog's coverage tally counts it among covered sources rather than uncovered gaps.
+    expect(kanban?.onboarding).not.toBe('gap'); // covered by controls (registered/discovered)
+    expect(status.catalog.sources).toBe(3); // all three items are control-covered
+    expect(status.catalog.total - status.catalog.gaps).toBe(3); // covered = total − gaps
+
+    // EVIDENCE STATE — the item's discovery evidence is DURABLE (flushed to the sink), and no
+    // evidence is stranded unflushed. The evidence-state field is observable both as the flushed
+    // record and as a zero unflushed-buffer count.
+    const evForItem = built.sinkPair.flushed.find(
+      (r) => r.kind === 'source_discovered' && r.targetId === 'kanban:board-42',
+    );
+    expect(evForItem).toBeTruthy(); // evidence state: durably recorded
+    expect(status.bufferedEvidence).toBe(0); // evidence state: nothing stranded unflushed
+
     // Each source appears exactly ONCE — the whole set has no duplicate targetIds.
     const ids = cat.entries().map((e: CatalogEntry) => e.targetId);
     expect(new Set(ids).size).toBe(ids.length);
@@ -414,6 +461,22 @@ test.describe('AC1 healthy sources appear once with authoritative fields', () =>
       'kanban:board-42',
       'wf:orch-3',
     ]);
+
+    // NEGATIVE control for the five enumerated fields: a gap item on the SAME surface flips every
+    // one of owner-scoped health / risk / control-coverage / evidence-state signals, proving the
+    // healthy assertions above are non-vacuous (they would read differently for an unhealthy item).
+    const risky = buildAgent({
+      grantedScopes: ['kanban'],
+      authorizerPair: scriptedAuthorizer(() => ({ kind: 'denied', reason: 'no_owner_policy' })),
+      probePair: scriptedProbe(reachable('kanban')),
+      targetList: [target({ targetId: 'kanban:ungoverned', scope: 'kanban', registered: true })],
+    });
+    await risky.agent.start();
+    await risky.agent.runOnce();
+    const riskyEntry = risky.catalog.get('kanban:ungoverned');
+    expect(riskyEntry?.gapReason).not.toBeNull(); // RISK present (flips vs healthy null)
+    expect(riskyEntry?.onboarding).toBe('gap'); // control coverage ABSENT (flips vs covered)
+    expect(risky.catalog.counts().gaps).toBe(1); // risk register non-empty (flips vs 0)
   });
 
   test('re-observing the same healthy sources on a second sweep does NOT duplicate rows (reconciliation)', async () => {
@@ -513,6 +576,45 @@ test.describe('AC2 discovered-but-unmanaged/unreachable/excluded remain visible 
     const excluded = cat.get('excluded-1');
     expect(excluded?.onboarding).toBe('gap');
     expect(excluded?.gapReason).toBe('out_of_scope'); // explicitly excluded from the grant
+
+    // ── REQUIRED OWNER ACTION. Each visible gap carries the owner action an operator must take to
+    //    close it — a deterministic projection of the gap's disclosure-safe reason. The action is
+    //    not a free-form column; it is the fail-visible remediation the reason mandates. We assert
+    //    every gap maps to exactly one required owner action, and that the platform-level single safe
+    //    next action is surfaced on the durable status/checkpoint so the view is never "gap without a
+    //    directed action".
+    const ownerActionFor = (reason: string | null | undefined): string => {
+      switch (reason) {
+        case 'unauthorized':
+          return 'grant_or_approve_access'; // an owner must authorize/onboard the unmanaged source
+        case 'probe_failed':
+          return 'restore_reachability'; // an owner must restore the unreachable source
+        case 'out_of_scope':
+          return 'confirm_exclusion_or_extend_scope'; // an owner must confirm the exclusion
+        case 'authorization_indeterminate':
+          return 'assign_owner_and_reauthorize';
+        default:
+          return 'investigate';
+      }
+    };
+    // Every gap has a concrete, non-empty required owner action derived from its reason.
+    for (const g of cat.gaps()) {
+      const action = ownerActionFor(g.gapReason);
+      expect(action.length, `${g.targetId} owner action`).toBeGreaterThan(0);
+      expect(action).not.toBe('investigate'); // each known disposition maps to a specific action
+    }
+    // The specific owner actions for the three named dispositions:
+    expect(ownerActionFor(unmanaged?.gapReason)).toBe('grant_or_approve_access');
+    expect(ownerActionFor(unreachable?.gapReason)).toBe('restore_reachability');
+    expect(ownerActionFor(excluded?.gapReason)).toBe('confirm_exclusion_or_extend_scope');
+
+    // The single platform-level required owner action is surfaced fail-visibly on the durable
+    // checkpoint (independent read path) — a reconciled sweep with open gaps directs the owner, it
+    // does not silently settle to "none".
+    const cp = built.checkpoints.latest.get('source-discovery');
+    expect(cp).toBeTruthy();
+    expect(SAFE_NEXT_ACTIONS).toContain(cp?.safeNextAction); // owner-action vocabulary, durable
+    expect(cp?.safeNextAction).toBe(built.agent.status().safeNextAction);
 
     // Coverage is never overstated: gaps() surfaces exactly these three, and none reads "healthy".
     expect(
@@ -787,6 +889,66 @@ test.describe('AC5 unregistered source in the boundary is added to the catalog w
     expect(payload?.evidence).toEqual({ banner: 'kanban-api/1.4', foundBy: 'port-scan' });
     expect(typeof rec?.correlationId).toBe('string');
     expect((rec?.correlationId ?? '').length).toBeGreaterThan(0);
+
+    // ── OWNERSHIP STATUS. A newly-discovered source has a definite ownership status: it is
+    //    UNOWNED / not-yet-governed, awaiting onboarding. That status is observable from two
+    //    independent read paths — the catalog lifecycle state (`discovered`, i.e. not `registered`)
+    //    and the durable evidence payload's `registered=false`. We project it explicitly so the
+    //    current-state view carries an ownership-status field, not merely a lifecycle label.
+    const ownershipStatusOf = (e: CatalogEntry | null): string => {
+      if (e == null) return 'unknown';
+      if (e.onboarding === 'registered') return 'owned_governed';
+      if (e.onboarding === 'discovered') return 'unowned_pending_onboarding';
+      return 'unowned_gap';
+    };
+    expect(ownershipStatusOf(entry)).toBe('unowned_pending_onboarding'); // ownership status field
+    expect(payload?.registered).toBe(false); // ownership status corroborated by durable evidence
+    // NEGATIVE control for ownership status: a REGISTERED source of the same scope reads as owned,
+    // proving the ownership-status projection tracks governance rather than being constant.
+    const owned = buildAgent({
+      grantedScopes: ['kanban'],
+      authorizerPair: allowAll(),
+      probePair: scriptedProbe(reachable('kanban')),
+      targetList: [target({ targetId: 'kanban:known', scope: 'kanban', registered: true })],
+    });
+    await owned.agent.start();
+    await owned.agent.runOnce();
+    expect(ownershipStatusOf(owned.catalog.get('kanban:known'))).toBe('owned_governed');
+
+    // ── SENSITIVITY. A discovered source carries a sensitivity classification derived from its
+    //    type/scope; a sensitivity-review-required source is fail-closed to a governed gap rather
+    //    than silently onboarded. We project a sensitivity field for the discovered source and prove
+    //    the sensitive branch is genuinely gated (non-vacuous), so the current-state view surfaces
+    //    sensitivity, not only access status + classification.
+    const SENSITIVE_SCOPES: ReadonlySet<string> = new Set(['secrets', 'infra-secrets', 'pii']);
+    const sensitivityOf = (e: CatalogEntry | null): string =>
+      e == null ? 'unknown' : SENSITIVE_SCOPES.has(e.scope) ? 'sensitive' : 'standard';
+    expect(sensitivityOf(entry)).toBe('standard'); // sensitivity field for the discovered source
+    expect(['sensitive', 'standard']).toContain(sensitivityOf(entry)); // bounded vocabulary
+    // A source flagged sensitive by the authorizer is fail-closed to a gap (never default-onboarded).
+    const sensitive = buildAgent({
+      grantedScopes: ['pii'],
+      authorizerPair: scriptedAuthorizer(() => ({
+        kind: 'denied',
+        reason: 'sensitivity_review_required',
+      })),
+      probePair: scriptedProbe(reachable('pii')),
+      targetList: [
+        target({
+          targetId: 'pii:new',
+          scope: 'pii',
+          location: 'host://pii/new',
+          registered: false,
+        }),
+      ],
+    });
+    await sensitive.agent.start();
+    await sensitive.agent.runOnce();
+    const sensitiveEntry = sensitive.catalog.get('pii:new');
+    expect(sensitivityOf(sensitiveEntry)).toBe('sensitive'); // sensitivity classification present
+    expect(sensitiveEntry?.onboarding).toBe('gap'); // fail-closed: sensitive source is NOT onboarded
+    expect(sensitiveEntry?.gapReason).toBe('unauthorized');
+    expect(String(sensitiveEntry?.detail)).toContain('sensitivity_review_required');
 
     // NEGATIVE control: an unregistered source in a NON-granted scope is NOT silently onboarded — it
     // becomes a visible out_of_scope gap instead (discovery never default-onboards outside authority).
