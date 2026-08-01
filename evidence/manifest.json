@@ -77,6 +77,13 @@
       "digest": "b57bc2f6ee4c3729d102ad0ccabc2232c9a60561f50fc397cac4a86ab295f5d6"
     },
     {
+      "path": "db/migrations/0005_audit_ledger.sql",
+      "status": "present",
+      "vo": "VO-d76c5d1293b91d26e094",
+      "exists": true,
+      "digest": "914b2615fba96cd498e08232f480cf01a19cc39705595f8880c50567116d1f49"
+    },
+    {
       "path": "deploy/nats/topology.json",
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
@@ -228,7 +235,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "476ebdd90ff4cda1b10620807eee1f2c546d947f3ef44a8e4489d3eb97b7eda8"
+      "digest": "bb6484af0e68f985017b92b8c6bb63c7c7f127b4439087df45fc5c7e262b4c56"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -341,6 +348,10 @@
       "digest": "e55a23d9c36fdf02338383be291a23af2d35c6109568e833a188ad6271ec3e56"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE28-EVIDENCE.md",
+      "digest": "aaaefd124a7c45f6eafba28860e86c7debda06dbb35dc3b9db863fe9c095b208"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE3-EVIDENCE.md",
       "digest": "330e1bd52be74c79e3f38bf574fd9979f65c1c25d051aa1b9e8d17255f12d12a"
     },
@@ -369,5 +380,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "4cc42a869da566a2e3e019d7b7a79a9335500394d9363ef6f116d223a5bf7b0d"
+  "inventoryDigest": "ae569dc7bc01987a4ae33d89e3d9bd37de771808233f27d654a9f9506673126c"
 }

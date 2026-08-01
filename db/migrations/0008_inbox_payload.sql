@@ -1,4 +1,4 @@
--- 0006_inbox_payload — Retain the ORIGINAL inbox event payload so the durable inbox can
+-- 0008_inbox_payload — Retain the ORIGINAL inbox event payload so the durable inbox can
 -- deterministically re-apply on retry and rebuild ordering state from its own durable rows
 -- (Phase 28 / task T028 / GAR-008 / VO-52d0780c11bcc6fd7583).
 --
@@ -18,7 +18,7 @@
 -- once applied (packages/persistence/src/database.ts `runMigrations` records its checksum in
 -- schema_migrations and rejects an in-place edit with MigrationChecksumError — an applied
 -- migration is immutable). So the inbox payload column is added here as a SEPARATE, later,
--- EXPAND-ONLY migration, exactly as 0005_outbox_claim added the outbox claim-lease columns. This
+-- EXPAND-ONLY migration, exactly as 0007_outbox_claim added the outbox claim-lease columns. This
 -- MIRRORS outbox_message, which already retains payload_json (0004 line 75) for the same replay
 -- reason; the inbox now has parity.
 --

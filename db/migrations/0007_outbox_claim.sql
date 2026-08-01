@@ -1,6 +1,12 @@
--- 0005_outbox_claim — Transactional-outbox CLAIM LEASE columns and the terminal
+-- 0007_outbox_claim — Transactional-outbox CLAIM LEASE columns and the terminal
 -- `dead_letter` publish state for the command-worker publisher (Phase 27 / task T027 /
 -- VO-7a0dbcc527946b539bf6, VO-52d0780c11bcc6fd7583).
+--
+-- NOTE (ordinal): originally authored as 0005; renumbered to 0007 in Phase 29 so the plan's
+-- reserved ordinals (0005 = audit_ledger, 0006 = evidence, per specs/.../tasks.md T029/T033)
+-- are honoured. The migration id derives purely from the filename ordinal
+-- (packages/persistence/src/database.ts parseMigrationFilename); content is unchanged and it
+-- still sorts/applies after 0004.
 --
 -- Design authority (specs/001-governance-control-plane):
 --   * data-model.md §"OutboxMessage": publish state, attempts, next-attempt time, JetStream

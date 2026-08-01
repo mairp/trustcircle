@@ -1,6 +1,6 @@
 // Deterministic in-memory SqlDriver for the OUTBOX-PUBLISHER tests (Phase 27).
 //
-// It models the delivery substrate of db/migrations/0004_delivery.sql + 0005_outbox_claim.sql —
+// It models the delivery substrate of db/migrations/0004_delivery.sql + 0007_outbox_claim.sql —
 // outbox_message (with claim-lease columns), the append-only delivery_attempt history, and the
 // dead_letter_record terminal table — so the transactional-outbox publisher's invariants (atomic
 // claim, ack-gated success, bounded retry, dead-letter, uncertain-safety) are exercised for real
@@ -312,7 +312,7 @@ export function createOutboxDriver() {
     }
   }
 
-  // Seed a pending outbox row exactly as the unit-of-work would write it (+ 0005 defaults).
+  // Seed a pending outbox row exactly as the unit-of-work would write it (+ 0007 defaults).
   function seedOutbox(row) {
     committed.outbox_message.set(row.message_id, {
       message_id: row.message_id,
