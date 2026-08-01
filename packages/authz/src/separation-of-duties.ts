@@ -170,6 +170,20 @@ export interface SoDEvaluation {
 /** The duties considered "decision authority" for the platform-admin-alone rule. */
 const DECISION_DUTIES: ReadonlySet<Duty> = new Set<Duty>(['approval', 'review', 'assurance']);
 
+/**
+ * Action roles that are INCOMPATIBLE with acting as the independent central reviewer for a
+ * cross-tenant action (GAR-003 / spec.md role table): an approver, operator, control owner, or
+ * automation principal cannot also be the reviewer that independently approves the joint action,
+ * even under a distinct principal id. Exported so the incompatible-action-role set is part of the
+ * module's stable, independently-testable API surface (not buried inside the guard body).
+ */
+export const INCOMPATIBLE_CENTRAL_REVIEWER_ROLES: ReadonlySet<RoleKey> = new Set<RoleKey>([
+  'authorized_approver',
+  'operator',
+  'control_owner',
+  'automation_principal',
+]);
+
 // ---------------------------------------------------------------------------
 // Guard 1 — self-approval / incompatible-duty: no principal holds two conflicting duties.
 // ---------------------------------------------------------------------------
@@ -394,15 +408,12 @@ export function evaluateCentralReviewerDistinctness(
     });
   }
 
-  // The reviewer must not hold an incompatible action role even under a different principal id.
-  const INCOMPATIBLE_REVIEWER_ROLES: ReadonlySet<RoleKey> = new Set<RoleKey>([
-    'authorized_approver',
-    'operator',
-    'control_owner',
-    'automation_principal',
-  ]);
+  // The reviewer must not hold an incompatible action role even under a DISTINCT principal id:
+  // a distinct reviewer who additionally carries an approver/operator/owner/automation role is
+  // still rejected. This is the clause "the independent central reviewer for a cross-tenant
+  // action MUST NOT hold an incompatible action role".
   for (const role of reviewer.roles) {
-    if (INCOMPATIBLE_REVIEWER_ROLES.has(role)) {
+    if (INCOMPATIBLE_CENTRAL_REVIEWER_ROLES.has(role)) {
       violations.push({
         code: 'CENTRAL_REVIEWER_INCOMPATIBLE_ROLE',
         message: `central reviewer '${reviewer.principalId}' holds incompatible action role '${role}'`,

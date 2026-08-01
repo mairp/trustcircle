@@ -40,6 +40,7 @@ import {
   evaluateWithWaiver,
   evaluateCentralReviewerDistinctness,
   isNonWaivable,
+  INCOMPATIBLE_CENTRAL_REVIEWER_ROLES,
   type DutyAssignment,
   type SoDConstraint,
   type CrossTenantAction,
@@ -308,10 +309,7 @@ describe('fail-closed: stale or unsigned policy', () => {
   });
 
   it('a TAMPERED bundle (revision changed after signing) fails signature verification', () => {
-    const signed = signBundle(
-      { revision: REV, roots: ['separation_of_duties'] },
-      BUNDLE_KEY,
-    );
+    const signed = signBundle({ revision: REV, roots: ['separation_of_duties'] }, BUNDLE_KEY);
     const tampered: SignedPolicyBundle = { ...signed, revision: 'rev-attacker' };
     expect(() => verifyBundle(tampered, BUNDLE_KEY)).toThrowError(PdpUnavailableError);
     try {
@@ -425,10 +423,7 @@ describe('fail-closed: expired authority', () => {
   });
 
   it('a LAPSED-recertification assignment grants nothing even if not yet expired', () => {
-    const res = resolveRoleAssignmentA(
-      activeAssignment({ nextRecertificationAt: NOW - 1 }),
-      NOW,
-    );
+    const res = resolveRoleAssignmentA(activeAssignment({ nextRecertificationAt: NOW - 1 }), NOW);
     expect(res.granted).toBe(false);
     expect(res.reason).toBe('RECERTIFICATION_LAPSED');
   });
@@ -659,6 +654,30 @@ describe('acceptance: separation of duties oracle (VO-173f7afb7801f4ab3e29)', ()
     const res = evaluateCentralReviewerDistinctness(action, incompatible);
     expect(res.permitted).toBe(false);
     expect(res.violations.map((v) => v.code)).toContain('CENTRAL_REVIEWER_INCOMPATIBLE_ROLE');
+  });
+
+  it('EVERY incompatible action role, held by a DISTINCT reviewer principal, is rejected with CENTRAL_REVIEWER_INCOMPATIBLE_ROLE', () => {
+    const action: CrossTenantAction = {
+      requesterPrincipalId: 'alice',
+      operatorPrincipalId: 'bob',
+      controlOwnerPrincipalId: 'carol',
+      tenantApproverPrincipalIds: ['t1-approver', 't2-approver'],
+    };
+    // The exported set is non-empty and exactly the four action roles.
+    expect(INCOMPATIBLE_CENTRAL_REVIEWER_ROLES.size).toBeGreaterThanOrEqual(4);
+    for (const role of INCOMPATIBLE_CENTRAL_REVIEWER_ROLES) {
+      // Distinct principal id (not any action principal), but additionally holds an incompatible role.
+      const reviewer: CentralReviewer = {
+        principalId: 'distinct-reviewer',
+        roles: ['central_governance_reviewer', role],
+      };
+      const res = evaluateCentralReviewerDistinctness(action, reviewer);
+      // Distinctness is satisfied (id is not an action principal) — so the ONLY thing that can
+      // deny is the incompatible-action-role guard. It MUST both deny and emit the specific code.
+      expect(res.violations.map((v) => v.code)).not.toContain('CENTRAL_REVIEWER_NOT_DISTINCT');
+      expect(res.permitted).toBe(false);
+      expect(res.violations.map((v) => v.code)).toContain('CENTRAL_REVIEWER_INCOMPATIBLE_ROLE');
+    }
   });
 
   it('POSITIVE — a distinct central reviewer holding only the reviewer role is accepted', () => {
