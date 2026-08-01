@@ -3,7 +3,13 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "../../.tsbuild/apps/web",
-    "tsBuildInfoFile": "../../.tsbuild/apps/web/.tsbuildinfo"
+    "tsBuildInfoFile": "../../.tsbuild/apps/web/.tsbuildinfo",
+    // apps/web owns `.tsx` files (the Phase-77 shell + Phase-78 executive posture). They contain NO
+    // JSX syntax — they are pure string-builder presenters — but as soon as one `.tsx` module imports
+    // another (ExecutivePosture.tsx imports layout.tsx), tsc requires a `jsx` mode to resolve the
+    // `.tsx` extension (TS6142). `preserve` satisfies that with no React dependency and no runtime
+    // change: Node's native type-stripping still just strips types, since there is no JSX to emit.
+    "jsx": "preserve"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": [
