@@ -126,6 +126,13 @@
       "digest": "fb2d21d9f6f9e530201924f138cf3784b9ed4136682d0175aaca5604b26ef697"
     },
     {
+      "path": "packages/contracts/src/events.ts",
+      "status": "present",
+      "vo": "VO-52d0780c11bcc6fd7583",
+      "exists": true,
+      "digest": "eace10955197372dc0aacffb5044d6b963581c2ca4014674940e2d636f5599c9"
+    },
+    {
       "path": "packages/domain/src/outcomes.ts",
       "status": "present",
       "vo": "VO-34d9f9fb2a6a39e2d62c",
@@ -214,7 +221,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "0bfedf8ba3c0081f585e58b95e0aa1b1ebd44633272bb0e0c4b3adb68f76647f"
+      "digest": "c97fc0d6d170f0ce95e1c38fa5c28f314cb353df0599f8a30b38b97fbb41527f"
     },
     {
       "path": "tests/integration/simulation-binding.test.ts",
@@ -315,6 +322,10 @@
       "digest": "881ad56fab23dfb7da41995960cb3a39b853804752f1b7ce52ca231a6db6cdec"
     },
     {
+      "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE25-EVIDENCE.md",
+      "digest": "b3ed1dba76e2e13ef295882b38466726d40b2ca8282e3a522ba2365fae3b1262"
+    },
+    {
       "path": ".lisa/features/bundle-36gcygdj15ptyp60f91qwray2m/gates/GATE3-EVIDENCE.md",
       "digest": "330e1bd52be74c79e3f38bf574fd9979f65c1c25d051aa1b9e8d17255f12d12a"
     },
@@ -343,5 +354,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "6805067e6c703213c42d91b48b0c1d14f194a6acd35815f71faddbf428863f37"
+  "inventoryDigest": "3cac3518b97ebdd58ca1b9612619c49fbd1edeff7d35b4cfa2c7c59aea32f8c3"
 }
