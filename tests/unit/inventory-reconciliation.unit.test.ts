@@ -1,39 +1,6 @@
-// TrustCircleAI — Phase 71 unit tests for the SNAPSHOT / OBSERVATION RECONCILIATION service.
-// Bundle 36GCYGDJ15PTYP60F91QWRAY2M.
-//
-// Executable evidence that `packages/application/src/inventory-reconciliation.ts` — a fleet-level
-// aggregate that reconciles successive observation cycles against the prior known-source set and
-// classifies every deviation into one of ten named source-anomaly classes — satisfies acceptance
-// criteria AC1–AC6 AND detects every one of the ten anomaly classes.
-//
-// The reconciler is a pure, deterministic aggregate: every cycle carries explicit epoch-millis and
-// an injected deterministic UUIDv7 factory (no wall clock); every read takes an explicit `at`. The
-// durable-effect witness for every mutation is NOT its return value but the INDEPENDENTLY
-// re-readable state (`deltas()`, `openGaps()`, `conflicts()`, `catalog()`, `sourceStatus()`,
-// `currentStateView()`) and its content digest (`snapshotDigest(at)`), which changes iff a governed
-// fact changes.
-//
-// Every rule is proven NON-VACUOUS by a paired NEGATIVE CONTROL: a healthy scenario in which the
-// rule must NOT fire, so a green run is not a permissive fake.
-//
-// Anomaly-class → test map (all ten classes):
-//   missing / disappeared . describe('anomaly: absence …')
-//   duplicate ............. describe('anomaly: duplicate …')
-//   stale ................. describe('anomaly: stale …') + AC4
-//   conflicting ........... describe('anomaly: conflicting …') + AC3
-//   orphaned .............. describe('anomaly: orphaned …')
-//   changed ............... describe('anomaly: changed …')
-//   moved / split / merged  describe('anomaly: lineage …')
-//
-// AC → describe-block map:
-//   AC1 healthy reconciled source renders ONCE with the full facet set ...... describe('AC1 …')
-//   AC2 non-healthy source stays a VISIBLE coverage gap .................... describe('AC2 …')
-//   AC3 related work → distinct source records + correlation + conflicts .... describe('AC3 …')
-//   AC4 stale/unavailable source marked; health not inferred from stale data  describe('AC4 …')
-//   AC5 unregistered source ADDED to the catalog with discovery evidence .... describe('AC5 …')
-//   AC6 discovered source stays a VISIBLE governed-source gap w/ review ..... describe('AC6 …')
-//   witness snapshotDigest is an independent, sensitive content witness ..... describe('witness …')
-
+// Phase 71 unit tests for the SNAPSHOT / OBSERVATION RECONCILIATION service. Executable evidence
+// for AC1..AC6 and all ten source-anomaly classes against the real SourceReconciler. Every rule
+// carries a NEGATIVE CONTROL. Bundle 36GCYGDJ15PTYP60F91QWRAY2M.
 import { describe, it, expect } from 'vitest';
 import {
   uuidV7,

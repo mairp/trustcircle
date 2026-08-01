@@ -61,43 +61,6 @@
 // `catalog()`, `currentInventory()`, `snapshotDigest()`): the mutation's return value is never the
 // proof — the re-readable state + its content digest are. The reconciler grants NO authority: it
 // records, classifies, and keeps visible; it never silently repairs and NEVER deletes.
-//
-// ---------------------------------------------------------------------------
-// PUBLIC API INDEX — the exact read/write surface each AC binds to (named here,
-// near the file head, so the method and field anchors resolve without reading to
-// the definition sites deep in the file). Every method below is defined later in
-// the `SourceReconciler` class body and exercised by the unit + facet tests.
-//
-//   reconcile(input)               -> ReconciliationDelta[]   (drives every AC)
-//   currentStateView(at)           -> InventoryRow[]          AC1: one row per identity carrying
-//                                     row.assetId, row.assetType, row.riskTier, row.coverage,
-//                                     row.ownerPrincipalId, row.ownershipGap, row.lifecycleState,
-//                                     row.evidenceState, row.observedHealth, row.lastObservationAt,
-//                                     row.unresolvedIssueCount, row.sourceRecordCount.
-//   currentInventory()             -> InventoryService        AC3: .drillDown(assetId, at) ->
-//                                     dd.correlation.fields[].contested / .differingSources /
-//                                     .differingStatuses, dd.dependencies[].relationshipId,
-//                                     dd.authoritativeFields[].field / .authoritativeSourceId.
-//   openGaps()                     -> CoverageGap[]            AC2: each gap.gapClass / gap.reason /
-//                                     gap.impact / gap.requiredAction / gap.requiredOwner; gapAge().
-//   deltas() / deltasOfClass(c)    -> ReconciliationDelta[]    AC2: the retained classification.
-//   sourceStatuses(at) /
-//     sourceStatus(identity, at)   -> SourceStatus[]           AC4: status.stale / status.confidence /
-//                                     status.lastKnownAt / status.present / status.disappeared —
-//                                     current health is NEVER inferred from stale/absent evidence.
-//   catalogSource(entry) /
-//     catalog()                    -> SourceCatalogEntry[]     AC5: entry.sourceClass (type-or-unknown),
-//                                     entry.accessState, entry.sensitivity, entry.onboardingState,
-//                                     entry.discoveryEvidence, entry.observedLocations,
-//                                     entry.ownerPrincipalId.
-//   openGovernedSourceGap(input) /
-//     governedSourceGaps()         -> CoverageGap[]            AC6: gap.gapClass==='governed_source',
-//                                     gap.reason, gap.impact, gap.requiredAction, gap.reviewAt,
-//                                     gap.expiresAt (a review-or-expiry deadline is REQUIRED).
-//   conflicts()                    -> SourceConflict[]         AC3: conflict.identity / .recordIds /
-//                                     .differingStatuses for same-identity disagreements.
-//   snapshotDigest(at)             -> string                   content witness over all of the above.
-// ---------------------------------------------------------------------------
 
 import {
   isUuid,
