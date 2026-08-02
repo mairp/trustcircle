@@ -12,3 +12,9 @@ export type * from './generated/index.ts';
 // is the runtime half of the AsyncAPI governance-events contract — the generated
 // types are compile-time only and cannot enforce the GAR-008 obligation.
 export * from './events.ts';
+
+// Runtime DECISION-API contract surface (Phase 88 / Work item BJG3PZHMWX4DHWZ9RMEZ33F9GZ):
+// validates decision / action / delegation requests, headers, ETags, idempotency, errors, and
+// responses against the loaded governance-api.openapi.yaml. Runtime half of the OpenAPI decision
+// surface — the generated types are compile-time only.
+export * from './decision-api.ts';
