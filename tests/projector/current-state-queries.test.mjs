@@ -224,7 +224,11 @@ test('AC4: stale source ⇒ health withheld, marked with last-known time + confi
   fresh.ingestBatch(freshStream);
   const svc2 = new CurrentStateQueryService(fresh);
   const atFresh = svc2.operationalItem(F.STALE_ASSET_ID, AT);
-  assert.equal(atFresh.freshness.stale, false, 'GREEN: a fresh full-confidence record is not stale');
+  assert.equal(
+    atFresh.freshness.stale,
+    false,
+    'GREEN: a fresh full-confidence record is not stale',
+  );
   assert.equal(atFresh.freshness.confidence, 1);
   assert.equal(atFresh.reportedHealth, 'healthy', 'GREEN: fresh evidence ⇒ health IS reported');
 });

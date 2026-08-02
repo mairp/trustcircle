@@ -250,10 +250,7 @@ export class CurrentStateQueryService {
     if (!(projector instanceof InventoryProjector)) {
       throw new TypeError('CurrentStateQueryService requires an InventoryProjector');
     }
-    if (
-      !Number.isInteger(stalenessHorizonMillis) ||
-      stalenessHorizonMillis <= 0
-    ) {
+    if (!Number.isInteger(stalenessHorizonMillis) || stalenessHorizonMillis <= 0) {
       throw new RangeError('stalenessHorizonMillis must be a positive integer');
     }
     this.projector = projector;
