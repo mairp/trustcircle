@@ -3,17 +3,21 @@
   "feature": "001-governance-control-plane",
   "phase": "Phase 9 — Governance Assurance and Release Readiness",
   "generatedAt": "2026-08-03T00:00:00.000Z",
-  "decision": "approved",
+  "decision": "blocked",
+  "releaseGateStatus": "held",
   "reviews": [
     {
       "discipline": "accessibility",
       "reviewerRole": "Accessibility Reviewer",
-      "decision": "approve",
+      "decision": "approve_with_conditions",
       "evidence": [
-        "tests/accessibility/full-suite.spec.ts"
+        "tests/accessibility/full-suite.spec.ts",
+        "playwright.config.ts"
       ],
-      "conditions": [],
-      "statement": "WCAG 2.2 AA verified across AR-001..AR-008 and SC-014 via the browserless full-suite; every positive assertion carries a red witness so the suite is non-vacuous."
+      "conditions": [
+        "Finding F-A11Y-1: the browserless full-suite verifies the WCAG 2.2 AA affordances present in the shipped rendered markup (AR-001..AR-008, SC-014) with red witnesses, but the full-fidelity axe-core scan against a real Chromium (playwright project \"accessibility-current-state\") is DEFERRED — it cannot run on this browserless host and MUST be executed and pass in CI (TC_HAS_BROWSER=1) before release. Until then the browser-axe accessibility result is indeterminate and the release is held (owner: Accessibility Reviewer)."
+      ],
+      "statement": "The browserless full-suite verifies the WCAG 2.2 AA affordances (AR-001..AR-008, SC-014) that appear in the exact rendered markup that ships, each with a red witness so it is non-vacuous. The full-fidelity browser axe-core scan is a separate, CI-only gate that has NOT yet run on this host; that result is indeterminate and is a release-blocking condition, not a pass."
     },
     {
       "discipline": "compliance",
@@ -110,6 +114,10 @@
       "exists": true
     },
     {
+      "pointer": "playwright.config.ts",
+      "exists": true
+    },
+    {
       "pointer": "scripts/supply-chain-evidence.ts",
       "exists": true
     },
@@ -170,6 +178,6 @@
     "distinctReviewerRoles": 6,
     "disciplines": 6
   },
-  "bodyDigest": "6d268ebf6b558eea12d22004a5940284e4fb1f940f5a9235bd1c95ce1c6bb353",
-  "signature": "e50ffaf7043839b2ef798ea3f46714732cbfcdb933619849e8f34b19e9ba1b6c"
+  "bodyDigest": "5ca70196cd20f649ec00b4990f1e3d39ed45c4f9579a27155eaadcededad542e",
+  "signature": "dd4ba3fc7bfcbddc0113b8db28c4ba42f6816b240adbcb7a1b6754e62631ee3b"
 }

@@ -9,19 +9,28 @@
 // writes a SINGLE aggregate manifest, HMAC-signed over its canonical body, to
 // artifacts/validation/full-quickstart/manifest.json.
 //
-// HONESTY MODEL (critical): the guide's canonical realization of scenarios 1–11 and the role-
-// dashboard slice of 15 is a full-browser E2E run against a live Docker Compose stack
-// (Postgres/NATS/OPA/MinIO) that this headless host does not have. Rather than SKIP those scenarios
-// (which would leave the quickstart mostly unexercised), EVERY scenario is mapped to a HOST-RUNNABLE
-// PROXY that genuinely exercises the same behavior in-process against the real adapters, application,
-// projector, worker, policy, authz and event pipeline — the integration/discovery/worker/projector/
-// authz/domain/policy/resilience/recovery suites and the browserless Playwright projects. Each step
-// records the literal guide command it stands in for (`guideCommand`) for traceability, and executes
-// its proxy for REAL. The live-stack + full-browser commands are retained as CI-only supplementary
-// steps (`requiresInfra`/`requiresBrowser`), reported as `covered` when the host lacks that infra
-// because the same scenario is already proven by its host-runnable proxy — NEVER falsely `passed`,
-// and never a blocking `skipped`. The aggregate `status` is `passed` only if no step FAILED and no
-// scenario is left indeterminate (a scenario with no host-runnable proxy that ran).
+// HONESTY MODEL (critical — this is what distinguishes a truthful manifest from a green-washed one).
+// The guide's canonical realization of scenarios 1–11 and the role-dashboard slice of 15 is a
+// full-browser E2E run against a live Docker Compose stack (Postgres/NATS/OPA/MinIO). This headless
+// host has neither Docker nor a browser, so those canonical commands CANNOT run here. The manifest
+// records this truthfully with THREE distinct facts, never conflated:
+//   • Each canonical guide command that needs infra/browser is a step in its own right, executed when
+//     the host has that infra and otherwise reported `deferred` — meaning it DID NOT RUN and its
+//     outcome is UNKNOWN until CI runs it. It is NEVER reported `passed` and NEVER silently dropped.
+//   • Alongside it, a HOST-RUNNABLE step exercises the SAME scenario's behavior in-process against the
+//     real adapters/application/projector/worker/policy/authz/event pipeline (the integration/
+//     discovery/worker/projector/authz/domain/policy/resilience/recovery suites + browserless
+//     Playwright projects). That step runs for REAL and is reported `passed` on its own merits.
+//   • The two are kept SEPARATE: the passing host-runnable step does NOT cause the canonical
+//     browser/infra step to be reported as covered/proven. A deferred canonical step stays deferred.
+//
+// Aggregate `status` is three-way, matching the phase Checkpoint:
+//   passed — every step ran and passed (only on a host with infra + browser).
+//   failed — a step that ran exited non-zero.
+//   held   — nothing failed, but at least one canonical guide command is `deferred` (did not run).
+//            The validation is INCOMPLETE and release is BLOCKED until CI runs the deferred commands.
+// A `held` aggregate exits non-zero: the runner never reports the quickstart as fully validated when
+// canonical commands were not executed.
 //
 // Determinism: the manifest is canonical (sorted keys) and signed with a fixed key; the only inputs
 // that vary run-to-run (timestamps, per-step stdout) are excluded from the signed body. Pass a fixed
@@ -65,6 +74,8 @@ export interface Step {
   readonly supplementary?: boolean;
   /** For scenarios: the literal guide command this proxy stands in for on infra-less hosts. */
   readonly guideCommand?: string;
+  /** This step invokes a sub-gate that exits 3 to mean HELD/indeterminate (not a failure); map 3→deferred. */
+  readonly heldOnExit3?: boolean;
 }
 
 // Every scenario in quickstart.md is mapped to a HOST-RUNNABLE PROXY that exercises its behavior in
@@ -534,20 +545,23 @@ export const STEPS: readonly Step[] = [
     kind: 'release',
     guideSection: 'Full release gate',
     guideCommand: 'npm run verify:release',
-    // The complete release gate across ALL 11 required dimensions (integration is host-runnable in
-    // process, so it is included here — no dimension is excluded). Reaches PASS on this host.
+    // The complete release gate across ALL 11 required dimensions. On this host it exits 3 (HELD):
+    // every host-runnable gate passes, but the full-fidelity infra/browser gates are DEFERRED, so the
+    // gate correctly BLOCKS release. Exit 3 is the honest "held/indeterminate" signal — map it to
+    // `deferred` here (NOT `failed`): a held release gate is the expected, correct state, not a defect.
     command: 'node',
     args: ['--experimental-strip-types', 'scripts/verify-release.ts'],
+    heldOnExit3: true,
   },
 ];
 
 export interface StepResult {
   readonly step: Step;
-  // passed  — ran, exit 0. failed — ran, exit non-zero.
-  // covered — supplementary live/browser step the host cannot run, but its guide section is already
-  //           proven by a host-runnable proxy/step that passed (NOT indeterminate).
-  // skipped — could not run AND its section has no passing host-runnable step (INDETERMINATE).
-  readonly status: 'passed' | 'failed' | 'covered' | 'skipped';
+  // passed   — ran, exit 0. failed — ran, exit non-zero.
+  // deferred — needs infra/browser the host lacks, so it DID NOT RUN; outcome UNKNOWN until CI runs
+  //            it. Release-blocking (makes the aggregate `held`). Reported truthfully, never merged
+  //            with the passing host-runnable proxy for the same scenario.
+  readonly status: 'passed' | 'failed' | 'deferred';
   readonly code: number | null;
   readonly note: string;
 }
@@ -571,6 +585,15 @@ function executeStep(step: Step): StepResult {
     env: { ...process.env, ...(step.env ?? {}) },
   });
   const code = res.status;
+  // A sub-gate that exits 3 signals HELD/indeterminate (not a failure): record it as `deferred`.
+  if (step.heldOnExit3 === true && code === 3) {
+    return {
+      step,
+      status: 'deferred',
+      code,
+      note: 'sub-gate HELD (exit 3): host-runnable gates passed, full-fidelity infra/browser gates deferred to CI — release-blocking',
+    };
+  }
   return {
     step,
     status: code === 0 ? 'passed' : 'failed',
@@ -579,58 +602,52 @@ function executeStep(step: Step): StepResult {
   };
 }
 
+export type Aggregate = 'passed' | 'failed' | 'held';
+
 export function runAll(opts: RunOptions): {
   results: StepResult[];
-  ok: boolean;
-  indeterminate: string[];
+  aggregate: Aggregate;
+  /** Canonical guide commands that DID NOT run (need infra/browser) — release-blocking. */
+  deferred: string[];
 } {
   // Pass 1 — run every step the host CAN run (host-runnable proxies + bootstrap + browserless
-  // scenarios). This establishes which guide sections are proven for real on this host.
+  // scenarios). Reported truthfully on their own merits.
   const runnable = STEPS.filter((s) => canRun(s, opts));
   const unavailable = STEPS.filter((s) => !canRun(s, opts));
   const ran: StepResult[] = runnable.map((s) =>
     opts.dryRun
-      ? { step: s, status: 'skipped' as const, code: null, note: 'dry-run (not executed)' }
+      ? { step: s, status: 'deferred' as const, code: null, note: 'dry-run (not executed)' }
       : executeStep(s),
   );
-  const provenSections = new Set(
-    ran.filter((r) => r.status === 'passed').map((r) => r.step.guideSection),
-  );
 
-  // Pass 2 — classify the supplementary live/browser steps the host could not run. If their guide
-  // section is already proven by a host-runnable step, they are `covered`; otherwise `skipped`
-  // (indeterminate). Every scenario/stack section HAS a host-runnable proxy, so on a healthy host
-  // no section is ever left indeterminate.
-  const deferred: StepResult[] = unavailable.map((step) => {
-    const covered = provenSections.has(step.guideSection);
-    const why = step.requiresInfra ? 'live stack (Postgres/NATS/OPA/MinIO)' : 'Chromium';
-    return covered
-      ? {
-          step,
-          status: 'covered' as const,
-          code: null,
-          note: `requires ${why}; section proven by host-runnable proxy — full-fidelity step deferred to CI`,
-        }
-      : {
-          step,
-          status: 'skipped' as const,
-          code: null,
-          note: `requires ${why}; NO host-runnable proxy proved this section — INDETERMINATE`,
-        };
+  // Pass 2 — every step the host could not run is `deferred`: it DID NOT run, its outcome is UNKNOWN.
+  // We do NOT infer coverage from a sibling host-runnable proxy — the canonical guide command is a
+  // distinct obligation, recorded honestly as not-yet-run (release-blocking) until CI executes it.
+  const deferredResults: StepResult[] = unavailable.map((step) => {
+    const why = step.requiresInfra ? 'a live stack (Postgres/NATS/OPA/MinIO)' : 'a real Chromium browser';
+    return {
+      step,
+      status: 'deferred' as const,
+      code: null,
+      note: `canonical guide command requires ${why}, absent on this host — DID NOT RUN; outcome INDETERMINATE until executed in CI (release-blocking)`,
+    };
   });
 
   // Reassemble in declared order.
   const byStep = new Map<Step, StepResult>();
-  for (const r of [...ran, ...deferred]) byStep.set(r.step, r);
+  for (const r of [...ran, ...deferredResults]) byStep.set(r.step, r);
   const results = STEPS.map((s) => byStep.get(s)!);
 
-  // Aggregate is OK iff nothing FAILED and nothing is indeterminate (`skipped`).
+  // Three-way aggregate: failed if anything that ran failed; held if any canonical command is
+  // deferred (validation incomplete → release blocked); passed only if every step ran and passed.
   const failed = results.some((r) => r.status === 'failed');
-  const indeterminate = [
-    ...new Set(results.filter((r) => r.status === 'skipped').map((r) => r.step.guideSection)),
+  const deferred = [
+    ...new Set(
+      results.filter((r) => r.status === 'deferred' && !opts.dryRun).map((r) => r.step.guideCommand ?? r.step.id),
+    ),
   ];
-  const ok = !failed && indeterminate.length === 0;
-  return { results, ok, indeterminate };
+  const aggregate: Aggregate = failed ? 'failed' : deferred.length > 0 ? 'held' : 'passed';
+  return { results, aggregate, deferred };
 }
 
 // ── Canonical JSON + signing (matches the repo's evidence-manifest conventions) ──────────────────
@@ -651,13 +668,12 @@ export interface Manifest {
   readonly guide: string;
   readonly generatedAt: string;
   readonly host: { readonly hasInfra: boolean; readonly hasBrowser: boolean };
-  readonly status: 'passed' | 'failed';
+  readonly status: 'passed' | 'failed' | 'held';
   readonly counts: {
     readonly total: number;
     readonly passed: number;
     readonly failed: number;
-    readonly covered: number;
-    readonly skipped: number;
+    readonly deferred: number;
   };
   readonly steps: ReadonlyArray<{
     readonly id: string;
@@ -668,7 +684,7 @@ export interface Manifest {
     readonly requiresInfra: boolean;
     readonly requiresBrowser: boolean;
     readonly supplementary: boolean;
-    readonly status: 'passed' | 'failed' | 'covered' | 'skipped';
+    readonly status: 'passed' | 'failed' | 'deferred';
     readonly note: string;
   }>;
   readonly bodyDigest?: string;
@@ -696,15 +712,16 @@ export function buildManifest(
     total: steps.length,
     passed: steps.filter((s) => s.status === 'passed').length,
     failed: steps.filter((s) => s.status === 'failed').length,
-    covered: steps.filter((s) => s.status === 'covered').length,
-    skipped: steps.filter((s) => s.status === 'skipped').length,
+    deferred: steps.filter((s) => s.status === 'deferred').length,
   };
+  const status: 'passed' | 'failed' | 'held' =
+    counts.failed > 0 ? 'failed' : counts.deferred > 0 ? 'held' : 'passed';
   const body = {
     kind: 'full-quickstart-validation' as const,
     guide: 'specs/001-governance-control-plane/quickstart.md',
     generatedAt,
     host: { hasInfra: opts.hasInfra, hasBrowser: opts.hasBrowser },
-    status: (counts.failed === 0 ? 'passed' : 'failed') as 'passed' | 'failed',
+    status,
     counts,
     steps,
   };
@@ -792,7 +809,7 @@ if (isEntry) {
   const dryRun = argv.includes('--dry-run');
   const generatedAt = argValue(argv, '--generated-at') ?? '1970-01-01T00:00:00.000Z';
 
-  const { results, indeterminate } = runAll({ hasInfra, hasBrowser, dryRun });
+  const { results, deferred } = runAll({ hasInfra, hasBrowser, dryRun });
   const manifest = buildManifest(results, { hasInfra, hasBrowser, dryRun }, generatedAt);
 
   mkdirSync(OUT_DIR, { recursive: true });
@@ -805,19 +822,20 @@ if (isEntry) {
     );
   }
   console.log(`\nmanifest: ${OUT_FILE}`);
-  if (indeterminate.length > 0) {
-    console.log(`INDETERMINATE sections (blocking): ${indeterminate.join(', ')}`);
-  } else {
+  if (deferred.length > 0) {
     console.log(
-      'no indeterminate sections — every guide section exercised by a host-runnable step.',
+      `DEFERRED canonical guide commands (did NOT run — release-blocking):\n  - ${deferred.join('\n  - ')}`,
     );
+  } else {
+    console.log('no deferred commands — every guide command ran on this host.');
   }
   console.log(
-    `aggregate: ${manifest.status.toUpperCase()} (passed=${manifest.counts.passed} failed=${manifest.counts.failed} covered=${manifest.counts.covered} skipped=${manifest.counts.skipped})`,
+    `aggregate: ${manifest.status.toUpperCase()} (passed=${manifest.counts.passed} failed=${manifest.counts.failed} deferred=${manifest.counts.deferred})`,
   );
   if (!verifyManifest(manifest)) {
     console.error('FATAL: manifest failed self-verification');
     process.exit(2);
   }
-  process.exit(manifest.status === 'passed' ? 0 : 1);
+  // passed → 0; failed → 1; held (canonical commands deferred, validation incomplete) → 3.
+  process.exit(manifest.status === 'passed' ? 0 : manifest.status === 'failed' ? 1 : 3);
 }

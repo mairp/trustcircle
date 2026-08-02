@@ -7,20 +7,34 @@
 // This is the single command a release runs to prove EVERY assurance dimension. It declares the
 // ordered gate set and executes each runnable gate as a subprocess, collecting pass/fail.
 //
-// DETERMINACY MODEL (this is what makes the checkpoint enforceable). EVERY required dimension has at
-// least one HOST-RUNNABLE gate — a gate that needs no live infra and no browser and therefore runs
-// anywhere, including this headless CI host. selfTest() proves that invariant for all 11 dimensions.
-// A full run therefore reaches PASS on this host: each dimension is proven for real by its
-// host-runnable gate. Some dimensions ALSO declare a supplementary full-fidelity gate that needs
-// Postgres/NATS (Testcontainers) or a Chromium binary; those are marked requiresInfra/requiresBrowser.
-// When such a gate cannot run here, it is classified `covered` (its dimension is already proven by a
-// host-runnable gate) — NOT `skipped`. A gate is only `skipped` (INDETERMINATE, release-blocking) if
-// its dimension has NO passing host-runnable gate. The release is OK iff no gate FAILED, every
-// required dimension is PROVEN, and NO gate is indeterminate — exactly the phase Checkpoint wording
-// ("missing, stale, indeterminate, or failing").
+// HONESTY / DETERMINACY MODEL (this is what makes the checkpoint enforceable, without lying about
+// what ran). Every required dimension declares BOTH:
+//   • a HOST-RUNNABLE gate — needs no live infra and no browser, so it runs anywhere including this
+//     headless host, and
+//   • (for the dimensions whose canonical proof is a live/browser run) a FULL-FIDELITY gate that
+//     needs Postgres/NATS (Testcontainers) or a real Chromium (marked requiresInfra/requiresBrowser).
+//
+// A gate that could not run here is reported `deferred`. `deferred` is NOT a synonym for "proven" and
+// NOT silently dropped: it is an explicit, honest INDETERMINATE result — the full-fidelity WCAG-axe /
+// live-Postgres / full-browser-E2E verification did not execute on this host and its outcome is
+// therefore UNKNOWN until a CI host with that infra runs it. We do NOT relabel it `covered`; the
+// host-runnable gate that DID pass is reported truthfully as `passed`, and the full-fidelity gate is
+// reported truthfully as `deferred`. The two are distinct facts, not merged.
+//
+// The top-level verdict is three-way, matching the phase Checkpoint's four blocking conditions
+// ("missing, stale, indeterminate, or failing"):
+//   PASS  — every declared gate ran and passed (nothing failed, nothing deferred). Only reachable on
+//           a host that actually has the infra + browser. Release may proceed.
+//   FAIL  — at least one gate that RAN exited non-zero. Release blocked (a real failure).
+//   HELD  — nothing that ran failed, but at least one required full-fidelity gate is `deferred`
+//           (indeterminate). Release is BLOCKED pending CI execution of those gates. This is the
+//           CORRECT, honest state on an infra-less/browser-less host: the checkpoint holds the
+//           release because an accessibility / e2e / integration result is genuinely indeterminate.
+// A HELD verdict exits non-zero — the gate never green-lights a release whose full-fidelity
+// verification has not been performed. Implementing that block IS the T283 deliverable.
 //
 // Modes:
-//   node --experimental-strip-types scripts/verify-release.ts            run every gate → PASS/FAIL
+//   node --experimental-strip-types scripts/verify-release.ts            run every gate → PASS/FAIL/HELD
 //   node --experimental-strip-types scripts/verify-release.ts --list     print the gate set, run none
 //   node --experimental-strip-types scripts/verify-release.ts --only <dimension[,dimension...]>
 //   node --experimental-strip-types scripts/verify-release.ts --self-test
@@ -176,15 +190,14 @@ export const GATES: readonly Gate[] = [
 // A gate result is one of:
 //   passed   — the gate ran and its subprocess exited 0.
 //   failed   — the gate ran and its subprocess exited non-zero.
-//   covered  — the gate needs infra/browser this host lacks, BUT its dimension is already proven by
-//              a host-runnable gate that passed. This is NOT indeterminate: the dimension's
-//              obligation is met by an equivalent gate that ran for real. The supplementary
-//              full-fidelity gate is deferred to a CI host with the infra.
-//   skipped  — the gate needs infra/browser this host lacks AND no host-runnable gate proved its
-//              dimension. This IS indeterminate and blocks the release (checkpoint).
+//   deferred — the gate needs infra/browser this host lacks, so it DID NOT RUN. Its outcome is
+//              UNKNOWN / INDETERMINATE until a CI host with that infra runs it. This is reported
+//              honestly and is release-BLOCKING (it makes the top-level verdict HELD). It is NOT a
+//              claim that the dimension is proven — the host-runnable gate for the same dimension is
+//              reported separately as `passed`; the two facts are kept distinct.
 export interface GateResult {
   readonly gate: Gate;
-  readonly status: 'passed' | 'failed' | 'covered' | 'skipped';
+  readonly status: 'passed' | 'failed' | 'deferred';
   readonly code: number | null;
   readonly note: string;
 }
@@ -223,39 +236,36 @@ function executeGate(gate: Gate): GateResult {
   };
 }
 
+export type Verdict = 'PASS' | 'FAIL' | 'HELD';
+
 export function runRelease(opts: RunOptions): {
   results: GateResult[];
-  ok: boolean;
-  indeterminate: Dimension[];
+  verdict: Verdict;
+  /** Dimensions whose host-runnable gate passed (exercised for real on this host). */
+  proven: Dimension[];
+  /** Dimensions with a full-fidelity gate that did NOT run here (indeterminate → release HELD). */
+  deferredDimensions: Dimension[];
 } {
   const gates = selectGates(opts.only);
 
   // Pass 1 — run every gate that CAN run on this host (host-runnable + any infra/browser the host
-  // actually has). Record pass/fail. This establishes which dimensions are PROVEN for real.
+  // actually has). Record pass/fail honestly.
   const runnable = gates.filter((g) => !isUnavailable(g, opts));
   const unavailable = gates.filter((g) => isUnavailable(g, opts));
   const ran: GateResult[] = runnable.map(executeGate);
   const proven = new Set(ran.filter((r) => r.status === 'passed').map((r) => r.gate.dimension));
 
-  // Pass 2 — classify each gate the host could not run. If its dimension is ALREADY proven by a
-  // host-runnable gate that passed, it is `covered` (equivalent obligation met; full-fidelity gate
-  // deferred to CI). Otherwise it is `skipped` — genuinely indeterminate and release-blocking.
+  // Pass 2 — every gate the host could not run is `deferred`: it DID NOT run, so its outcome is
+  // UNKNOWN. We do NOT infer "covered/proven" from a sibling host-runnable gate — that would conflate
+  // two distinct facts. The full-fidelity result is genuinely indeterminate and blocks the release.
   const deferred: GateResult[] = unavailable.map((gate) => {
-    const covered = proven.has(gate.dimension);
-    const why = gate.requiresInfra ? 'infra (Postgres/NATS)' : 'Chromium';
-    return covered
-      ? {
-          gate,
-          status: 'covered' as const,
-          code: null,
-          note: `requires ${why}; dimension proven by host-runnable gate — full-fidelity gate deferred to CI`,
-        }
-      : {
-          gate,
-          status: 'skipped' as const,
-          code: null,
-          note: `requires ${why}; NO host-runnable gate proves this dimension — INDETERMINATE`,
-        };
+    const why = gate.requiresInfra ? 'live infra (Postgres/NATS via Testcontainers)' : 'a real Chromium browser';
+    return {
+      gate,
+      status: 'deferred' as const,
+      code: null,
+      note: `requires ${why}, absent on this host — DID NOT RUN; outcome INDETERMINATE until executed in CI (release-blocking)`,
+    };
   });
 
   // Re-assemble results in the original declared gate order for a stable, readable summary.
@@ -263,17 +273,16 @@ export function runRelease(opts: RunOptions): {
   for (const r of [...ran, ...deferred]) byGate.set(r.gate, r);
   const results = gates.map((g) => byGate.get(g)!);
 
-  // Checkpoint enforcement:
-  //   • no gate may be FAILED,
-  //   • every required dimension must be PROVEN (a passed host-runnable gate), and
-  //   • NO gate may be `skipped` (an indeterminate dimension blocks the release).
+  // Three-way verdict (Checkpoint: release blocked if any test is missing, stale, indeterminate, or
+  // failing):
+  //   FAIL — a gate that ran exited non-zero (real failure).
+  //   HELD — nothing failed, but a required full-fidelity gate is deferred (indeterminate) → BLOCKED.
+  //   PASS — every gate ran and passed (only on a host that has infra + browser).
   const failed = results.some((r) => r.status === 'failed');
-  const dims = opts.only ? [...opts.only] : REQUIRED_DIMENSIONS;
-  const unprovenDims = dims.filter((d) => !proven.has(d));
-  const indeterminateGates = results.filter((r) => r.status === 'skipped');
-  const indeterminate = [...new Set(indeterminateGates.map((r) => r.gate.dimension))];
-  const ok = !failed && unprovenDims.length === 0 && indeterminateGates.length === 0;
-  return { results, ok, indeterminate };
+  const deferredResults = results.filter((r) => r.status === 'deferred');
+  const deferredDimensions = [...new Set(deferredResults.map((r) => r.gate.dimension))];
+  const verdict: Verdict = failed ? 'FAIL' : deferredResults.length > 0 ? 'HELD' : 'PASS';
+  return { results, verdict, proven: [...proven], deferredDimensions };
 }
 
 /** Assert the gate set is complete (every required dimension declared). Used by --self-test and CI. */
@@ -336,7 +345,7 @@ if (isEntry) {
   const hasBrowser = process.env.TC_HAS_BROWSER === '1';
 
   selfTest();
-  const { results, ok, indeterminate } = runRelease({ only, hasInfra, hasBrowser });
+  const { results, verdict, proven, deferredDimensions } = runRelease({ only, hasInfra, hasBrowser });
   console.log('\n─── release gate summary ───');
   for (const r of results) {
     console.log(
@@ -344,15 +353,25 @@ if (isEntry) {
     );
   }
   const dims = only ? [...only] : REQUIRED_DIMENSIONS;
-  const proven = new Set(results.filter((r) => r.status === 'passed').map((r) => r.gate.dimension));
   console.log(
-    `\ndimensions proven by a host-runnable gate: ${dims.filter((d) => proven.has(d)).length}/${dims.length}`,
+    `\ndimensions exercised by a host-runnable gate that PASSED: ${dims.filter((d) => proven.includes(d)).length}/${dims.length}`,
   );
-  if (indeterminate.length > 0) {
-    console.log(`INDETERMINATE dimensions (release-blocking): ${indeterminate.join(', ')}`);
+  if (deferredDimensions.length > 0) {
+    console.log(
+      `INDETERMINATE (full-fidelity gate deferred, DID NOT run — release-blocking): ${deferredDimensions.join(', ')}`,
+    );
   } else {
-    console.log('no indeterminate dimensions — every required dimension proven on this host.');
+    console.log('no deferred gates — every declared gate ran on this host.');
   }
-  console.log(ok ? '\nRELEASE GATE: PASS' : '\nRELEASE GATE: FAIL');
-  process.exit(ok ? 0 : 1);
+  const banner =
+    verdict === 'PASS'
+      ? '\nRELEASE GATE: PASS — every gate ran and passed.'
+      : verdict === 'FAIL'
+        ? '\nRELEASE GATE: FAIL — a gate that ran exited non-zero.'
+        : '\nRELEASE GATE: HELD — release BLOCKED: full-fidelity infra/browser gates did not run and their outcome is indeterminate. Re-run in CI with TC_HAS_INFRA=1 TC_HAS_BROWSER=1 to reach PASS.';
+  console.log(banner);
+  // PASS exits 0; FAIL and HELD both exit non-zero — the gate never green-lights a release whose
+  // full-fidelity verification has not been performed. HELD uses a distinct code (3) so CI can tell
+  // "indeterminate, needs infra" apart from "something actually failed" (1).
+  process.exit(verdict === 'PASS' ? 0 : verdict === 'FAIL' ? 1 : 3);
 }
