@@ -1,0 +1,175 @@
+{
+  "kind": "release-approval",
+  "feature": "001-governance-control-plane",
+  "phase": "Phase 9 — Governance Assurance and Release Readiness",
+  "generatedAt": "2026-08-03T00:00:00.000Z",
+  "decision": "approved",
+  "reviews": [
+    {
+      "discipline": "accessibility",
+      "reviewerRole": "Accessibility Reviewer",
+      "decision": "approve",
+      "evidence": [
+        "tests/accessibility/full-suite.spec.ts"
+      ],
+      "conditions": [],
+      "statement": "WCAG 2.2 AA verified across AR-001..AR-008 and SC-014 via the browserless full-suite; every positive assertion carries a red witness so the suite is non-vacuous."
+    },
+    {
+      "discipline": "compliance",
+      "reviewerRole": "Compliance Reviewer",
+      "decision": "approve_with_conditions",
+      "evidence": [
+        "tests/fixtures/audit-readiness/iso-42001-evidence-package.json",
+        "tests/fixtures/audit-readiness/iso-42005-impact-assessment.json",
+        "tests/fixtures/audit-readiness/iso-42006-audit-readiness.json",
+        "tests/fixtures/audit-readiness/validate.mjs"
+      ],
+      "conditions": [
+        "Finding F-ISO-1: clause identifiers to be re-confirmed against the exact published standard editions before any external assessment (owner: Compliance Reviewer)."
+      ],
+      "statement": "ISO/IEC 42001/42005/42006 audit-readiness packages map shipped controls to clause identifiers with paraphrased obligations; no licensed text is reproduced and no certification is claimed."
+    },
+    {
+      "discipline": "evidence",
+      "reviewerRole": "Evidence Administrator",
+      "decision": "approve",
+      "evidence": [
+        "tests/evidence/verify-manifests.ts",
+        "artifacts/validation/full-quickstart/manifest.json",
+        "evidence/manifest.json",
+        "packages/evidence/src/retention.ts"
+      ],
+      "conditions": [],
+      "statement": "Validation manifests verify (schema HMAC, requirement coverage, checkpoint signature, evidence-digest binding); the aggregate quickstart run is signed; the governed evidence inventory is tamper-evident and self-consistent."
+    },
+    {
+      "discipline": "governance",
+      "reviewerRole": "Governance Officer",
+      "decision": "approve",
+      "evidence": [
+        "specs/001-governance-control-plane/checklists/release-review.md",
+        "specs/001-governance-control-plane/traceability.md",
+        "tests/usability/primary-journeys.md"
+      ],
+      "conditions": [],
+      "statement": "Every requirements-quality checklist is dispositioned with owners and independent reviewers; requirement→task→test→evidence traceability is complete; primary role journeys complete unaided."
+    },
+    {
+      "discipline": "operations",
+      "reviewerRole": "Operations Reviewer",
+      "decision": "approve_with_conditions",
+      "evidence": [
+        "docs/runbooks/operations.md",
+        "deploy/kubernetes/recovery/runbook.md",
+        "tests/resilience/chaos.test.ts",
+        "tests/recovery/canonical-restore.test.ts"
+      ],
+      "conditions": [
+        "Finding F-ECO-1: per-source numeric freshness/lag alert thresholds to be tuned at first adapter activation (owner: Operations Reviewer)."
+      ],
+      "statement": "Operations and disaster-recovery runbooks cover triage, dead-letters, reconciliation, audit freeze, and a four-hour RTO with zero committed loss; chaos suite proves safe degradation."
+    },
+    {
+      "discipline": "security",
+      "reviewerRole": "Security Reviewer",
+      "decision": "approve",
+      "evidence": [
+        "docs/security/threat-model.md",
+        "tests/e2e/audit-tamper.spec.ts",
+        "scripts/supply-chain-evidence.ts",
+        "tests/security"
+      ],
+      "conditions": [],
+      "statement": "STRIDE threat model with residual-risk register; tamper detection is fail-closed; tenant isolation enforced; supply-chain SBOM/licenses/vulnerabilities are clean with narrow, owned exceptions."
+    }
+  ],
+  "evidenceChecks": [
+    {
+      "pointer": "artifacts/validation/full-quickstart/manifest.json",
+      "exists": true
+    },
+    {
+      "pointer": "deploy/kubernetes/recovery/runbook.md",
+      "exists": true
+    },
+    {
+      "pointer": "docs/runbooks/operations.md",
+      "exists": true
+    },
+    {
+      "pointer": "docs/security/threat-model.md",
+      "exists": true
+    },
+    {
+      "pointer": "evidence/manifest.json",
+      "exists": true
+    },
+    {
+      "pointer": "packages/evidence/src/retention.ts",
+      "exists": true
+    },
+    {
+      "pointer": "scripts/supply-chain-evidence.ts",
+      "exists": true
+    },
+    {
+      "pointer": "specs/001-governance-control-plane/checklists/release-review.md",
+      "exists": true
+    },
+    {
+      "pointer": "specs/001-governance-control-plane/traceability.md",
+      "exists": true
+    },
+    {
+      "pointer": "tests/accessibility/full-suite.spec.ts",
+      "exists": true
+    },
+    {
+      "pointer": "tests/e2e/audit-tamper.spec.ts",
+      "exists": true
+    },
+    {
+      "pointer": "tests/evidence/verify-manifests.ts",
+      "exists": true
+    },
+    {
+      "pointer": "tests/fixtures/audit-readiness/iso-42001-evidence-package.json",
+      "exists": true
+    },
+    {
+      "pointer": "tests/fixtures/audit-readiness/iso-42005-impact-assessment.json",
+      "exists": true
+    },
+    {
+      "pointer": "tests/fixtures/audit-readiness/iso-42006-audit-readiness.json",
+      "exists": true
+    },
+    {
+      "pointer": "tests/fixtures/audit-readiness/validate.mjs",
+      "exists": true
+    },
+    {
+      "pointer": "tests/recovery/canonical-restore.test.ts",
+      "exists": true
+    },
+    {
+      "pointer": "tests/resilience/chaos.test.ts",
+      "exists": true
+    },
+    {
+      "pointer": "tests/security",
+      "exists": true
+    },
+    {
+      "pointer": "tests/usability/primary-journeys.md",
+      "exists": true
+    }
+  ],
+  "separationOfDuties": {
+    "distinctReviewerRoles": 6,
+    "disciplines": 6
+  },
+  "bodyDigest": "6d268ebf6b558eea12d22004a5940284e4fb1f940f5a9235bd1c95ce1c6bb353",
+  "signature": "e50ffaf7043839b2ef798ea3f46714732cbfcdb933619849e8f34b19e9ba1b6c"
+}
