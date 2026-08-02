@@ -8,8 +8,12 @@
 // Scenarios seeded (each maps to an acceptance criterion the route must render):
 //   - a HEALTHY, fully-owned, fully-covered governed asset          (AC1 positive)
 //   - an ORPHANED, unowned, uncovered asset bound to a component gap (AC2 — stays visible)
-//   - two DISTINCT source records (kanban + agentctl) with differing
-//     access/health status for correlation drill-down                (AC3)
+//   - THREE DISTINCT source records (kanban + agentctl +
+//     workflows_orchestration), each on the SAME kanban correlation
+//     anchor, disagreeing on access/health status and each owning a
+//     distinct authoritative field — the correlation drill-down subjects.
+//     The kanban source `depends_on` BOTH of the other two (two declared
+//     edges, never inferred)                                          (AC3)
 //   - a STALE source whose last-known time is old → reportedHealth
 //     withheld, evidence 'stale', page freshness downgraded          (AC4 — no inference)
 //   - a freshly DISCOVERED unknown-class source (metadata-only)       (AC5)
