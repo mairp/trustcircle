@@ -16,6 +16,25 @@
 //   - an UNSUPPORTED/INACCESSIBLE, unowned, EXCLUDED source carrying
 //     governed-source gap(s) with a review/expiry                     (AC6 — visible governed gap)
 //
+// Phase 84 — the PINNED SEVEN source-state taxonomy (see `SourceState` /
+// `SEVEN_SOURCE_STATES` below). The fixture seeds a source in each of these SEVEN states, and
+// every state is witnessed through a durable read path (registry projection, latest source
+// contract, or the reconciler's append-only lineage delta) — never a mutation echo:
+//   1. supported     — kanban source's latest contract  → supportLevel='supported'
+//                      (line ~245; SourceRegistry.latestContract(kanbanSourceId).supportLevel)
+//   2. metadata-only — discovered unknown source catalogued from metadata only, no content
+//                      ingested (line ~325; catalog() onboardingState='discovered', no observedState)
+//   3. unsupported   — excluded vendor-x source's latest contract → supportLevel='unsupported'
+//                      (line ~354; SourceRegistry.latestContract(excludedSourceId).supportLevel)
+//   4. unowned       — discovered-unknown + excluded sources have no ownerPrincipalId
+//                      (lines ~325/~339; catalog() entry ownerPrincipalId === undefined)
+//   5. unreachable   — stale warehouse source's accessState='unreachable'
+//                      (line ~311; catalog() entry accessState)
+//   6. renamed       — a 1→1 re-key of one content fingerprint across two reconcile cycles
+//                      (seedRenamedReconciliation, line ~422; SourceReconciler.deltasOfClass('moved'))
+//   7. unknown       — discovered source's class never asserted → UNKNOWN_SOURCE_CLASS sentinel
+//                      (line ~327; catalog() entry sourceClass === UNKNOWN_SOURCE_CLASS)
+//
 // Nothing here reads the wall clock or performs I/O; ids come from a fixed monotonic factory.
 
 import {
