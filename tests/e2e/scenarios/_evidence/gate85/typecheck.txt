@@ -1,9 +1,9 @@
-### npm run typecheck (tsc --noEmit) — 2026-08-02T05:04:47Z
+# typecheck green-gate — Command: npm run typecheck (tsc --build --verbose)
 
 > trustcircle@0.1.0 typecheck
 > tsc --build --verbose
 
-9:04:47 AM - Projects in this build: 
+9:14:00 AM - Projects in this build: 
     * packages/contracts/tsconfig.json
     * packages/domain/tsconfig.json
     * packages/adapter-sdk/tsconfig.json
@@ -21,34 +21,34 @@
     * packages/evidence/tsconfig.json
     * tsconfig.json
 
-9:04:48 AM - Project 'packages/contracts/tsconfig.json' is up to date because newest input 'packages/contracts/src/generated/adapter-manifest.ts' is older than output '.tsbuild/packages/contracts/.tsbuildinfo'
+9:14:00 AM - Project 'packages/contracts/tsconfig.json' is up to date because newest input 'packages/contracts/src/generated/adapter-manifest.ts' is older than output '.tsbuild/packages/contracts/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/domain/tsconfig.json' is up to date because newest input 'packages/domain/src/index.ts' is older than output '.tsbuild/packages/domain/.tsbuildinfo'
+9:14:00 AM - Project 'packages/domain/tsconfig.json' is up to date because newest input 'packages/domain/src/index.ts' is older than output '.tsbuild/packages/domain/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/adapter-sdk/tsconfig.json' is up to date because newest input 'packages/adapter-sdk/src/index.ts' is older than output '.tsbuild/packages/adapter-sdk/.tsbuildinfo'
+9:14:00 AM - Project 'packages/adapter-sdk/tsconfig.json' is up to date because newest input 'packages/adapter-sdk/src/index.ts' is older than output '.tsbuild/packages/adapter-sdk/.tsbuildinfo'
 
-9:04:48 AM - Project 'adapters/wiggum/tsconfig.json' is up to date because newest input 'adapters/wiggum/src/snapshot.ts' is older than output '.tsbuild/adapters/wiggum/.tsbuildinfo'
+9:14:00 AM - Project 'adapters/wiggum/tsconfig.json' is up to date because newest input 'adapters/wiggum/src/snapshot.ts' is older than output '.tsbuild/adapters/wiggum/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/application/tsconfig.json' is up to date because newest input 'packages/application/src/index.ts' is older than output '.tsbuild/packages/application/.tsbuildinfo'
+9:14:00 AM - Project 'packages/application/tsconfig.json' is up to date because newest input 'packages/application/src/index.ts' is older than output '.tsbuild/packages/application/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/authz/tsconfig.json' is up to date because newest input 'packages/authz/src/separation-of-duties.ts' is older than output '.tsbuild/packages/authz/.tsbuildinfo'
+9:14:00 AM - Project 'packages/authz/tsconfig.json' is up to date because newest input 'packages/authz/src/separation-of-duties.ts' is older than output '.tsbuild/packages/authz/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/policy/tsconfig.json' is up to date because newest input 'packages/policy/src/pdp.ts' is older than output '.tsbuild/packages/policy/.tsbuildinfo'
+9:14:00 AM - Project 'packages/policy/tsconfig.json' is up to date because newest input 'packages/policy/src/pdp.ts' is older than output '.tsbuild/packages/policy/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/observability/tsconfig.json' is up to date because newest input 'packages/observability/src/instrumentation.ts' is older than output '.tsbuild/packages/observability/.tsbuildinfo'
+9:14:00 AM - Project 'packages/observability/tsconfig.json' is up to date because newest input 'packages/observability/src/instrumentation.ts' is older than output '.tsbuild/packages/observability/.tsbuildinfo'
 
-9:04:48 AM - Project 'apps/api/tsconfig.json' is up to date because newest input 'apps/api/src/routes/events.ts' is older than output '.tsbuild/apps/api/.tsbuildinfo'
+9:14:00 AM - Project 'apps/api/tsconfig.json' is up to date because newest input 'apps/api/src/routes/events.ts' is older than output '.tsbuild/apps/api/.tsbuildinfo'
 
-9:04:48 AM - Project 'apps/discovery-agent/tsconfig.json' is up to date because newest input 'apps/discovery-agent/src/discovery-runner.ts' is older than output '.tsbuild/apps/discovery-agent/.tsbuildinfo'
+9:14:00 AM - Project 'apps/discovery-agent/tsconfig.json' is up to date because newest input 'apps/discovery-agent/src/discovery-runner.ts' is older than output '.tsbuild/apps/discovery-agent/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/projections/tsconfig.json' is up to date because newest input 'packages/projections/src/current-state-queries.ts' is older than output '.tsbuild/packages/projections/.tsbuildinfo'
+9:14:00 AM - Project 'packages/projections/tsconfig.json' is up to date because newest input 'packages/projections/src/current-state-queries.ts' is older than output '.tsbuild/packages/projections/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/persistence/tsconfig.json' is up to date because newest input 'packages/persistence/src/unit-of-work.ts' is older than output '.tsbuild/packages/persistence/.tsbuildinfo'
+9:14:00 AM - Project 'packages/persistence/tsconfig.json' is up to date because newest input 'packages/persistence/src/unit-of-work.ts' is older than output '.tsbuild/packages/persistence/.tsbuildinfo'
 
-9:04:48 AM - Project 'apps/projector/tsconfig.json' is up to date because newest input 'apps/projector/src/main.ts' is older than output '.tsbuild/apps/projector/.tsbuildinfo'
+9:14:00 AM - Project 'apps/projector/tsconfig.json' is up to date because newest input 'apps/projector/src/main.ts' is older than output '.tsbuild/apps/projector/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/audit-ledger/tsconfig.json' is up to date because newest input 'packages/audit-ledger/src/hash-chain.ts' is older than output '.tsbuild/packages/audit-ledger/.tsbuildinfo'
+9:14:00 AM - Project 'packages/audit-ledger/tsconfig.json' is up to date because newest input 'packages/audit-ledger/src/hash-chain.ts' is older than output '.tsbuild/packages/audit-ledger/.tsbuildinfo'
 
-9:04:48 AM - Project 'packages/evidence/tsconfig.json' is up to date because newest input 'packages/evidence/src/evidence-service.ts' is older than output '.tsbuild/packages/evidence/.tsbuildinfo'
+9:14:00 AM - Project 'packages/evidence/tsconfig.json' is up to date because newest input 'packages/evidence/src/evidence-service.ts' is older than output '.tsbuild/packages/evidence/.tsbuildinfo'
 
-typecheck exit=0
+typecheck exit code: 0

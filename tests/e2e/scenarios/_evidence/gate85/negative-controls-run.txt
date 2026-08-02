@@ -1,4 +1,3 @@
-### node emit-and-negative-controls.mjs — 2026-08-02T05:03:01Z
 Gate 85 — determinism + negative-control witness (independent oracle)
 
 determinism: digestA=54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd
@@ -20,4 +19,3 @@ negative controls (each MUST be rejected -> verify.ok=false):
 OVERALL: PASS
 
 manifest-sample.json written: verify.ok=true, digest=54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd, lines=6, gaps=3, successCriteria=5
-driver exit=0

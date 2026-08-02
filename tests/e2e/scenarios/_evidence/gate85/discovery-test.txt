@@ -1,4 +1,3 @@
-### npm run test:discovery — 2026-08-02T05:03:10Z
 
 > trustcircle@0.1.0 test:discovery
 > node --experimental-strip-types --test "tests/discovery/**/*.test.mjs"
@@ -7,265 +6,265 @@ TAP version 13
 # Subtest: A1 bootstrap parses good config, holds ONLY granted scopes, produces an unstarted agent (positive)
 ok 1 - A1 bootstrap parses good config, holds ONLY granted scopes, produces an unstarted agent (positive)
   ---
-  duration_ms: 4.849288
+  duration_ms: 12.632033
   type: 'test'
   ...
 # Subtest: A2 bootstrap REFUSES bad config: throws BootstrapError, discloses only variable:code, and yields NO agent (negative → fail-closed)
 ok 2 - A2 bootstrap REFUSES bad config: throws BootstrapError, discloses only variable:code, and yields NO agent (negative → fail-closed)
   ---
-  duration_ms: 1.086161
+  duration_ms: 1.311342
   type: 'test'
   ...
 # Subtest: A3 bootstrap validates budget bounds eagerly (non-positive bound is a bootstrap failure, not a silent runtime no-limit)
 ok 3 - A3 bootstrap validates budget bounds eagerly (non-positive bound is a bootstrap failure, not a silent runtime no-limit)
   ---
-  duration_ms: 0.863255
+  duration_ms: 0.882921
   type: 'test'
   ...
 # Subtest: B1 start() acquires the durable lease; the durable row and status agree that ownership is held and healthy (positive)
 ok 4 - B1 start() acquires the durable lease; the durable row and status agree that ownership is held and healthy (positive)
   ---
-  duration_ms: 2.148717
+  duration_ms: 13.201416
   type: 'test'
   ...
 # Subtest: B2 a second holder cannot steal a live lease; the durable row still names the first holder (negative)
 ok 5 - B2 a second holder cannot steal a live lease; the durable row still names the first holder (negative)
   ---
-  duration_ms: 1.567041
+  duration_ms: 1.01601
   type: 'test'
   ...
 # Subtest: B3 assertLive throws LeaseLostError once the lease expires; health flips to false (fail-closed)
 ok 6 - B3 assertLive throws LeaseLostError once the lease expires; health flips to false (fail-closed)
   ---
-  duration_ms: 1.718303
+  duration_ms: 1.345746
   type: 'test'
   ...
 # Subtest: C1 resolveScanAuthorization denies out-of-scope targets WITHOUT consulting the authorizer (least privilege first)
 ok 7 - C1 resolveScanAuthorization denies out-of-scope targets WITHOUT consulting the authorizer (least privilege first)
   ---
-  duration_ms: 1.215984
+  duration_ms: 13.564205
   type: 'test'
   ...
 # Subtest: C2 a throwing authorizer maps to indeterminate (fail-closed), never authorized
 ok 8 - C2 a throwing authorizer maps to indeterminate (fail-closed), never authorized
   ---
-  duration_ms: 1.156633
+  duration_ms: 0.640418
   type: 'test'
   ...
 # Subtest: C3 a sweep NEVER probes an unauthorized/out-of-scope target; each becomes a visible coverage gap in the reconciled catalog
 ok 9 - C3 a sweep NEVER probes an unauthorized/out-of-scope target; each becomes a visible coverage gap in the reconciled catalog
   ---
-  duration_ms: 5.605182
+  duration_ms: 18.552955
   type: 'test'
   ...
 # Subtest: C4 an empty grant set means the agent scans NOTHING — every target is an out_of_scope gap (least privilege at the extreme)
 ok 10 - C4 an empty grant set means the agent scans NOTHING — every target is an out_of_scope gap (least privilege at the extreme)
   ---
-  duration_ms: 1.395089
+  duration_ms: 1.721349
   type: 'test'
   ...
 # Subtest: D1 the RATE (targets) budget stops the sweep; remaining targets are recorded as budget gaps and status is fail-visible
 ok 11 - D1 the RATE (targets) budget stops the sweep; remaining targets are recorded as budget gaps and status is fail-visible
   ---
-  duration_ms: 2.249246
+  duration_ms: 2.376634
   type: 'test'
   ...
 # Subtest: D2 the TIME (duration) budget stops the sweep before the first target when already elapsed
 ok 12 - D2 the TIME (duration) budget stops the sweep before the first target when already elapsed
   ---
-  duration_ms: 1.116948
+  duration_ms: 0.918949
   type: 'test'
   ...
 # Subtest: D3 the BLAST-RADIUS budget caps NEW unregistered sources per sweep; registered sources still update, new-over-budget become blast gaps
 ok 13 - D3 the BLAST-RADIUS budget caps NEW unregistered sources per sweep; registered sources still update, new-over-budget become blast gaps
   ---
-  duration_ms: 1.303958
+  duration_ms: 9.342281
   type: 'test'
   ...
 # Subtest: D4 ScanBudget meter is deterministic and pure given the injected clock
 ok 14 - D4 ScanBudget meter is deterministic and pure given the injected clock
   ---
-  duration_ms: 0.243154
+  duration_ms: 0.2669
   type: 'test'
   ...
 # Subtest: E1 discovery observations are buffered then flushed to the durable sink; buffered count is visible in status
 ok 15 - E1 discovery observations are buffered then flushed to the durable sink; buffered count is visible in status
   ---
-  duration_ms: 1.103163
+  duration_ms: 0.929288
   type: 'test'
   ...
 # Subtest: E2 a failed flush RETAINS the records (nothing lost) and returns false — fail-visible, never silent drop
 ok 16 - E2 a failed flush RETAINS the records (nothing lost) and returns false — fail-visible, never silent drop
   ---
-  duration_ms: 0.310701
+  duration_ms: 0.309889
   type: 'test'
   ...
 # Subtest: E3 shutdown with an unflushable sink ends DEGRADED with reconcile as the safe next action (fail-visible terminal)
 ok 17 - E3 shutdown with an unflushable sink ends DEGRADED with reconcile as the safe next action (fail-visible terminal)
   ---
-  duration_ms: 1.590314
+  duration_ms: 1.392845
   type: 'test'
   ...
 # Subtest: F1 a throwing probe becomes a probe_failed coverage gap; the target is NOT recorded as a source
 ok 18 - F1 a throwing probe becomes a probe_failed coverage gap; the target is NOT recorded as a source
   ---
-  duration_ms: 1.065202
+  duration_ms: 1.023404
   type: 'test'
   ...
 # Subtest: F2 a sweep that throws is captured, counted as a RETRY in the durable checkpoint, and re-attempted (failures + retries are fail-visible)
 ok 19 - F2 a sweep that throws is captured, counted as a RETRY in the durable checkpoint, and re-attempted (failures + retries are fail-visible)
   ---
-  duration_ms: 1.397393
+  duration_ms: 14.806779
   type: 'test'
   ...
 # Subtest: G1 losing the lease mid-run pauses at a safe checkpoint: state lost_lease, continuity paused, reconcile action (fail-closed)
 ok 20 - G1 losing the lease mid-run pauses at a safe checkpoint: state lost_lease, continuity paused, reconcile action (fail-closed)
   ---
-  duration_ms: 0.897889
+  duration_ms: 1.004939
   type: 'test'
   ...
 # Subtest: H1 re-observing the same target updates its catalog entry in place — reconciled inventory, no duplicates
 ok 21 - H1 re-observing the same target updates its catalog entry in place — reconciled inventory, no duplicates
   ---
-  duration_ms: 2.652998
+  duration_ms: 13.791179
   type: 'test'
   ...
 # Subtest: I1 status() exposes catalog+inventory+gaps+state+ownership+health+failures+retries+continuity+lease+bufferedEvidence+safeNextAction all at once
 ok 22 - I1 status() exposes catalog+inventory+gaps+state+ownership+health+failures+retries+continuity+lease+bufferedEvidence+safeNextAction all at once
   ---
-  duration_ms: 0.590184
+  duration_ms: 0.778385
   type: 'test'
   ...
 # Subtest: I2 vocabulary + terminal-state helpers are coherent (states/modes/actions/axes are the fail-visible surface)
 ok 23 - I2 vocabulary + terminal-state helpers are coherent (states/modes/actions/axes are the fail-visible surface)
   ---
-  duration_ms: 0.201628
+  duration_ms: 0.246942
   type: 'test'
   ...
 # Subtest: J1 an uncontested agent drains, flushes evidence, releases the lease, and stops clean; the durable lease row is cleared
 ok 24 - J1 an uncontested agent drains, flushes evidence, releases the lease, and stops clean; the durable lease row is cleared
   ---
-  duration_ms: 0.741346
+  duration_ms: 0.856822
   type: 'test'
   ...
 # Subtest: P1 composeTargetId / splitCompositeTargetId round-trip and reject non-composite ids
 ok 25 - P1 composeTargetId / splitCompositeTargetId round-trip and reject non-composite ids
   ---
-  duration_ms: 4.326611
+  duration_ms: 2.803452
   type: 'test'
   ...
 # Subtest: AC5 on-demand sweep catalogs unregistered sources with full attributes + metadata-only evidence
 ok 26 - AC5 on-demand sweep catalogs unregistered sources with full attributes + metadata-only evidence
   ---
-  duration_ms: 8.551836
+  duration_ms: 5.996442
   type: 'test'
   ...
 # Subtest: AC5 discovery evidence flushed to the durable sink is METADATA-ONLY (no content/secret rides along)
 ok 27 - AC5 discovery evidence flushed to the durable sink is METADATA-ONLY (no content/secret rides along)
   ---
-  duration_ms: 1.750353
+  duration_ms: 4.831175
   type: 'test'
   ...
 # Subtest: AC1/AC3 unified view: each item once + cross-source drill-down + no duplicate on re-observation
 ok 28 - AC1/AC3 unified view: each item once + cross-source drill-down + no duplicate on re-observation
   ---
-  duration_ms: 9.356897
+  duration_ms: 7.90937
   type: 'test'
   ...
 # Subtest: AC2/AC6 gaps remain visible with reason: out_of_scope + probe_failed both stay as governed gap rows
 ok 29 - AC2/AC6 gaps remain visible with reason: out_of_scope + probe_failed both stay as governed gap rows
   ---
-  duration_ms: 2.840202
+  duration_ms: 2.469468
   type: 'test'
   ...
 # Subtest: AC4 unavailable source is marked stale with last-known time + confidence (health not inferred from stale data)
 ok 30 - AC4 unavailable source is marked stale with last-known time + confidence (health not inferred from stale data)
   ---
-  duration_ms: 1.820003
+  duration_ms: 2.059161
   type: 'test'
   ...
 # Subtest: BUDGET blast-radius bounds new-source onboarding; excess is a visible budget gap (fail-visible)
 ok 31 - BUDGET blast-radius bounds new-source onboarding; excess is a visible budget gap (fail-visible)
   ---
-  duration_ms: 2.067536
+  duration_ms: 2.087754
   type: 'test'
   ...
 # Subtest: SCHEDULE periodic loop runs a recurring cadence (initial then periodic) until stop
 ok 32 - SCHEDULE periodic loop runs a recurring cadence (initial then periodic) until stop
   ---
-  duration_ms: 2.064811
+  duration_ms: 2.615772
   type: 'test'
   ...
 # Subtest: SCHEDULE exactly-one-in-flight: concurrent on-demand triggers coalesce into a single sweep
 ok 33 - SCHEDULE exactly-one-in-flight: concurrent on-demand triggers coalesce into a single sweep
   ---
-  duration_ms: 1.326401
+  duration_ms: 1.187831
   type: 'test'
   ...
 # Subtest: FAIL-VISIBLE a throwing sweep is recorded with an error and the schedule survives
 ok 34 - FAIL-VISIBLE a throwing sweep is recorded with an error and the schedule survives
   ---
-  duration_ms: 1.907477
+  duration_ms: 6.877337
   type: 'test'
   ...
 # Subtest: VOCAB exported trigger/state unions are stable and used by the runner
 ok 35 - VOCAB exported trigger/state unions are stable and used by the runner
   ---
-  duration_ms: 0.52417
+  duration_ms: 0.507669
   type: 'test'
   ...
 # Subtest: AS-version: manifest binds the pinned bundle / content hash / work item / plan version
 ok 36 - AS-version: manifest binds the pinned bundle / content hash / work item / plan version
   ---
-  duration_ms: 3.221664
+  duration_ms: 4.856522
   type: 'test'
   ...
 # Subtest: AS-signature: the manifest is signed (sha256 over canonical form) and tamper-evident
 ok 37 - AS-signature: the manifest is signed (sha256 over canonical form) and tamper-evident
   ---
-  duration_ms: 12.467363
+  duration_ms: 9.146754
   type: 'test'
   ...
 # Subtest: AS-line-digest: each acceptance line carries its own verifiable digest
 ok 38 - AS-line-digest: each acceptance line carries its own verifiable digest
   ---
-  duration_ms: 1.285955
+  duration_ms: 1.420226
   type: 'test'
   ...
 # Subtest: AS-refs: every US1-AS{n} line references the requirement, assertion, and audit obligation
 ok 39 - AS-refs: every US1-AS{n} line references the requirement, assertion, and audit obligation
   ---
-  duration_ms: 1.260247
+  duration_ms: 1.425415
   type: 'test'
   ...
 # Subtest: AS-evidence: each acceptance line has independent-read-path evidence with concrete witnesses
 ok 40 - AS-evidence: each acceptance line has independent-read-path evidence with concrete witnesses
   ---
-  duration_ms: 1.393656
+  duration_ms: 1.578542
   type: 'test'
   ...
 # Subtest: AS-gaps: unmanaged/unreachable/excluded remain visible gaps with reason + owner action
 ok 41 - AS-gaps: unmanaged/unreachable/excluded remain visible gaps with reason + owner action
   ---
-  duration_ms: 2.279142
+  duration_ms: 11.509903
   type: 'test'
   ...
 # Subtest: SC: the five Scenario-1 success criteria are present and met from observed facts
 ok 42 - SC: the five Scenario-1 success criteria are present and met from observed facts
   ---
-  duration_ms: 12.108935
+  duration_ms: 1.285945
   type: 'test'
   ...
 # Subtest: SC-019 witness: the out-of-scope target is never probed and evidence is metadata-only
 ok 43 - SC-019 witness: the out-of-scope target is never probed and evidence is metadata-only
   ---
-  duration_ms: 18.01104
+  duration_ms: 4.066835
   type: 'test'
   ...
 # Subtest: AS1 witness: reconciliation keeps each item exactly once across two sweeps
 ok 44 - AS1 witness: reconciliation keeps each item exactly once across two sweeps
   ---
-  duration_ms: 14.351987
+  duration_ms: 9.790528
   type: 'test'
   ...
 1..44
@@ -276,5 +275,4 @@ ok 44 - AS1 witness: reconciliation keeps each item exactly once across two swee
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 767.776113
-test:discovery exit=0
+# duration_ms 718.845588

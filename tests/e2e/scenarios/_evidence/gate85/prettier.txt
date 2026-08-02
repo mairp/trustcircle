@@ -1,8 +1,5 @@
-### npm run format (prettier --check .) — 2026-08-02T05:04:47Z
-
-> trustcircle@0.1.0 format
-> prettier --check .
-
+# prettier --check green-gate for the 3 Phase-85 source files
+# Command: npx prettier --check tests/e2e/scenarios/discovery-open-boundary.ts tests/discovery/scenario1-result-manifest.test.mjs tests/e2e/discovery-open-boundary.manifest.spec.ts
 Checking formatting...
 All matched files use Prettier code style!
-format exit=0
+prettier exit code: 0
