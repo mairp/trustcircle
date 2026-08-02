@@ -4,8 +4,9 @@
 // the source catalog with discovery evidence, a type-or-unknown classification, its location,
 // access status, sensitivity, ownership status, and onboarding state.
 //
-// Durable read path: SourceRegistry.catalogView() → the CatalogEntryView for the freshly discovered
-// unknown-class source. We assert ALL SEVEN catalog facets are present TOGETHER on that one entry.
+// Durable read path: SourceRegistry.catalog() → the CatalogEntry list; we take the entry for the
+// freshly discovered unknown-class source and assert ALL SEVEN catalog facets are present TOGETHER
+// on that one entry.
 import { describe, it, expect } from 'vitest';
 import { UNKNOWN_SOURCE_CLASS } from '@trustcircle/domain';
 import { seedTenantProjection, DISCOVERY_EVIDENCE } from '../fixtures/inventory.ts';
