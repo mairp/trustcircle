@@ -11,3 +11,10 @@ export * from './outcomes.ts';
 export * from './component-profile.ts';
 export * from './inventory.ts';
 export * from './correlation.ts';
+
+// Explicit named re-exports of the seven-state inventory source symbols, so the
+// governed-source support taxonomy (`SupportLevel`) and the unknown-source-class
+// sentinel (`UNKNOWN_SOURCE_CLASS`) are resolvable by name directly on the package
+// boundary, not only via the wildcard `export *` above.
+export { UNKNOWN_SOURCE_CLASS } from './inventory.ts';
+export type { SupportLevel } from './inventory.ts';

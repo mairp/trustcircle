@@ -17,6 +17,11 @@ export * from './concurrency.ts';
 // compatible — a single stable surface for the governed-source registry (AC1–AC6).
 export * from './source-registry.ts';
 
+// Explicit named re-export of the governed-source registry class, so the
+// `latestContract(sourceId).supportLevel` read path (AC1 healthy-render / AC6
+// governed-gap support classification) is resolvable by name on the package boundary.
+export { SourceRegistry } from './source-registry.ts';
+
 // Re-exports the discovery ports (Phase 66): the SCAN / CANDIDATE / METADATA / ACCESS-LIMIT /
 // SCAN-GAP hexagonal boundary plus an in-memory reference implementation composing the domain
 // inventory model. Additive, backward-compatible — the stable surface for boundary discovery,
@@ -42,6 +47,11 @@ export * from './inventory-service.ts';
 // inferring current health from stale data), and cataloguing unregistered sources. Additive,
 // backward-compatible (AC1–AC6).
 export * from './inventory-reconciliation.ts';
+
+// Explicit named re-export of the reconciliation service, so the
+// `deltasOfClass('moved')` lineage read path (the seventh, `renamed`, seeded source
+// state) is resolvable by name on the package boundary.
+export { SourceReconciler } from './inventory-reconciliation.ts';
 
 // Re-exports the source-stewardship command service (Phase 72 / VO-fa865d78): the governed steward
 // commands over a discovered source — approve onboarding, assign ownership, declare authoritative
