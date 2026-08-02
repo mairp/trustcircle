@@ -1,0 +1,65 @@
+### TC_NO_WEBSERVER=1 npx playwright test --project=discovery tests/e2e/discovery-open-boundary.spec.ts — 2026-08-02T05:04:08Z
+### PRE-EXISTING Phase-58 journey spec (NOT authored/modified by Phase 85). git diff vs HEAD:
+### (empty diff above == untouched by Phase 85)
+
+
+Running 8 tests using 8 workers
+
+  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:989:3 › AC6 unsupported/inaccessible/sensitive/unowned/excluded discovered source stays a governed gap › each governed-source-gap disposition is a distinct, reasoned, visible catalog gap (187ms)
+  ✓  3 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:645:3 › AC2 discovered-but-unmanaged/unreachable/excluded remain visible gaps › a previously-recorded source that DISAPPEARS from the next sweep does not vanish from the catalog (48ms)
+  ✘  2 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:694:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation (102ms)
+  ✓  4 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:777:3 › AC4 stale/unavailable source marked last-known; health not inferred from stale data › a source that becomes unreachable on refresh flips to a visible gap and is not read as healthy (74ms)
+  ✓  6 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:538:3 › AC2 discovered-but-unmanaged/unreachable/excluded remain visible gaps › unreachable + out-of-scope(excluded) + denied(unmanaged) targets all persist as reasoned gaps, not healthy/absent (105ms)
+  ✓  5 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:362:3 › AC1 healthy sources appear once with authoritative fields › a healthy multi-source sweep records each item exactly once, with identity/type/state/observation time (257ms)
+  ✘  7 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:852:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence (152ms)
+  ✓  8 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:482:3 › AC1 healthy sources appear once with authoritative fields › re-observing the same healthy sources on a second sweep does NOT duplicate rows (reconciliation) (80ms)
+
+
+  1) [discovery] › tests/e2e/discovery-open-boundary.spec.ts:694:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 5
+    + Received  + 1
+
+    - Array [
+    -   "agentctl:run-WORK-100",
+    -   "kanban:card-WORK-100",
+    -   "wf:pipeline-WORK-100",
+    - ]
+    + Array []
+
+      737 |       .filter((r) => r.kind === 'source_discovered')
+      738 |       .filter((r) => workIdOf(r) === 'WORK-100');
+    > 739 |     expect(byWork.map((r) => r.targetId).sort()).toEqual([
+          |                                                  ^
+      740 |       'agentctl:run-WORK-100',
+      741 |       'kanban:card-WORK-100',
+      742 |       'wf:pipeline-WORK-100',
+        at <repo-root>/tests/e2e/discovery-open-boundary.spec.ts:739:50
+
+    Error Context: test-results/discovery-open-boundary-AC-ed09a-reconstructable-correlation-discovery/error-context.md
+
+  2) [discovery] › tests/e2e/discovery-open-boundary.spec.ts:852:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    Expected: {"banner": "kanban-api/1.4", "foundBy": "port-scan"}
+    Received: undefined
+
+      887 |     expect(payload?.registered).toBe(false); // was unregistered when discovered
+      888 |     expect(payload?.location).toBe('host://kanban/new');
+    > 889 |     expect(payload?.evidence).toEqual({ banner: 'kanban-api/1.4', foundBy: 'port-scan' });
+          |                               ^
+      890 |     expect(typeof rec?.correlationId).toBe('string');
+      891 |     expect((rec?.correlationId ?? '').length).toBeGreaterThan(0);
+      892 |
+        at <repo-root>/tests/e2e/discovery-open-boundary.spec.ts:889:31
+
+    Error Context: test-results/discovery-open-boundary-AC-64467-cation-and-durable-evidence-discovery/error-context.md
+
+  2 failed
+    [discovery] › tests/e2e/discovery-open-boundary.spec.ts:694:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation 
+    [discovery] › tests/e2e/discovery-open-boundary.spec.ts:852:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence 
+  6 passed (3.8s)
+playwright exit=1

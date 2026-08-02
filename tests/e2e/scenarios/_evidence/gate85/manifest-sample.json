@@ -1,0 +1,283 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "US1",
+  "scenarioTitle": "See the Current Governance State",
+  "emittedBy": "tests/e2e/scenarios/discovery-open-boundary.ts",
+  "version": {
+    "bundleId": "36GCYGDJ15PTYP60F91QWRAY2M",
+    "contentHash": "af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b",
+    "bundleVersion": 2,
+    "workItemId": "73TQ0YZ16SPVKR0PNRDJTH8C43",
+    "requirementRef": "RKMR5H2VVV7B7KQAEEY2D8CDXG",
+    "verificationPlanId": "verification-90012e69317ff71a927b",
+    "verificationPlanVersion": 1
+  },
+  "successCriteria": [
+    {
+      "id": "SC-001",
+      "text": "100% of records from declared healthy inventory sources are represented or explicitly listed as unmatched, excluded, or failed-to-ingest; no discovered item disappears silently.",
+      "met": true,
+      "measure": "5/5 declared sources represented or listed as gaps"
+    },
+    {
+      "id": "SC-002",
+      "text": "At least 99% of observed source-state changes appear with provenance in the current-state view within 2 minutes while the source is healthy.",
+      "met": true,
+      "measure": "state changes re-observed after 120000ms (<=120000ms) with durable checkpoint"
+    },
+    {
+      "id": "SC-017",
+      "text": "Machine-wide discovery identifies 100% of seeded supported source instances and at least 95% of seeded previously unregistered source candidates within the declared, authorized boundary.",
+      "met": true,
+      "measure": "3/3 supported discovered; unregistered candidate discovered=true"
+    },
+    {
+      "id": "SC-018",
+      "text": "100% of discovered unsupported, inaccessible, sensitive, unowned, excluded, moved, or disappeared sources remain visible with current coverage state, reason, stewardship action, and history.",
+      "met": true,
+      "measure": "4/4 unsupported/inaccessible/excluded/disappeared sources remain visible"
+    },
+    {
+      "id": "SC-019",
+      "text": "In all least-privilege discovery tests, the platform catalogs available source metadata without reading protected content, secrets, or credentials beyond the discovery principal's current authority.",
+      "met": true,
+      "measure": "out-of-scope target never probed=true; all evidence metadata-only=true"
+    }
+  ],
+  "lines": [
+    {
+      "assertionRef": "US1-AS1",
+      "requirementRef": "RKMR5H2VVV7B7KQAEEY2D8CDXG",
+      "auditRef": {
+        "obligationRef": "VO-a990a9859f97d9ea0c27",
+        "verificationPlanId": "verification-90012e69317ff71a927b",
+        "safeNextAction": "none"
+      },
+      "assertionText": "Given healthy connected sources contain AI assets and governance records, When the officer opens the current-state view, Then each item appears once with its type, source identity, owner, lifecycle state, risk, control coverage, evidence state, health, last observation time, and unresolved issues.",
+      "evidence": [
+        {
+          "readPath": "source-catalog",
+          "detail": "each healthy registered source appears exactly once (uniqueness=true) with scope/onboarding/observedAt authoritative fields",
+          "witnessed": [
+            "kanban:board-42|scope=kanban|onboarding=registered|observedAt=1700000120000|gapReason=null",
+            "agentctl:agent-7|scope=agentctl|onboarding=registered|observedAt=1700000120000|gapReason=null",
+            "workflows_orchestration:wf-9|scope=workflows_orchestration|onboarding=registered|observedAt=1700000120000|gapReason=null"
+          ]
+        },
+        {
+          "readPath": "evidence-sink",
+          "detail": "durable discovery evidence recorded for each healthy source (evidence state)",
+          "witnessed": [
+            "kanban:board-42:source_discovered+source_discovered",
+            "agentctl:agent-7:source_discovered+source_discovered",
+            "workflows_orchestration:wf-9:source_discovered+source_discovered"
+          ]
+        }
+      ],
+      "gapRefs": [],
+      "lineDigest": "2d8b9cbdbb92513dc17374a55fee2bf3b135dceed9bab6cc7d88eed983014378"
+    },
+    {
+      "assertionRef": "US1-AS2",
+      "requirementRef": "RKMR5H2VVV7B7KQAEEY2D8CDXG",
+      "auditRef": {
+        "obligationRef": "VO-62c432815b37599ebe22",
+        "verificationPlanId": "verification-90012e69317ff71a927b",
+        "safeNextAction": "none"
+      },
+      "assertionText": "Given a component is discovered but unmanaged, unreachable, stale, orphaned, or explicitly excluded, When inventory is reconciled, Then it remains visible as a coverage gap with reason, age, impact, and required owner action rather than appearing healthy or disappearing.",
+      "evidence": [
+        {
+          "readPath": "source-catalog",
+          "detail": "discovered-but-unmanaged/unreachable/excluded persist as reasoned gaps (never healthy, never absent)",
+          "witnessed": [
+            "kanban:board-denied|gapReason=unauthorized|ownerAction=grant_or_approve_access|age=0ms",
+            "agentctl:agent-down|gapReason=probe_failed|ownerAction=restore_reachability|age=0ms",
+            "secretstore:vault-1|gapReason=out_of_scope|ownerAction=confirm_exclusion_or_extend_scope|age=0ms"
+          ]
+        }
+      ],
+      "gapRefs": [
+        {
+          "targetId": "agentctl:agent-down",
+          "gapReason": "probe_failed",
+          "ownerAction": "restore_reachability",
+          "lastObservedAt": 1700000120000,
+          "detail": "Error: connection refused"
+        },
+        {
+          "targetId": "kanban:board-denied",
+          "gapReason": "unauthorized",
+          "ownerAction": "grant_or_approve_access",
+          "lastObservedAt": 1700000120000,
+          "detail": "owner_has_not_approved_access"
+        },
+        {
+          "targetId": "secretstore:vault-1",
+          "gapReason": "out_of_scope",
+          "ownerAction": "confirm_exclusion_or_extend_scope",
+          "lastObservedAt": 1700000120000,
+          "detail": "out_of_scope"
+        }
+      ],
+      "lineDigest": "fd27012532f758ae877721e038b75cde1cba8f8374b1274db52c6b64060a14f5"
+    },
+    {
+      "assertionRef": "US1-AS3",
+      "requirementRef": "RKMR5H2VVV7B7KQAEEY2D8CDXG",
+      "auditRef": {
+        "obligationRef": "VO-9f597528a41f71ca46b5",
+        "verificationPlanId": "verification-90012e69317ff71a927b",
+        "safeNextAction": "none"
+      },
+      "assertionText": "Given related work exists across registered sources, including Kanban, agentctl, and workflows_orchestration, When the officer drills into an item, Then the view shows their distinct source records, correlation, status differences, dependencies, and authoritative fields.",
+      "evidence": [
+        {
+          "readPath": "source-catalog",
+          "detail": "three DISTINCT source records preserved across 3 systems (no collapse/merge of distinct sources)",
+          "witnessed": [
+            "kanban:board-42|scope=kanban|location=host://svc/kanban/board-42",
+            "agentctl:agent-7|scope=agentctl|location=host://svc/agentctl/agent-7",
+            "workflows_orchestration:wf-9|scope=workflows_orchestration|location=host://svc/wf/wf-9"
+          ]
+        },
+        {
+          "readPath": "evidence-sink",
+          "detail": "per-source discovery evidence keeps each record independently traceable (correlation preserves distinct records)",
+          "witnessed": [
+            "kanban:board-42:source_discovered+source_discovered",
+            "agentctl:agent-7:source_discovered+source_discovered",
+            "workflows_orchestration:wf-9:source_discovered+source_discovered"
+          ]
+        }
+      ],
+      "gapRefs": [],
+      "lineDigest": "90992e1d40052eb90212df56b6cbd38f5b6e41f13934c6f9d3162b2f26f2dc65"
+    },
+    {
+      "assertionRef": "US1-AS4",
+      "requirementRef": "RKMR5H2VVV7B7KQAEEY2D8CDXG",
+      "auditRef": {
+        "obligationRef": "VO-2f3b4fefeac7e96846a8",
+        "verificationPlanId": "verification-90012e69317ff71a927b",
+        "safeNextAction": "none"
+      },
+      "assertionText": "Given a source becomes stale or unavailable, When the view is refreshed, Then affected data is visibly marked with its last-known time and confidence, and current compliance or health is not inferred from stale data.",
+      "evidence": [
+        {
+          "readPath": "source-catalog",
+          "detail": "stale/disappeared source retains its last-known observation (last-known time=1700000000000); health not inferred from stale data",
+          "witnessed": [
+            "kanban:board-stale|lastKnownAt=1700000000000|ageAtRefresh=120000ms|onboarding=registered"
+          ]
+        },
+        {
+          "readPath": "checkpoint-store",
+          "detail": "durable checkpoint distinguishes the refreshed sweep clock from the stale source last-known time",
+          "witnessed": [
+            "latestCheckpointSweepClock=none",
+            "staleLastKnownAt=1700000000000"
+          ]
+        }
+      ],
+      "gapRefs": [],
+      "lineDigest": "8ed5d040e05a5fd59b289ada08c14f1671a8be6f7ecfe113e9e928960a4763dd"
+    },
+    {
+      "assertionRef": "US1-AS5",
+      "requirementRef": "RKMR5H2VVV7B7KQAEEY2D8CDXG",
+      "auditRef": {
+        "obligationRef": "VO-7e4075d359bbfb117256",
+        "verificationPlanId": "verification-90012e69317ff71a927b",
+        "safeNextAction": "none"
+      },
+      "assertionText": "Given an unregistered governance-relevant source appears within the declared computer boundary, When discovery runs, Then it is added to the source catalog with discovery evidence, type or unknown classification, location, access status, sensitivity, ownership status, and onboarding state.",
+      "evidence": [
+        {
+          "readPath": "source-catalog",
+          "detail": "previously-unregistered in-boundary source added to catalog with classification/location/onboarding/access state",
+          "witnessed": [
+            "unknown:svc-new|onboarding=discovered|location=host://svc/new/svc-new|classification(detail)=classification=unknown"
+          ]
+        },
+        {
+          "readPath": "evidence-sink",
+          "detail": "durable discovery-evidence record proves the source was discovered (not assumed)",
+          "witnessed": [
+            "unknown:svc-new:source_discovered+source_discovered"
+          ]
+        }
+      ],
+      "gapRefs": [],
+      "lineDigest": "909dbe352ae8358ee580cef3b521c38d619e965b3d1a8c73ddcbafd8c28bdc41"
+    },
+    {
+      "assertionRef": "US1-AS6",
+      "requirementRef": "RKMR5H2VVV7B7KQAEEY2D8CDXG",
+      "auditRef": {
+        "obligationRef": "VO-60db0834fdb5154845d0",
+        "verificationPlanId": "verification-90012e69317ff71a927b",
+        "safeNextAction": "none"
+      },
+      "assertionText": "Given a discovered source is unsupported, inaccessible, sensitive, unowned, or intentionally excluded, When coverage is assessed, Then it remains visible as a governed source gap with reason, impact, owner action, and review or expiry.",
+      "evidence": [
+        {
+          "readPath": "source-catalog",
+          "detail": "excluded (out-of-scope) + inaccessible (probe-failed) discovered sources remain governed gaps with reason + owner action + reviewability",
+          "witnessed": [
+            "secretstore:vault-1|gapReason=out_of_scope|ownerAction=confirm_exclusion_or_extend_scope|detail=out_of_scope",
+            "agentctl:agent-down|gapReason=probe_failed|ownerAction=restore_reachability|detail=Error: connection refused"
+          ]
+        }
+      ],
+      "gapRefs": [
+        {
+          "targetId": "agentctl:agent-down",
+          "gapReason": "probe_failed",
+          "ownerAction": "restore_reachability",
+          "lastObservedAt": 1700000120000,
+          "detail": "Error: connection refused"
+        },
+        {
+          "targetId": "secretstore:vault-1",
+          "gapReason": "out_of_scope",
+          "ownerAction": "confirm_exclusion_or_extend_scope",
+          "lastObservedAt": 1700000120000,
+          "detail": "out_of_scope"
+        }
+      ],
+      "lineDigest": "03af23ac76472d9c4762bb66424178901d2793705e325e241dbba6717eee53eb"
+    }
+  ],
+  "gapRegister": [
+    {
+      "targetId": "agentctl:agent-down",
+      "gapReason": "probe_failed",
+      "ownerAction": "restore_reachability",
+      "lastObservedAt": 1700000120000,
+      "detail": "Error: connection refused"
+    },
+    {
+      "targetId": "kanban:board-denied",
+      "gapReason": "unauthorized",
+      "ownerAction": "grant_or_approve_access",
+      "lastObservedAt": 1700000120000,
+      "detail": "owner_has_not_approved_access"
+    },
+    {
+      "targetId": "secretstore:vault-1",
+      "gapReason": "out_of_scope",
+      "ownerAction": "confirm_exclusion_or_extend_scope",
+      "lastObservedAt": 1700000120000,
+      "detail": "out_of_scope"
+    }
+  ],
+  "manifestDigest": "54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd",
+  "signature": {
+    "algorithm": "sha256",
+    "digest": "54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd",
+    "boundBundleId": "36GCYGDJ15PTYP60F91QWRAY2M",
+    "boundContentHash": "af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b"
+  }
+}

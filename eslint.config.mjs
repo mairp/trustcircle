@@ -49,6 +49,10 @@ const IGNORES = [
   '**/*.generated.ts',
   'playwright-report/**',
   'test-results/**',
+  // Gate evidence-capture scratch: disposable proof artifacts (run logs, emitted manifest
+  // samples, evidence drivers) written by the test harness. Mirrors .prettierignore so both
+  // tools agree these are not authored source. Kept tracked so gate snapshots can read them.
+  'tests/e2e/scenarios/_evidence/**',
 ];
 
 // ---------------------------------------------------------------------------------------

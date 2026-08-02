@@ -1,0 +1,11 @@
+### TC_NO_WEBSERVER=1 npx playwright test --project=discovery tests/e2e/discovery-open-boundary.manifest.spec.ts — 2026-08-02T05:03:46Z
+
+Running 4 tests using 4 workers
+
+  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:34:3 › Scenario 1 signed result manifest › emits a signed, pinned, tamper-evident manifest that verifies (95ms)
+  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:77:3 › Scenario 1 signed result manifest › gap references stay visible with reason + specific owner action (163ms)
+  ✓  3 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:95:3 › Scenario 1 signed result manifest › the five Scenario-1 success criteria are present and met (157ms)
+  ✓  4 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:56:3 › Scenario 1 signed result manifest › binds requirement / assertion / audit references for every US1-AS{n} (223ms)
+
+  4 passed (4.1s)
+playwright exit=0

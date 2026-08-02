@@ -1,0 +1,23 @@
+### node emit-and-negative-controls.mjs — 2026-08-02T05:03:01Z
+Gate 85 — determinism + negative-control witness (independent oracle)
+
+determinism: digestA=54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd
+determinism: digestB=54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd
+determinism: digestA==digestB -> PASS
+
+positive control (untouched manifest) verify.ok=true -> PASS
+
+negative controls (each MUST be rejected -> verify.ok=false):
+  1. tampered evidence witness   verify.ok=false rejected=true -> PASS
+     reasons: manifestDigest mismatch (recomputed e8b3b6f5aecb… != stored 54a9825755e6…); line US1-AS1 digest mismatch
+  2. mis-pinned bundle id        verify.ok=false rejected=true -> PASS
+     reasons: bundle id WRONGBUNDLEID000000000000000 != pinned 36GCYGDJ15PTYP60F91QWRAY2M; manifestDigest mismatch (recomputed 3acd90397885… != stored 54a9825755e6…)
+  3. dropped acceptance line     verify.ok=false rejected=true -> PASS
+     reasons: manifestDigest mismatch (recomputed 7ecf11b12751… != stored 54a9825755e6…); missing acceptance line US1-AS1
+  4. forced-unmet success crit   verify.ok=false rejected=true -> PASS
+     reasons: manifestDigest mismatch (recomputed ef0e00586d5c… != stored 54a9825755e6…); success criterion SC-001 not met: 5/5 declared sources represented or listed as gaps
+
+OVERALL: PASS
+
+manifest-sample.json written: verify.ok=true, digest=54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd, lines=6, gaps=3, successCriteria=5
+driver exit=0

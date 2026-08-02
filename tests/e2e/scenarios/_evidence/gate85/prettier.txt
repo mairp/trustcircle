@@ -1,0 +1,8 @@
+### npm run format (prettier --check .) — 2026-08-02T05:04:47Z
+
+> trustcircle@0.1.0 format
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+format exit=0
