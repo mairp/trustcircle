@@ -1,4 +1,2 @@
-$ prettier --check <phase-85 files>
 Checking formatting...
 All matched files use Prettier code style!
-prettier exit code: 0

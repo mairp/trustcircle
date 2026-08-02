@@ -1,0 +1,9 @@
+Scenario-file typecheck — repo project graph (tsc --build --force --verbose)
+command: npx tsc --build --force --verbose   (authoritative repo config, tsconfig.base.json)
+full-build exit code: 0  (PASS)
+
+TypeScript errors anywhere in the graph:
+  count=0
+
+Lines mentioning the Phase-85 scenario file (tests/e2e/scenarios/discovery-open-boundary.ts):
+  (none — file compiles with zero diagnostics under the repo graph)
