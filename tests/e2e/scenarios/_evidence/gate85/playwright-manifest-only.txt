@@ -1,9 +1,10 @@
-[WebServer] npm error Lifecycle script `preview` failed with error:
-[WebServer] npm error workspace @trustcircle/web@0.1.0
-[WebServer] npm error location <repo-root>/apps/web
-[WebServer] npm error Missing script: "preview"
-[WebServer] npm error
-[WebServer] npm error To see a list of scripts, run:
-[WebServer] npm error   npm run --workspace=@trustcircle/web@0.1.0
-Error: Process from config.webServer was not able to start. Exit code: 1
 
+Running 5 tests using 5 workers
+
+  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:77:3 › Scenario 1 signed result manifest › gap references stay visible with reason + specific owner action (104ms)
+  ✓  3 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:34:3 › Scenario 1 signed result manifest › emits a signed, pinned, tamper-evident manifest that verifies (220ms)
+  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:107:3 › Scenario 1 signed result manifest › every standalone FR MUST-clause maps to a durable, independently observable witness (591ms)
+  ✓  4 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:95:3 › Scenario 1 signed result manifest › the five Scenario-1 success criteria are present and met (110ms)
+  ✓  5 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:56:3 › Scenario 1 signed result manifest › binds requirement / assertion / audit references for every US1-AS{n} (473ms)
+
+  5 passed (5.8s)

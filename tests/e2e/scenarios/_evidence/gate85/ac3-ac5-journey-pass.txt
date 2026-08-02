@@ -1,7 +1,7 @@
 
 Running 2 tests using 2 workers
 
-  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:865:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence (167ms)
-  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:688:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation (166ms)
+  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:865:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence (171ms)
+  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:688:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation (156ms)
 
-  2 passed (3.4s)
+  2 passed (4.1s)

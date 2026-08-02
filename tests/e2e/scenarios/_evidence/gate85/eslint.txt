@@ -1,2 +1,0 @@
-eslint tests/e2e/scenarios/discovery-open-boundary.ts tests/e2e/discovery-open-boundary.manifest.spec.ts
-exit=0 — 0 problems (0 errors, 0 warnings)
