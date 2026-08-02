@@ -1,0 +1,50 @@
+{
+  "package": "ISO/IEC 42001 AI Management System — sample evidence mapping",
+  "certificationClaimed": false,
+  "disclaimer": "No licensed standard text is reproduced; obligations are paraphrased in our own words and referenced by clause identifier only. No certification is claimed.",
+  "edition": "ISO/IEC 42001 (referenced by clause identifier; confirm against the assessment edition)",
+  "controls": [
+    {
+      "clause": "5.1",
+      "obligationParaphrase": "Leadership demonstrates accountability for the AI management system.",
+      "shippedControl": "Accountable-owner binding on every governed action.",
+      "evidencePointer": "packages/audit-ledger/src/hash-chain.ts (accountableOwnerPrincipalId enforced)"
+    },
+    {
+      "clause": "6.1",
+      "obligationParaphrase": "Actions to address risks and opportunities are planned and recorded.",
+      "shippedControl": "Threat model with residual-risk register and per-release review.",
+      "evidencePointer": "docs/security/threat-model.md"
+    },
+    {
+      "clause": "7.5",
+      "obligationParaphrase": "Documented information is controlled and retained.",
+      "shippedControl": "Evidence retention with longest-approved-policy resolution and visible gaps.",
+      "evidencePointer": "tests/e2e/evidence-retention.spec.ts"
+    },
+    {
+      "clause": "8.1",
+      "obligationParaphrase": "Operational controls are implemented and their outputs are governed.",
+      "shippedControl": "Consequential/destructive action gating with fail-closed audit freeze.",
+      "evidencePointer": "tests/e2e/audit-tamper.spec.ts"
+    },
+    {
+      "clause": "9.1",
+      "obligationParaphrase": "Performance is monitored, measured, analysed, and evaluated.",
+      "shippedControl": "Performance acceptance measured against NFR budgets at acceptance scale.",
+      "evidencePointer": "tests/performance/acceptance.ts"
+    },
+    {
+      "clause": "9.2",
+      "obligationParaphrase": "Internal audit verifies the management system against its own requirements.",
+      "shippedControl": "Tamper-evident audit ledger with independent verification and signed checkpoints.",
+      "evidencePointer": "packages/audit-ledger/src/checkpoints.ts"
+    },
+    {
+      "clause": "10.1",
+      "obligationParaphrase": "Nonconformity is addressed and corrective action is taken.",
+      "shippedControl": "Integrity incident → freeze → escalation runbook.",
+      "evidencePointer": "docs/runbooks/operations.md (section 5)"
+    }
+  ]
+}

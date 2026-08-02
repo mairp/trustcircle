@@ -1,0 +1,36 @@
+{
+  "package": "ISO/IEC 42005 AI system impact assessment — sample record",
+  "certificationClaimed": false,
+  "disclaimer": "Illustrative sample. No licensed standard text reproduced; clause identifiers only. No certification claimed.",
+  "system": {
+    "name": "Sample governed AI decisioning assistant",
+    "purpose": "Assist human approvers in governance decisions; humans remain accountable.",
+    "autonomy": "recommend-only; no autonomous consequential action without human approval"
+  },
+  "assessment": [
+    {
+      "clause": "impact-identification",
+      "obligationParaphrase": "Identify potential impacts on individuals, groups, and society.",
+      "finding": "Potential for biased recommendations; mitigated by human accountability and audit.",
+      "evidencePointer": "docs/security/threat-model.md (privacy + least-disclosure)"
+    },
+    {
+      "clause": "affected-stakeholders",
+      "obligationParaphrase": "Determine affected stakeholders and their exposure.",
+      "finding": "Stakeholders: data subjects in evidence, approvers, auditors.",
+      "evidencePointer": "tests/usability/primary-journeys.md"
+    },
+    {
+      "clause": "data-and-privacy",
+      "obligationParaphrase": "Assess data handling and privacy implications.",
+      "finding": "Data minimization + retention gaps surfaced explicitly; erasure via signed disposition.",
+      "evidencePointer": "packages/evidence/src/retention.ts"
+    },
+    {
+      "clause": "mitigation-and-residual",
+      "obligationParaphrase": "Record mitigations and accepted residual impact.",
+      "finding": "Residual risks accepted at documented level; reviewed each release.",
+      "evidencePointer": "specs/001-governance-control-plane/checklists/release-review.md"
+    }
+  ]
+}
