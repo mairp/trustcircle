@@ -28,7 +28,7 @@ import {
   type Reason,
 } from '@trustcircle/domain';
 import { makeGovernedAsset, makeSourceRecord, makeCoverageGap } from '@trustcircle/domain';
-import { InventoryService, SourceRegistry } from '@trustcircle/application';
+import { InventoryService, SourceRegistry, SourceReconciler } from '@trustcircle/application';
 
 // A type-only import of the route's consumed shapes, so the fixtures stay in lock-step with the
 // interface the route actually reads.
@@ -55,6 +55,63 @@ export const DISCOVERY_EVIDENCE = toUuid('018f0000-0000-7000-8000-0000000000ac')
 // Stable asset ids (UUIDv7) — chosen so localeCompare ordering is deterministic.
 export const HEALTHY_ASSET_ID = toUuid('018f0000-0000-7000-8000-000000000010');
 export const GAP_ASSET_ID = toUuid('018f0000-0000-7000-8000-000000000011');
+
+// --- Phase 84: the pinned SEVEN source-state taxonomy -----------------------
+//
+// The governance inventory fixture must seed a source in each of these seven states so every
+// downstream test can observe it INDEPENDENTLY (through a durable read path — the registry
+// projection, the latest source contract, or the reconciler's append-only delta log — never a
+// mutation echo). `observedVia` names the exact read path that witnesses each state, so an
+// assertion for a state can never be vacuous (it reads a concrete, seeded value, not a constant).
+export type SourceState =
+  'supported' | 'metadata-only' | 'unsupported' | 'unowned' | 'unreachable' | 'renamed' | 'unknown';
+
+export interface SourceStateSpec {
+  readonly state: SourceState;
+  /** The seeded source's distinguishing facet an assertion pins. */
+  readonly witness: string;
+  /** The durable read path the state is observed through (never a mutation response). */
+  readonly observedVia: string;
+}
+
+/** The seven seeded source states and the durable evidence each is observed through. */
+export const SEVEN_SOURCE_STATES: readonly SourceStateSpec[] = [
+  {
+    state: 'supported',
+    witness: "kanban source's latest contract carries supportLevel='supported'",
+    observedVia: 'SourceRegistry.latestContract(kanbanSourceId).supportLevel',
+  },
+  {
+    state: 'metadata-only',
+    witness: 'discovered unknown source was catalogued from metadata only (no content ingested)',
+    observedVia: 'SourceRegistry.catalog() entry: onboardingState=discovered, no observedState',
+  },
+  {
+    state: 'unsupported',
+    witness: "excluded vendor-x source's latest contract carries supportLevel='unsupported'",
+    observedVia: 'SourceRegistry.latestContract(excludedSourceId).supportLevel',
+  },
+  {
+    state: 'unowned',
+    witness: 'discovered unknown + excluded sources have no ownerPrincipalId',
+    observedVia: 'SourceRegistry.catalog() entry: ownerPrincipalId === undefined',
+  },
+  {
+    state: 'unreachable',
+    witness: "stale warehouse source's accessState='unreachable'",
+    observedVia: 'SourceRegistry.catalog() entry: accessState',
+  },
+  {
+    state: 'renamed',
+    witness: 'a 1→1 re-key of one content fingerprint across two reconcile cycles',
+    observedVia: "SourceReconciler.deltasOfClass('moved') (append-only lineage delta)",
+  },
+  {
+    state: 'unknown',
+    witness: "discovered source's class was never asserted → pinned to the 'unknown' sentinel",
+    observedVia: 'SourceRegistry.catalog() entry: sourceClass === UNKNOWN_SOURCE_CLASS',
+  },
+];
 
 // --- The seeded per-tenant projection ---------------------------------------
 
@@ -180,6 +237,15 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
     discoveryEvidence: DISCOVERY_EVIDENCE,
     at: now,
   }).id;
+  // SEVEN-STATE 'supported': register a validated, SUPPORTED source contract on the kanban source.
+  // `supportLevel='supported'` is the durable facet an assertion reads via `latestContract(...)`.
+  sources.registerContract({
+    sourceId: kanbanSourceId,
+    version: 1,
+    supportLevel: 'supported',
+    authoritativeFields: ['status', 'pipeline_state'],
+    at: now,
+  });
   // Observe differing health so the current-state view carries a status difference.
   sources.recordObservation({
     sourceId: kanbanSourceId,
@@ -279,6 +345,15 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
     discoveryEvidence: DISCOVERY_EVIDENCE,
     at: now,
   }).id;
+  // SEVEN-STATE 'unsupported': register a validated contract declaring this source UNSUPPORTED.
+  // `supportLevel='unsupported'` is the durable facet an assertion reads via `latestContract(...)`
+  // — the unsupported governed-source gap (AC6) is BACKED by this contract, not merely by class name.
+  sources.registerContract({
+    sourceId: excludedSourceId,
+    version: 1,
+    supportLevel: 'unsupported',
+    at: now,
+  });
   const { gap: excludedGap } = sources.exclude({
     sourceId: excludedSourceId,
     reason: makeReason('vendor_unsupported', 'vendor x is not a supported governance source'),
@@ -315,6 +390,119 @@ export function providerFor(
   seeded: SeededProjection,
 ): (tenantId: TenantId) => TenantProjection | undefined {
   return (tenantId) => (tenantId === TENANT ? seeded : undefined);
+}
+
+// --- Phase 84: the 'renamed' source state (reconciler `moved` lineage delta) -
+//
+// A source is RENAMED when its stable content reappears under a NEW external key while its OLD key
+// disappears — a 1→1 re-key. The `SourceReconciler` classifies this as a `moved` lineage delta and
+// records it in an APPEND-ONLY log, so the rename is durably observable through an independent read
+// (`deltasOfClass('moved')`) rather than any mutation echo. This models the seventh seeded state
+// without touching the 5-entry `SourceRegistry` catalog the routes page over.
+
+/** The fixed external keys the renamed source is observed under, before and after the re-key. */
+export const RENAMED_OLD_KEY = 'kanban://board/eng#card-legacy';
+export const RENAMED_NEW_KEY = 'kanban://board/eng#card-renamed';
+
+export interface SeededRename {
+  readonly reconciler: SourceReconciler;
+  /** The single `moved` delta the re-key produced (append-only; independently re-readable). */
+  readonly movedDelta: import('@trustcircle/application').ReconciliationDelta;
+  readonly oldIdentity: string;
+  readonly newIdentity: string;
+}
+
+/**
+ * Seed a {@link SourceReconciler} with a two-cycle 1→1 re-key so the seventh source state —
+ * RENAMED — is observable as a durable `moved` lineage delta. Deterministic: fixed ids + clock, no
+ * I/O. The SAME governed content (a fixed fingerprint) is observed under {@link RENAMED_OLD_KEY} in
+ * cycle 1 and under {@link RENAMED_NEW_KEY} (old key absent) in cycle 2 — the exact 1→1 shape the
+ * reconciler classifies as `moved`.
+ */
+export function seedRenamedReconciliation(now: EpochMillis = NOW): SeededRename {
+  const idf = createIdFactory();
+  const reconciler = new SourceReconciler({
+    tenantId: TENANT,
+    // The reconciler's IdFactory is nullary; mint monotonic ids off the fixed clock.
+    newId: () => idf.next(now),
+    stalenessHorizonMillis: HORIZON,
+    disappearanceCycles: 2,
+  });
+
+  const catalogId = toUuid('018f0000-0000-7000-8000-000000000401');
+  const renamedAssetId = toUuid('018f0000-0000-7000-8000-000000000012');
+  // The SAME governed content across both cycles → one stable content fingerprint that re-keys.
+  const content = { pipeline_state: 'running', payload: 'stable-renamed-content' };
+
+  const asset = {
+    asset: makeGovernedAsset({
+      id: renamedAssetId,
+      tenantId: TENANT,
+      assetType: 'service',
+      name: 'renamed-card',
+      ownerPrincipalId: OWNER,
+      lifecycleState: 'operating',
+      riskTier: 'moderate',
+      health: 'healthy',
+      coverage: 'covered',
+      lastObservedAt: now,
+      updatedAt: now,
+    }),
+    fields: ['status'] as const,
+  };
+
+  // Cycle 1: content observed under the OLD external key.
+  reconciler.reconcile({
+    observations: [
+      makeSourceRecord({
+        id: toUuid('018f0000-0000-7000-8000-000000000411'),
+        tenantId: TENANT,
+        catalogId,
+        assetId: renamedAssetId,
+        sourceClass: 'kanban',
+        externalKey: RENAMED_OLD_KEY,
+        observedState: content,
+        status: 'active',
+        freshness: 'fresh',
+        lastKnownAt: now,
+        observedAt: now,
+      }),
+    ],
+    assets: [asset],
+    at: now,
+  });
+
+  // Cycle 2: SAME content under a NEW external key; the OLD key is absent → a 1→1 re-key.
+  reconciler.reconcile({
+    observations: [
+      makeSourceRecord({
+        id: toUuid('018f0000-0000-7000-8000-000000000412'),
+        tenantId: TENANT,
+        catalogId,
+        assetId: renamedAssetId,
+        sourceClass: 'kanban',
+        externalKey: RENAMED_NEW_KEY,
+        observedState: content,
+        status: 'active',
+        freshness: 'fresh',
+        lastKnownAt: now + MINUTE,
+        observedAt: now + MINUTE,
+      }),
+    ],
+    assets: [asset],
+    at: now + MINUTE,
+  });
+
+  const moved = reconciler.deltasOfClass('moved');
+  if (moved.length !== 1) {
+    throw new Error(
+      `seedRenamedReconciliation: expected exactly one 'moved' delta, got ${moved.length}`,
+    );
+  }
+  const movedDelta = moved[0]!;
+  const oldIdentity = `${TENANT}|${catalogId}|${RENAMED_OLD_KEY}`;
+  const newIdentity = `${TENANT}|${catalogId}|${RENAMED_NEW_KEY}`;
+  return { reconciler, movedDelta, oldIdentity, newIdentity };
 }
 
 // --- A deterministic, least-privilege discovery port ------------------------

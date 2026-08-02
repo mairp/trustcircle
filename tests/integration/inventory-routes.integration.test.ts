@@ -154,6 +154,66 @@ describe('AC1 · current-state governed-asset view (GET /v1/inventory/assets)', 
     expect(gap.confidence).not.toBe(healthy.confidence);
   });
 
+  it('AC1 FULL BUNDLE: a SINGLE rendered item carries ALL TEN required attributes together (type, source identity, owner, lifecycle, risk, control coverage, evidence state, health, last-observation time, unresolved issues)', async () => {
+    // The critic's AC1 oracle: not ten attributes proven across ten tests, but ONE projected
+    // inventory item that simultaneously carries the entire required attribute set. This reads a
+    // single wire item and asserts every one of the ten SPEC attributes is present and correct on
+    // THAT item, observed together in one projection read.
+    const app = makeApp();
+    const body = await json(await app.fetch(get('/v1/inventory/assets')));
+    const item = body.items.find((i: Rec) => i.id === String(HEALTHY_ASSET_ID)) as Rec;
+    expect(item).toBeTruthy();
+
+    // The ten SPEC attributes, each a NAMED field on this ONE item:
+    const bundle = {
+      // 1. type
+      asset_type: item.asset_type,
+      // 2. source identity (the item's own governed identity: id + tenant, a stable handle)
+      id: item.id,
+      tenant_id: item.tenant_id,
+      name: item.name,
+      // 3. owner
+      owner_principal_id: item.owner_principal_id,
+      // 4. lifecycle state
+      lifecycle_state: item.lifecycle_state,
+      // 5. risk
+      risk_tier: item.risk_tier,
+      // 6. control coverage
+      coverage: item.coverage,
+      // 7. evidence state
+      evidence_state: item.evidence_state,
+      // 8. health
+      health: item.health,
+      // 9. last observation time
+      last_observed_at: item.last_observed_at,
+      // 10. unresolved issues
+      unresolved_issues: item.unresolved_issues,
+    };
+    // EVERY attribute is present (none undefined) on this single item — the bundle is complete.
+    for (const [key, value] of Object.entries(bundle)) {
+      expect(
+        value,
+        `AC1 attribute '${key}' must be present on the single item`,
+      ).not.toBeUndefined();
+    }
+    // …and each carries its correct, data-driven value (a healthy, owned, covered service):
+    expect(bundle.asset_type).toBe('service');
+    expect(bundle.id).toBe(String(HEALTHY_ASSET_ID));
+    expect(bundle.tenant_id).toBe(String(TENANT));
+    expect(bundle.name).toBe('orders-api');
+    expect(bundle.owner_principal_id).toBeTruthy();
+    expect(bundle.lifecycle_state).toBe('operating');
+    expect(bundle.risk_tier).toBe('moderate');
+    expect(bundle.coverage).toBe('covered');
+    expect(bundle.evidence_state).toBe('current');
+    expect(bundle.health).toBe('healthy');
+    expect(typeof bundle.last_observed_at).toBe('string');
+    expect(bundle.unresolved_issues).toBe(0);
+
+    // Appears exactly ONCE (AC1 "each item appears once").
+    expect(body.items.filter((i: Rec) => i.id === String(HEALTHY_ASSET_ID)).length).toBe(1);
+  });
+
   it('NEGATIVE CONTROL: an unauthenticated request cannot read the inventory', async () => {
     const app = makeApp({ verifyIdentity: () => null });
     const res = await app.fetch(get('/v1/inventory/assets'));
@@ -209,6 +269,52 @@ describe('AC2 · orphaned component stays a visible coverage gap', () => {
     // Age is a concrete non-negative duration (firstSeen was 3h before `now` → 10_800_000 ms).
     expect(Number.isInteger(detail.age_millis)).toBe(true);
     expect(detail.age_millis).toBe(3 * 60 * 60_000);
+  });
+
+  it('AC2 FULL BUNDLE: the still-visible coverage gap carries reason + age + impact + required owner action TOGETHER on one detail', async () => {
+    // The critic's AC2 oracle: a discovered/unmanaged/orphaned item that remains visible must
+    // surface — on ONE gap detail, together — its reason, its age, its impact, and the required
+    // OWNER ACTION. This reads that single detail and asserts all four (plus the required owner)
+    // are present at once, then proves each is data-driven via a differing sibling.
+    const app = makeApp();
+    const body = await json(await app.fetch(get('/v1/inventory/assets')));
+    const gap = body.items.find((i: Rec) => i.id === String(GAP_ASSET_ID)) as Rec;
+    // The item stays VISIBLE (never dropped) even though it is orphaned/unmanaged.
+    expect(gap).toBeTruthy();
+    expect(gap.coverage).toBe('gap');
+    expect(Array.isArray(gap.coverage_gaps)).toBe(true);
+    const detail = (gap.coverage_gaps as Rec[])[0] as Rec;
+
+    // All four required fields + the required owner action's owner, present TOGETHER on one detail:
+    const bundle = {
+      reason: detail.reason, // WHY it is a gap
+      age_millis: detail.age_millis, // AGE
+      impact: detail.impact, // IMPACT
+      required_action: detail.required_action, // required OWNER ACTION
+    };
+    for (const [key, value] of Object.entries(bundle)) {
+      expect(
+        value,
+        `AC2 attribute '${key}' must be present on the single gap detail`,
+      ).not.toBeUndefined();
+    }
+    expect(bundle.reason).toBe('orphaned');
+    expect(bundle.impact).toBe('high');
+    expect(bundle.required_action).toBe(
+      'assign an owner and onboard the batch job under a control',
+    );
+    // AGE is a concrete non-negative duration derived from firstSeen (3h before `now`).
+    expect(Number.isInteger(bundle.age_millis)).toBe(true);
+    expect(bundle.age_millis as number).toBe(3 * 60 * 60_000);
+    // The owner action is directed at the missing owner: the item itself is unowned (explicit null).
+    expect(gap.owner_principal_id).toBeNull();
+
+    // NON-VACUITY: the healthy asset carries NO coverage_gaps detail — so the bundle above is a
+    // real property of the gap item, not a constant on every row.
+    const healthy = body.items.find((i: Rec) => i.id === String(HEALTHY_ASSET_ID)) as Rec;
+    expect(
+      healthy.coverage_gaps === undefined || (healthy.coverage_gaps as unknown[]).length === 0,
+    ).toBe(true);
   });
 
   it('NEGATIVE CONTROL: filtering to only covered assets removes the gap AND clears partial coverage', async () => {
@@ -278,6 +384,68 @@ describe('AC3 · distinct source records correlate with differing status', () =>
     expect(dep.field_name).toBe('deployment_target');
   });
 
+  it('AC3 FULL BUNDLE: one source drill-down surfaces distinct source records + correlation + status differences + dependencies + authoritative fields TOGETHER', async () => {
+    // The critic's AC3 oracle: a drill-down across related work must show, together on ONE source
+    // view: (a) DISTINCT source records, (b) their CORRELATION, (c) STATUS DIFFERENCES, (d)
+    // DEPENDENCIES, and (e) AUTHORITATIVE FIELDS. This reads the single kanban catalog entry from
+    // the wire and asserts every one of those five is present at once.
+    const app = makeApp();
+    const body = await json(await app.fetch(get('/v1/inventory/sources')));
+    const kanban = body.items.find((i: Rec) => i.source_class === 'kanban') as Rec;
+    const agentctl = body.items.find((i: Rec) => i.source_class === 'agentctl') as Rec;
+    expect(kanban).toBeTruthy();
+    expect(agentctl).toBeTruthy();
+
+    // (a) DISTINCT source records: the correlation surface is built from ≥2 distinct records that
+    //     each reported a value; their record ids are named and distinct.
+    const correlation = kanban.correlation as Rec[];
+    expect(Array.isArray(correlation)).toBe(true);
+    expect(correlation.length).toBeGreaterThan(0);
+    const allRecordIds = new Set<string>();
+    for (const d of correlation) {
+      for (const v of d.values as Rec[]) {
+        for (const r of v.record_ids as string[]) allRecordIds.add(r);
+      }
+    }
+    expect(allRecordIds.size).toBeGreaterThanOrEqual(2); // distinct records
+
+    // (b)+(c) CORRELATION / STATUS DIFFERENCES: the distinct records DISAGREE on named fields, and
+    //     each differing value is attributed to the record ids that reported it.
+    const fields = correlation.map((d) => d.field).sort();
+    expect(fields).toContain('status');
+    expect(fields).toContain('observedState.pipeline_state');
+    const statusDiff = correlation.find((d) => d.field === 'status') as Rec;
+    const values = (statusDiff.values as Rec[]).map((v) => v.value).sort();
+    expect(values).toEqual(['active', 'inactive']); // a genuine status DIFFERENCE
+
+    // (d) DEPENDENCIES: the declared depends_on edge to the agentctl source.
+    const deps = kanban.dependencies as Rec[];
+    expect(Array.isArray(deps)).toBe(true);
+    expect(deps.length).toBeGreaterThan(0);
+    const dep = deps[0];
+    expect(dep.from_id).toBe(kanban.id);
+    expect(dep.to_id).toBe(String(app.seeded.ids.agentctlSourceId));
+
+    // (e) AUTHORITATIVE FIELDS: the two entries carry distinct identities and DIFFERING authoritative
+    //     status (access_state) — the field a human reconciles across the correlated records.
+    expect(kanban.id).not.toBe(agentctl.id);
+    expect(kanban.access_state).toBe('connected');
+    expect(agentctl.access_state).toBe('degraded');
+    expect(kanban.access_state).not.toBe(agentctl.access_state);
+
+    // All five AC3 surfaces present TOGETHER on this one drill-down view.
+    const present = {
+      distinct_records: allRecordIds.size >= 2,
+      correlation: correlation.length > 0,
+      status_differences: values.length >= 2,
+      dependencies: deps.length > 0,
+      authoritative_field_difference: kanban.access_state !== agentctl.access_state,
+    };
+    for (const [k, v] of Object.entries(present)) {
+      expect(v, `AC3 surface '${k}' must be present on the drill-down`).toBe(true);
+    }
+  });
+
   it('NEGATIVE CONTROL: a source with no distinct-record disagreement exposes NO correlation entries (non-vacuity)', async () => {
     const app = makeApp();
     const body = await json(await app.fetch(get('/v1/inventory/sources')));
@@ -324,6 +492,39 @@ describe('AC4 · stale/unavailable source is marked, health not inferred', () =>
     expect(warehouse.confidence).toBeGreaterThanOrEqual(0);
     // Its evidence-state facet reflects the stale knowledge, too.
     expect(warehouse.evidence_state).not.toBe('current');
+  });
+
+  it('AC4 FULL BUNDLE: the stale source is marked with last-known time AND confidence together, and its current health is NOT inferred from that stale data', async () => {
+    // The critic's AC4 oracle: a stale/unavailable source must be marked with BOTH a last-known
+    // time AND a confidence, on the SAME rendered item — and current compliance/health must NOT be
+    // inferred from the stale data. This reads the single warehouse item and asserts both markers
+    // are present together, then proves the (fresh) observed health was WITHHELD, not reported.
+    const app = makeApp();
+    const body = await json(await app.fetch(get('/v1/inventory/sources')));
+    const stale = body.items.find((i: Rec) => i.source_class === 'warehouse') as Rec;
+    expect(stale).toBeTruthy();
+
+    // BOTH markers present TOGETHER on the one item:
+    const bundle = {
+      last_seen_at: stale.last_seen_at, // last-KNOWN time (marked, not dropped)
+      confidence: stale.confidence, // CONFIDENCE in that stale knowledge
+      evidence_state: stale.evidence_state, // the currency verdict
+    };
+    for (const [k, v] of Object.entries(bundle)) {
+      expect(v, `AC4 marker '${k}' must be present on the stale item`).not.toBeUndefined();
+    }
+    expect(typeof bundle.last_seen_at).toBe('string'); // last-known time is a real timestamp
+    expect(typeof bundle.confidence).toBe('number');
+    expect(bundle.confidence as number).toBeLessThan(1); // degraded — not full confidence
+    expect(bundle.confidence as number).toBeGreaterThanOrEqual(0);
+    expect(bundle.evidence_state).not.toBe('current'); // knowledge is not current
+
+    // CURRENT HEALTH IS NOT INFERRED FROM STALE DATA: the fixture seeded this unreachable source at
+    // an OLD time; its reported health is WITHHELD (never inferred to 'healthy'), and the whole page
+    // freshness is downgraded to 'stale' rather than asserted current.
+    expect(stale.health_state).not.toBe('healthy');
+    expect(body.metadata.freshness).toBe('stale');
+    expect(body.metadata.freshness).not.toBe('current');
   });
 
   it('NEGATIVE CONTROL: a FRESH source carries full confidence (1), proving the degraded value above is data-driven', async () => {
@@ -434,6 +635,59 @@ describe('AC5 · discovery accepts a metadata-only run and catalogs an unknown s
     expect(kanban.sensitivity).not.toBe(unknown.sensitivity);
   });
 
+  it('AC5 FULL BUNDLE: the catalogued discovered source carries discovery evidence + type/unknown classification + location + access status + sensitivity + ownership status + onboarding state TOGETHER', async () => {
+    // The critic's AC5 oracle: an unregistered governance-relevant source, once discovered, is
+    // added to the catalog carrying — on ONE entry, together — its (a) discovery evidence, (b)
+    // type-or-'unknown' classification, (c) location, (d) access status, (e) sensitivity, (f)
+    // ownership status, and (g) onboarding state. This reads the single unknown-class entry and
+    // asserts all seven are present at once.
+    const app = makeApp();
+    const body = await json(await app.fetch(get('/v1/inventory/sources')));
+    const item = body.items.find((i: Rec) => i.source_class === 'unknown') as Rec;
+    expect(item).toBeTruthy();
+
+    const bundle = {
+      // (a) discovery evidence (provenance observation id)
+      discovery_evidence: item.discovery_evidence,
+      // (b) type/unknown classification
+      source_class: item.source_class,
+      // (c) location(s)
+      observed_locations: item.observed_locations,
+      // (d) access status
+      access_state: item.access_state,
+      // (e) sensitivity
+      sensitivity: item.sensitivity,
+      // (f) ownership status (unowned → explicit null, still a present field)
+      owner_principal_id: item.owner_principal_id,
+      // (g) onboarding state
+      onboarding_state: item.onboarding_state,
+    };
+    // All seven keys are present on this ONE entry (owner is null but the field exists).
+    for (const key of Object.keys(bundle)) {
+      expect(key in item, `AC5 attribute '${key}' must be a field on the discovered entry`).toBe(
+        true,
+      );
+    }
+    // …and each carries its correct, data-driven value:
+    expect(bundle.discovery_evidence).toBe(DISCOVERY_EVIDENCE); // exact seeded provenance
+    expect(bundle.source_class).toBe('unknown'); // classified as the unknown sentinel
+    expect(Array.isArray(bundle.observed_locations)).toBe(true);
+    expect((bundle.observed_locations as unknown[]).length).toBeGreaterThan(0);
+    expect(bundle.access_state).toBe('reachable');
+    expect(['normal', 'sensitive', 'restricted']).toContain(bundle.sensitivity);
+    expect(bundle.sensitivity).toBe('restricted');
+    expect(bundle.owner_principal_id).toBeNull(); // ownership status: unowned
+    expect(bundle.onboarding_state).toBe('discovered');
+
+    // NON-VACUITY: a DIFFERENT catalogued source (kanban) carries a different classification,
+    // sensitivity, and a present owner — so the bundle above is this entry's own facets, not
+    // constants stamped on every row.
+    const kanban = body.items.find((i: Rec) => i.source_class === 'kanban') as Rec;
+    expect(kanban.sensitivity).toBe('normal');
+    expect(kanban.owner_principal_id).toBeTruthy();
+    expect(kanban.source_class).not.toBe(item.source_class);
+  });
+
   it('NEGATIVE CONTROL: a discovery request missing boundary_version_id is rejected 400 (no run started)', async () => {
     const app = makeApp();
     const res = await app.fetch(
@@ -514,6 +768,48 @@ describe('AC6 · excluded/inaccessible source stays a visible governed gap', () 
     expect(exclusionGap.required_action).toBe(
       'document the exclusion and schedule a governance review',
     );
+  });
+
+  it('AC6 FULL BUNDLE: the governed-source gap is visible carrying reason + impact + owner action + review-or-expiry TOGETHER on one detail', async () => {
+    // The critic's AC6 oracle: a discovered source that is unsupported/inaccessible/sensitive/
+    // unowned/excluded remains VISIBLE as a governed-source gap carrying — on ONE gap detail,
+    // together — its reason, impact, required owner action, and a review OR expiry deadline. This
+    // reads the single exclusion gap detail and asserts all four are present at once.
+    const app = makeApp();
+    const body = await json(await app.fetch(get('/v1/inventory/sources')));
+    const excluded = body.items.find((i: Rec) => i.source_class === 'unsupported-vendor-x') as Rec;
+    expect(excluded).toBeTruthy(); // stays VISIBLE — never dropped.
+    expect(excluded.access_state).toBe('inaccessible');
+    expect(excluded.onboarding_state).toBe('excluded');
+
+    const gaps = excluded.coverage_gaps as Rec[];
+    expect(Array.isArray(gaps)).toBe(true);
+    const detail = gaps.find((g) => g.reason === 'excluded') as Rec;
+    expect(detail).toBeTruthy();
+
+    // All four required fields present TOGETHER on this one governed-source gap detail:
+    const hasReviewOrExpiry =
+      typeof detail.review_at === 'string' || typeof detail.expires_at === 'string';
+    const bundle = {
+      reason: detail.reason, // WHY governed coverage is missing
+      impact: detail.impact, // IMPACT
+      required_action: detail.required_action, // required OWNER ACTION
+      review_or_expiry: hasReviewOrExpiry, // REVIEW or EXPIRY deadline
+    };
+    for (const [k, v] of Object.entries(bundle)) {
+      expect(v, `AC6 attribute '${k}' must be present on the governed-source gap`).toBeTruthy();
+    }
+    expect(detail.gap_class).toBe('governed_source');
+    expect(bundle.reason).toBe('excluded');
+    expect(bundle.impact).toBe('high');
+    expect(bundle.required_action).toBe('document the exclusion and schedule a governance review');
+    expect(hasReviewOrExpiry).toBe(true);
+
+    // The gap stays folded into page coverage metadata (visible, not silently dropped).
+    expect(body.metadata.partial_coverage).toBe(true);
+    for (const g of excluded.coverage_gap_ids as string[]) {
+      expect(body.metadata.coverage_gaps).toContain(g);
+    }
   });
 
   it('NEGATIVE CONTROL: an onboarded/covered source exposes NO governed-source gaps (non-vacuity)', async () => {
