@@ -17,3 +17,4 @@ negative controls (each MUST be rejected -> verify.ok=false):
      reasons: manifestDigest mismatch (recomputed ef0e00586d5c… != stored 54a9825755e6…); success criterion SC-001 not met: 5/5 declared sources represented or listed as gaps
 
 OVERALL: PASS
+

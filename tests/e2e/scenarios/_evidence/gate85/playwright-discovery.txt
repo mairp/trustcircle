@@ -1,30 +1,9 @@
-          |                                                  ^
-      740 |       'agentctl:run-WORK-100',
-      741 |       'kanban:card-WORK-100',
-      742 |       'wf:pipeline-WORK-100',
-        at <repo-root>/tests/e2e/discovery-open-boundary.spec.ts:739:50
 
-    Error Context: test-results/discovery-open-boundary-AC-ed09a-reconstructable-correlation-discovery/error-context.md
+Running 4 tests using 4 workers
 
-  2) [discovery] › tests/e2e/discovery-open-boundary.spec.ts:852:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence 
+  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:34:3 › Scenario 1 signed result manifest › emits a signed, pinned, tamper-evident manifest that verifies (180ms)
+  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:95:3 › Scenario 1 signed result manifest › the five Scenario-1 success criteria are present and met (145ms)
+  ✓  3 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:56:3 › Scenario 1 signed result manifest › binds requirement / assertion / audit references for every US1-AS{n} (230ms)
+  ✓  4 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:77:3 › Scenario 1 signed result manifest › gap references stay visible with reason + specific owner action (75ms)
 
-    Error: expect(received).toEqual(expected) // deep equality
-
-    Expected: {"banner": "kanban-api/1.4", "foundBy": "port-scan"}
-    Received: undefined
-
-      887 |     expect(payload?.registered).toBe(false); // was unregistered when discovered
-      888 |     expect(payload?.location).toBe('host://kanban/new');
-    > 889 |     expect(payload?.evidence).toEqual({ banner: 'kanban-api/1.4', foundBy: 'port-scan' });
-          |                               ^
-      890 |     expect(typeof rec?.correlationId).toBe('string');
-      891 |     expect((rec?.correlationId ?? '').length).toBeGreaterThan(0);
-      892 |
-        at <repo-root>/tests/e2e/discovery-open-boundary.spec.ts:889:31
-
-    Error Context: test-results/discovery-open-boundary-AC-64467-cation-and-durable-evidence-discovery/error-context.md
-
-  2 failed
-    [discovery] › tests/e2e/discovery-open-boundary.spec.ts:694:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation 
-    [discovery] › tests/e2e/discovery-open-boundary.spec.ts:852:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence 
-  10 passed (7.5s)
+  4 passed (2.6s)

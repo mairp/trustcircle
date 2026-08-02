@@ -1,9 +1,9 @@
 
 Running 4 tests using 4 workers
 
-  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:56:3 › Scenario 1 signed result manifest › binds requirement / assertion / audit references for every US1-AS{n} (241ms)
-  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:34:3 › Scenario 1 signed result manifest › emits a signed, pinned, tamper-evident manifest that verifies (126ms)
-  ✓  3 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:77:3 › Scenario 1 signed result manifest › gap references stay visible with reason + specific owner action (79ms)
-  ✓  4 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:95:3 › Scenario 1 signed result manifest › the five Scenario-1 success criteria are present and met (49ms)
+  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:34:3 › Scenario 1 signed result manifest › emits a signed, pinned, tamper-evident manifest that verifies (180ms)
+  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:95:3 › Scenario 1 signed result manifest › the five Scenario-1 success criteria are present and met (145ms)
+  ✓  3 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:56:3 › Scenario 1 signed result manifest › binds requirement / assertion / audit references for every US1-AS{n} (230ms)
+  ✓  4 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:77:3 › Scenario 1 signed result manifest › gap references stay visible with reason + specific owner action (75ms)
 
-  4 passed (2.7s)
+  4 passed (2.6s)
