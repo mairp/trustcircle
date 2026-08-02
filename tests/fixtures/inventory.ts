@@ -142,11 +142,20 @@ export interface SeededProjection extends TenantProjection {
   readonly ids: {
     readonly kanbanSourceId: Uuid;
     readonly agentctlSourceId: Uuid;
+    /** AC3: the THIRD distinct catalogued source — workflows_orchestration. */
+    readonly workflowsSourceId: Uuid;
     readonly staleSourceId: Uuid;
     readonly discoveredUnknownSourceId: Uuid;
     readonly excludedSourceId: Uuid;
     readonly componentGapId: Uuid;
     readonly excludedGapId: Uuid;
+  };
+  /** AC3: the DISTINCT source-record ids correlated on the kanban anchor, one per named source
+   *  class (kanban / agentctl / workflows_orchestration) — the correlation drill-down subjects. */
+  readonly ac3RecordIds: {
+    readonly kanban: Uuid;
+    readonly agentctl: Uuid;
+    readonly workflowsOrchestration: Uuid;
   };
 }
 
@@ -237,7 +246,8 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
     }),
   );
 
-  // -- AC3: two DISTINCT registered sources with differing status. -----------
+  // -- AC3: THREE DISTINCT registered sources (kanban / agentctl / workflows_orchestration) with
+  //         differing access/health status, correlated on the kanban anchor for drill-down. -----
   const kanbanSourceId = sources.discover({
     externalKey: 'board/eng',
     sourceClass: 'kanban',
@@ -256,16 +266,45 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
     discoveryEvidence: DISCOVERY_EVIDENCE,
     at: now,
   }).id;
-  // SEVEN-STATE 'supported': register a validated, SUPPORTED source contract on the kanban source.
-  // `supportLevel='supported'` is the durable facet an assertion reads via `latestContract(...)`.
+  // AC3: the THIRD distinct named source — workflows_orchestration — catalogued as its own record,
+  // with an access status that DIFFERS from BOTH kanban ('connected') and agentctl ('degraded').
+  const workflowsSourceId = sources.discover({
+    externalKey: 'pipeline/deploy',
+    sourceClass: 'workflows_orchestration',
+    location: 'workflows://orchestration/pipeline/deploy',
+    accessState: 'inaccessible', // a THIRD distinct access status across the three named sources
+    ownerPrincipalId: STEWARD,
+    discoveryEvidence: DISCOVERY_EVIDENCE,
+    at: now,
+  }).id;
+  // SEVEN-STATE 'supported' + AC3 AUTHORITATIVE FIELDS: register a validated, SUPPORTED contract on
+  // EACH of the three named sources, declaring which fields each source is AUTHORITATIVE for. The
+  // three authoritative-field sets are DISTINCT (kanban owns `status`, agentctl owns
+  // `pipeline_state`, workflows_orchestration owns `deployment_target`), so the drill-down can
+  // attribute each governed field to its authoritative source rather than collapsing them.
   sources.registerContract({
     sourceId: kanbanSourceId,
     version: 1,
     supportLevel: 'supported',
-    authoritativeFields: ['status', 'pipeline_state'],
+    authoritativeFields: ['status'],
     at: now,
   });
-  // Observe differing health so the current-state view carries a status difference.
+  sources.registerContract({
+    sourceId: agentctlSourceId,
+    version: 1,
+    supportLevel: 'supported',
+    authoritativeFields: ['pipeline_state'],
+    at: now,
+  });
+  sources.registerContract({
+    sourceId: workflowsSourceId,
+    version: 1,
+    supportLevel: 'supported',
+    authoritativeFields: ['deployment_target'],
+    at: now,
+  });
+  // Observe differing health/access so the current-state view carries status differences across
+  // ALL THREE named sources (kanban connected/degraded, agentctl degraded, workflows inaccessible).
   sources.recordObservation({
     sourceId: kanbanSourceId,
     accessState: 'connected',
@@ -278,13 +317,25 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
     healthState: 'degraded',
     at: now,
   });
+  sources.recordObservation({
+    sourceId: workflowsSourceId,
+    accessState: 'inaccessible',
+    healthState: 'unknown', // a THIRD distinct health/access reading (AC3 correlation across three)
+    at: now,
+  });
 
-  // AC3 CORRELATION: attach TWO DISTINCT source records to the SAME (kanban) source that DISAGREE on
-  // a governed field (`observedState.pipeline_state`). `statusDifferencesFor` must surface this
-  // disagreement verbatim — a difference a human reconciles, never one the registry collapses.
+  // AC3 CORRELATION: attach THREE DISTINCT source records to the SAME (kanban) correlation anchor,
+  // one per named source class (kanban / agentctl / workflows_orchestration), that DISAGREE on
+  // governed fields (`status` and `observedState.pipeline_state`). `statusDifferencesFor` must
+  // surface these disagreements verbatim — a difference a human reconciles, never one the registry
+  // collapses. Each record id is exposed via `ac3RecordIds` so a witness can pin WHICH source holds
+  // WHICH value in each difference.
+  const kanbanRecordId = toUuid('018f0000-0000-7000-8000-000000000301');
+  const agentctlRecordId = toUuid('018f0000-0000-7000-8000-000000000302');
+  const workflowsRecordId = toUuid('018f0000-0000-7000-8000-000000000303');
   sources.attachRecord(
     makeSourceRecord({
-      id: toUuid('018f0000-0000-7000-8000-000000000301'),
+      id: kanbanRecordId,
       tenantId: TENANT,
       catalogId: kanbanSourceId,
       sourceClass: 'kanban',
@@ -299,7 +350,7 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
   );
   sources.attachRecord(
     makeSourceRecord({
-      id: toUuid('018f0000-0000-7000-8000-000000000302'),
+      id: agentctlRecordId,
       tenantId: TENANT,
       catalogId: kanbanSourceId,
       sourceClass: 'agentctl',
@@ -312,13 +363,36 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
       observedAt: now,
     }),
   );
-  // AC3 DEPENDENCY: the kanban source `depends_on` the agentctl source (a declared edge; NEVER an
-  // inferred one). `dependenciesFor(kanbanSourceId)` must surface exactly this edge.
+  sources.attachRecord(
+    makeSourceRecord({
+      id: workflowsRecordId,
+      tenantId: TENANT,
+      catalogId: kanbanSourceId,
+      sourceClass: 'workflows_orchestration',
+      externalKey: 'pipeline/deploy#card-1',
+      status: 'conflicting', // DIFFERS from BOTH 'active' (kanban) and 'inactive' (agentctl)
+      observedState: { pipeline_state: 'failed' }, // DIFFERS from 'running' AND 'paused'
+      freshness: 'fresh',
+      confidence: 1,
+      lastKnownAt: now,
+      observedAt: now,
+    }),
+  );
+  // AC3 DEPENDENCY: the kanban source `depends_on` BOTH the agentctl source AND the
+  // workflows_orchestration source (declared edges; NEVER inferred). `dependenciesFor(kanban)` must
+  // surface exactly these two edges — one to each of the other named sources.
   sources.attachRelationship({
     sourceId: kanbanSourceId,
     toId: agentctlSourceId,
     relationship: 'depends_on',
     fieldName: 'deployment_target',
+    at: now,
+  });
+  sources.attachRelationship({
+    sourceId: kanbanSourceId,
+    toId: workflowsSourceId,
+    relationship: 'depends_on',
+    fieldName: 'orchestration_pipeline',
     at: now,
   });
 
@@ -391,11 +465,17 @@ export function seedTenantProjection(now: EpochMillis = NOW): SeededProjection {
     ids: {
       kanbanSourceId,
       agentctlSourceId,
+      workflowsSourceId,
       staleSourceId,
       discoveredUnknownSourceId,
       excludedSourceId,
       componentGapId,
       excludedGapId: excludedGap.id,
+    },
+    ac3RecordIds: {
+      kanban: kanbanRecordId,
+      agentctl: agentctlRecordId,
+      workflowsOrchestration: workflowsRecordId,
     },
   };
 }

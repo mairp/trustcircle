@@ -31,6 +31,10 @@ import {
   RENAMED_OLD_KEY,
   RENAMED_NEW_KEY,
   TENANT,
+  NOW,
+  HEALTHY_ASSET_ID,
+  OWNER,
+  DISCOVERY_EVIDENCE,
   type SourceState,
 } from '../fixtures/inventory.ts';
 
@@ -205,5 +209,166 @@ describe('Phase 84 · seven seeded source states are each independently observab
     const r2 = seedRenamedReconciliation();
     expect(r1.movedDelta.identity).toBe(r2.movedDelta.identity);
     expect([...r1.movedDelta.relatedIdentities]).toEqual([...r2.movedDelta.relatedIdentities]);
+  });
+});
+
+// ===========================================================================
+// AC1 — a healthy governed asset appears EXACTLY ONCE in the current-state view,
+// carrying EVERY enumerated facet as a named field (not just support level).
+// ===========================================================================
+
+describe('Phase 84 · AC1 — a healthy item renders once with the full facet set', () => {
+  it('the healthy asset appears exactly once and carries every AC1 facet', () => {
+    const seeded = seedTenantProjection();
+    const view = seeded.inventory.currentStateView(NOW);
+
+    // APPEARS-ONCE: the healthy asset id occurs exactly once across the whole current-state view.
+    const rows = view.filter((r) => r.assetId === HEALTHY_ASSET_ID);
+    expect(rows.length).toBe(1);
+    const row = rows[0]!;
+
+    // Every AC1 facet is present as its OWN named field with a concrete, seeded value:
+    expect(row.assetType).toBe('service'); //            type
+    expect(row.assetId).toBe(HEALTHY_ASSET_ID); //       source identity
+    expect(row.ownerPrincipalId).toBe(OWNER); //         owner
+    expect(row.ownershipGap).toBe(false); //             owner is present → no ownership gap
+    expect(row.lifecycleState).toBe('operating'); //     lifecycle state
+    expect(row.riskTier).toBe('moderate'); //            risk
+    expect(row.coverage).toBe('covered'); //             control coverage
+    expect(row.evidenceState).toBe('current'); //        evidence state (fresh record at NOW)
+    expect(row.observedHealth).toBe('healthy'); //       health (recorded)
+    expect(row.reportedHealth).toBe('healthy'); //       health SAFE to report (evidence current)
+    expect(row.lastObservationAt).toBe(NOW); //          last observation time
+    expect(row.unresolvedIssueCount).toBe(0); //         unresolved issues (none for a clean item)
+    // AC1 clean-positive: a covered+healthy row is NOT dragged down by any visible component gap.
+    expect(row.hasVisibleComponentGap).toBe(false);
+
+    // NON-VACUITY: the orphaned sibling row differs on EVERY governance-critical facet, proving the
+    // healthy values above are data-driven and not constants stamped on every row.
+    const orphan = view.find((r) => r.assetId !== HEALTHY_ASSET_ID);
+    expect(orphan).toBeTruthy();
+    expect(orphan!.ownerPrincipalId).toBeUndefined();
+    expect(orphan!.ownershipGap).toBe(true);
+    expect(orphan!.lifecycleState).not.toBe(row.lifecycleState);
+    expect(orphan!.coverage).not.toBe(row.coverage);
+    expect(orphan!.riskTier).not.toBe(row.riskTier);
+  });
+});
+
+// ===========================================================================
+// AC3 — three DISTINCT named source records (kanban / agentctl /
+// workflows_orchestration) with correlation, per-field status differences,
+// declared dependencies, and per-source authoritative fields.
+// ===========================================================================
+
+describe('Phase 84 · AC3 — three distinct sources correlate with differences, dependencies, authority', () => {
+  it('all THREE named source records are distinct and correlated on the kanban anchor', () => {
+    const seeded = seedTenantProjection();
+    const anchor = seeded.ids.kanbanSourceId;
+    const records = seeded.sources.sourceRecordsFor(anchor);
+
+    // DISTINCT records: exactly one per named source class, all three present.
+    const classes = records.map((r) => r.sourceClass).sort();
+    expect(classes).toEqual(['agentctl', 'kanban', 'workflows_orchestration']);
+    // Distinct record identities (no collapse of the three into one).
+    expect(new Set(records.map((r) => r.id)).size).toBe(3);
+    expect(records.map((r) => r.id).sort()).toEqual(
+      [
+        seeded.ac3RecordIds.agentctl,
+        seeded.ac3RecordIds.kanban,
+        seeded.ac3RecordIds.workflowsOrchestration,
+      ].sort(),
+    );
+  });
+
+  it('per-field status differences surface the disagreement across all three sources (never collapsed)', () => {
+    const seeded = seedTenantProjection();
+    const diffs = seeded.sources.statusDifferencesFor(seeded.ids.kanbanSourceId);
+
+    const byField = new Map(diffs.map((d) => [d.field, d]));
+    // `status` disagrees three ways: kanban active / agentctl inactive / workflows conflicting.
+    const statusDiff = byField.get('status');
+    expect(statusDiff).toBeTruthy();
+    const statusValues = statusDiff!.values.map((v) => v.value).sort();
+    expect(statusValues).toEqual(['active', 'conflicting', 'inactive']);
+    // `observedState.pipeline_state` disagrees three ways: running / paused / failed.
+    const pipelineDiff = byField.get('observedState.pipeline_state');
+    expect(pipelineDiff).toBeTruthy();
+    const pipelineValues = pipelineDiff!.values.map((v) => v.value).sort();
+    expect(pipelineValues).toEqual(['failed', 'paused', 'running']);
+
+    // ATTRIBUTION: each distinct value is pinned to the RECORD that reported it — the
+    // workflows_orchestration record holds 'conflicting'/'failed', proving the third source is a
+    // real participant in the difference, not an artefact.
+    const wfId = seeded.ac3RecordIds.workflowsOrchestration;
+    const conflicting = statusDiff!.values.find((v) => v.value === 'conflicting');
+    expect(conflicting!.recordIds).toContain(wfId);
+    const failed = pipelineDiff!.values.find((v) => v.value === 'failed');
+    expect(failed!.recordIds).toContain(wfId);
+
+    // NON-VACUITY: an agreed field is NOT reported as a difference (differences are real, not every
+    // field). The stale warehouse source, correlated with a single record, has zero differences.
+    expect(seeded.sources.statusDifferencesFor(seeded.ids.staleSourceId).length).toBe(0);
+  });
+
+  it('declared dependency edges name BOTH other sources (never inferred)', () => {
+    const seeded = seedTenantProjection();
+    const deps = seeded.sources.dependenciesFor(seeded.ids.kanbanSourceId);
+    const targets = deps.map((d) => d.toId).sort();
+    expect(targets).toEqual([seeded.ids.agentctlSourceId, seeded.ids.workflowsSourceId].sort());
+    // Every edge is a declared `depends_on` (never any other, never inferred).
+    expect(deps.every((d) => d.relationship === 'depends_on')).toBe(true);
+
+    // NON-VACUITY: a source with no declared edges has no dependencies (edges are seeded, not global).
+    expect(seeded.sources.dependenciesFor(seeded.ids.staleSourceId).length).toBe(0);
+  });
+
+  it('each named source carries a contract declaring the fields it is AUTHORITATIVE for (distinct per source)', () => {
+    const seeded = seedTenantProjection();
+    const authOf = (id: string) => {
+      const c = seeded.sources.latestContract(id);
+      expect(c).toBeTruthy();
+      return [...c!.authoritativeFields].sort();
+    };
+    // Three DISTINCT authoritative-field sets — one per named source (no source owns every field).
+    expect(authOf(seeded.ids.kanbanSourceId)).toEqual(['status']);
+    expect(authOf(seeded.ids.agentctlSourceId)).toEqual(['pipeline_state']);
+    expect(authOf(seeded.ids.workflowsSourceId)).toEqual(['deployment_target']);
+    // Pairwise distinct — the authority is attributed, not collapsed onto one source.
+    expect(authOf(seeded.ids.kanbanSourceId)).not.toEqual(authOf(seeded.ids.agentctlSourceId));
+    expect(authOf(seeded.ids.agentctlSourceId)).not.toEqual(authOf(seeded.ids.workflowsSourceId));
+  });
+});
+
+// ===========================================================================
+// AC5 — an unregistered (unknown-class) source is added to the catalog with the
+// FULL enumerated field set: discovery evidence, type/unknown, location, access
+// status, sensitivity, ownership status, and onboarding state.
+// ===========================================================================
+
+describe('Phase 84 · AC5 — a discovered unknown source is catalogued with the full field set', () => {
+  it('the discovered source carries discovery evidence, location, sensitivity, and ownership status', () => {
+    const seeded = seedTenantProjection();
+    const id = seeded.ids.discoveredUnknownSourceId;
+    const entry = seeded.sources.catalog().find((c) => c.id === id)!;
+    expect(entry).toBeTruthy();
+
+    // Each AC5 field is INDEPENDENTLY witnessed with a concrete, seeded value:
+    expect(entry.discoveryEvidence).toBe(DISCOVERY_EVIDENCE); //   discovery evidence
+    expect(entry.sourceClass).toBe('unknown'); //                  type / unknown
+    expect(entry.observedLocations).toContain('s3://acme-unmapped-bucket'); // location
+    expect(entry.accessState).toBe('reachable'); //               access status
+    expect(entry.sensitivity).toBe('restricted'); //             sensitivity (non-default)
+    expect(entry.ownerPrincipalId).toBeUndefined(); //           ownership status (unowned gap)
+    expect(entry.onboardingState).toBe('discovered'); //         onboarding state
+
+    // NON-VACUITY: the kanban source differs on EVERY one of these fields, so each value above is a
+    // real property of the discovered source, not a constant stamped on every catalog entry.
+    const kanban = seeded.sources.catalog().find((c) => c.id === seeded.ids.kanbanSourceId)!;
+    expect(kanban.sourceClass).not.toBe(entry.sourceClass);
+    expect(kanban.accessState).not.toBe(entry.accessState);
+    expect(kanban.sensitivity).not.toBe(entry.sensitivity);
+    expect(kanban.ownerPrincipalId).toBe(OWNER);
+    expect(kanban.observedLocations).not.toContain('s3://acme-unmapped-bucket');
   });
 });

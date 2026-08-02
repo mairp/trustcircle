@@ -352,15 +352,16 @@ describe('AC3 · distinct source records correlate with differing status', () =>
 
     const kanban = body.items.find((i: Rec) => i.source_class === 'kanban');
     expect(Array.isArray(kanban.correlation)).toBe(true);
-    // The two distinct records disagree on `status` and on `observedState.pipeline_state`.
+    // The three distinct records (kanban/agentctl/workflows_orchestration) disagree on `status` and
+    // on `observedState.pipeline_state`.
     const fields = kanban.correlation.map((d: Rec) => d.field).sort();
     expect(fields).toContain('status');
     expect(fields).toContain('observedState.pipeline_state');
 
     const statusDiff = kanban.correlation.find((d: Rec) => d.field === 'status');
-    // Both distinct values are named, each attributed to the record ids that reported it.
+    // All three distinct values are named, each attributed to the record ids that reported it.
     const values = statusDiff.values.map((v: Rec) => v.value).sort();
-    expect(values).toEqual(['active', 'inactive']);
+    expect(values).toEqual(['active', 'conflicting', 'inactive']);
     for (const v of statusDiff.values) {
       expect(Array.isArray(v.record_ids)).toBe(true);
       expect(v.record_ids.length).toBeGreaterThan(0);
@@ -393,11 +394,16 @@ describe('AC3 · distinct source records correlate with differing status', () =>
     const body = await json(await app.fetch(get('/v1/inventory/sources')));
     const kanban = body.items.find((i: Rec) => i.source_class === 'kanban') as Rec;
     const agentctl = body.items.find((i: Rec) => i.source_class === 'agentctl') as Rec;
+    const workflows = body.items.find(
+      (i: Rec) => i.source_class === 'workflows_orchestration',
+    ) as Rec;
     expect(kanban).toBeTruthy();
     expect(agentctl).toBeTruthy();
+    expect(workflows).toBeTruthy(); // AC3: the THIRD named source is catalogued on the wire.
 
-    // (a) DISTINCT source records: the correlation surface is built from ≥2 distinct records that
-    //     each reported a value; their record ids are named and distinct.
+    // (a) DISTINCT source records: the correlation surface is built from THREE distinct records
+    //     (kanban + agentctl + workflows_orchestration) that each reported a value; their record
+    //     ids are named and distinct.
     const correlation = kanban.correlation as Rec[];
     expect(Array.isArray(correlation)).toBe(true);
     expect(correlation.length).toBeGreaterThan(0);
@@ -407,39 +413,48 @@ describe('AC3 · distinct source records correlate with differing status', () =>
         for (const r of v.record_ids as string[]) allRecordIds.add(r);
       }
     }
-    expect(allRecordIds.size).toBeGreaterThanOrEqual(2); // distinct records
+    expect(allRecordIds.size).toBeGreaterThanOrEqual(3); // THREE distinct records
 
-    // (b)+(c) CORRELATION / STATUS DIFFERENCES: the distinct records DISAGREE on named fields, and
-    //     each differing value is attributed to the record ids that reported it.
+    // (b)+(c) CORRELATION / STATUS DIFFERENCES: the three records DISAGREE on named fields three
+    //     ways, and each differing value is attributed to the record ids that reported it.
     const fields = correlation.map((d) => d.field).sort();
     expect(fields).toContain('status');
     expect(fields).toContain('observedState.pipeline_state');
     const statusDiff = correlation.find((d) => d.field === 'status') as Rec;
     const values = (statusDiff.values as Rec[]).map((v) => v.value).sort();
-    expect(values).toEqual(['active', 'inactive']); // a genuine status DIFFERENCE
+    expect(values).toEqual(['active', 'conflicting', 'inactive']); // a THREE-WAY status DIFFERENCE
+    const pipelineDiff = correlation.find((d) => d.field === 'observedState.pipeline_state') as Rec;
+    const pipelineValues = (pipelineDiff.values as Rec[]).map((v) => v.value).sort();
+    expect(pipelineValues).toEqual(['failed', 'paused', 'running']);
 
-    // (d) DEPENDENCIES: the declared depends_on edge to the agentctl source.
+    // (d) DEPENDENCIES: the declared depends_on edges to BOTH other named sources.
     const deps = kanban.dependencies as Rec[];
     expect(Array.isArray(deps)).toBe(true);
-    expect(deps.length).toBeGreaterThan(0);
-    const dep = deps[0];
-    expect(dep.from_id).toBe(kanban.id);
-    expect(dep.to_id).toBe(String(app.seeded.ids.agentctlSourceId));
+    expect(deps.length).toBe(2);
+    expect(deps.every((d) => d.from_id === kanban.id)).toBe(true);
+    const depTargets = deps.map((d) => d.to_id).sort();
+    expect(depTargets).toEqual(
+      [String(app.seeded.ids.agentctlSourceId), String(app.seeded.ids.workflowsSourceId)].sort(),
+    );
 
-    // (e) AUTHORITATIVE FIELDS: the two entries carry distinct identities and DIFFERING authoritative
-    //     status (access_state) — the field a human reconciles across the correlated records.
-    expect(kanban.id).not.toBe(agentctl.id);
+    // (e) AUTHORITATIVE FIELDS: the three entries carry distinct identities and THREE DIFFERING
+    //     authoritative statuses (access_state) — the field a human reconciles across the records.
+    expect(new Set([kanban.id, agentctl.id, workflows.id]).size).toBe(3);
     expect(kanban.access_state).toBe('connected');
     expect(agentctl.access_state).toBe('degraded');
-    expect(kanban.access_state).not.toBe(agentctl.access_state);
+    expect(workflows.access_state).toBe('inaccessible');
+    expect(new Set([kanban.access_state, agentctl.access_state, workflows.access_state]).size).toBe(
+      3,
+    );
 
     // All five AC3 surfaces present TOGETHER on this one drill-down view.
     const present = {
-      distinct_records: allRecordIds.size >= 2,
+      distinct_records: allRecordIds.size >= 3,
       correlation: correlation.length > 0,
-      status_differences: values.length >= 2,
-      dependencies: deps.length > 0,
-      authoritative_field_difference: kanban.access_state !== agentctl.access_state,
+      status_differences: values.length >= 3,
+      dependencies: deps.length >= 2,
+      authoritative_field_difference:
+        new Set([kanban.access_state, agentctl.access_state, workflows.access_state]).size === 3,
     };
     for (const [k, v] of Object.entries(present)) {
       expect(v, `AC3 surface '${k}' must be present on the drill-down`).toBe(true);
@@ -857,8 +872,9 @@ describe('cursor pagination over the source catalog', () => {
       expect(pages).toBeLessThan(50); // loop guard
     } while (cursor !== null);
 
-    // Every seeded source was visited exactly once across the paged walk (5 sources).
-    expect(seen.size).toBe(5);
+    // Every seeded source was visited exactly once across the paged walk (6 sources:
+    // kanban, agentctl, workflows_orchestration, warehouse/stale, discovered-unknown, excluded).
+    expect(seen.size).toBe(6);
   });
 
   it('the last page has next_cursor=null', async () => {
