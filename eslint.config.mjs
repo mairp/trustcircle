@@ -53,6 +53,7 @@ const IGNORES = [
   // samples, evidence drivers) written by the test harness. Mirrors .prettierignore so both
   // tools agree these are not authored source. Kept tracked so gate snapshots can read them.
   'tests/e2e/scenarios/_evidence/**',
+  'tests/tooling/_evidence/**',
 ];
 
 // ---------------------------------------------------------------------------------------

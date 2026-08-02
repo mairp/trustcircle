@@ -21,6 +21,7 @@ test-results/
 # authored source — the formatter must not own them (mirrors test-results/ above). They stay
 # tracked/non-git-ignored so gate grounding snapshots can read them.
 tests/e2e/scenarios/_evidence/
+tests/tooling/_evidence/
 
 # Lockfile (npm owns its formatting)
 package-lock.json

@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: docs/runbooks/source-inventory.md exists (Phase 86 required artifact)
+ok 1 - docs/runbooks/source-inventory.md exists (Phase 86 required artifact)
+  ---
+  duration_ms: 2.162965
+  type: 'test'
+  ...
+# Subtest: doc documents the current-state view with the full facet set (VO-17f515089c2fa3df7074)
+ok 2 - doc documents the current-state view with the full facet set (VO-17f515089c2fa3df7074)
+  ---
+  duration_ms: 1.051296
+  type: 'test'
+  ...
+# Subtest: doc documents source discovery authority + onboarding (VO-d1e59925eee504244d39)
+ok 3 - doc documents source discovery authority + onboarding (VO-d1e59925eee504244d39)
+  ---
+  duration_ms: 1.62047
+  type: 'test'
+  ...
+# Subtest: doc documents gap triage — reconcile keeps sources visible (VO-b0c8db36e38294f255d2)
+ok 4 - doc documents gap triage — reconcile keeps sources visible (VO-b0c8db36e38294f255d2)
+  ---
+  duration_ms: 0.960626
+  type: 'test'
+  ...
+# Subtest: doc documents cross-source drill-down & correlation (VO-a9b3817cf3037ba213be)
+ok 5 - doc documents cross-source drill-down & correlation (VO-a9b3817cf3037ba213be)
+  ---
+  duration_ms: 0.682035
+  type: 'test'
+  ...
+# Subtest: doc documents stale/unavailable marking with confidence (VO-6e56909c42e15b9dba13)
+ok 6 - doc documents stale/unavailable marking with confidence (VO-6e56909c42e15b9dba13)
+  ---
+  duration_ms: 0.642892
+  type: 'test'
+  ...
+# Subtest: doc documents governed-source gaps + exclusion with review-or-expiry (VO-4c192ba5b64b4227c51a)
+ok 7 - doc documents governed-source gaps + exclusion with review-or-expiry (VO-4c192ba5b64b4227c51a)
+  ---
+  duration_ms: 1.105147
+  type: 'test'
+  ...
+# Subtest: doc documents the least-information discovery rule
+ok 8 - doc documents the least-information discovery rule
+  ---
+  duration_ms: 0.743861
+  type: 'test'
+  ...
+# Subtest: doc documents core-only operation on the availability axis
+ok 9 - doc documents core-only operation on the availability axis
+  ---
+  duration_ms: 1.56144
+  type: 'test'
+  ...
+# Subtest: doc cites every phase-owned verification obligation
+ok 10 - doc cites every phase-owned verification obligation
+  ---
+  duration_ms: 1.200534
+  type: 'test'
+  ...
+# Subtest: every code path the runbook references exists in the repo (no drift)
+ok 11 - every code path the runbook references exists in the repo (no drift)
+  ---
+  duration_ms: 0.961668
+  type: 'test'
+  ...
+# Subtest: every symbol the runbook names is real (grep in its source file)
+ok 12 - every symbol the runbook names is real (grep in its source file)
+  ---
+  duration_ms: 6.965906
+  type: 'test'
+  ...
+# Subtest: every test file the runbook points to actually exists
+ok 13 - every test file the runbook points to actually exists
+  ---
+  duration_ms: 0.421018
+  type: 'test'
+  ...
+# Subtest: NEGATIVE CONTROL: absent keyword fails to match; non-owned VO id is absent
+ok 14 - NEGATIVE CONTROL: absent keyword fails to match; non-owned VO id is absent
+  ---
+  duration_ms: 0.393325
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 303.076611

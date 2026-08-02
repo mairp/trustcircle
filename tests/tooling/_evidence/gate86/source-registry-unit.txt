@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 <repo-root>
+
+
+ Test Files  1 passed (1)
+      Tests  27 passed (27)
+   Start at  10:27:34
+   Duration  1.95s (transform 906ms, setup 0ms, import 1.02s, tests 180ms, environment 0ms)
+

@@ -1,0 +1,14 @@
+NEGATIVE CONTROL A — drop VO-6e56909c42e15b9dba13 from doc -> test MUST fail:
+not ok 10 - doc cites every phase-owned verification obligation
+# pass 13
+# fail 1
+
+NEGATIVE CONTROL B — remove referenced test file -> test MUST fail:
+not ok 13 - every test file the runbook points to actually exists
+# pass 13
+# fail 1
+
+RESTORED — clean run MUST be 14/14:
+# tests 14
+# pass 14
+# fail 0
