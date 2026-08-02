@@ -1,9 +1,18 @@
 
-Running 4 tests using 4 workers
+Running 13 tests using 8 workers
 
-  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:34:3 › Scenario 1 signed result manifest › emits a signed, pinned, tamper-evident manifest that verifies (180ms)
-  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:95:3 › Scenario 1 signed result manifest › the five Scenario-1 success criteria are present and met (145ms)
-  ✓  3 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:56:3 › Scenario 1 signed result manifest › binds requirement / assertion / audit references for every US1-AS{n} (230ms)
-  ✓  4 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:77:3 › Scenario 1 signed result manifest › gap references stay visible with reason + specific owner action (75ms)
+  ✓   1 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:532:3 › AC2 discovered-but-unmanaged/unreachable/excluded remain visible gaps › unreachable + out-of-scope(excluded) + denied(unmanaged) targets all persist as reasoned gaps, not healthy/absent (255ms)
+  ✓   4 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:639:3 › AC2 discovered-but-unmanaged/unreachable/excluded remain visible gaps › a previously-recorded source that DISAPPEARS from the next sweep does not vanish from the catalog (53ms)
+  ✓   3 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:34:3 › Scenario 1 signed result manifest › emits a signed, pinned, tamper-evident manifest that verifies (77ms)
+  ✓   5 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:688:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation (80ms)
+  ✓   8 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:865:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence (86ms)
+  ✓   2 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:107:3 › Scenario 1 signed result manifest › every standalone FR MUST-clause maps to a durable, independently observable witness (310ms)
+  ✓   6 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:476:3 › AC1 healthy sources appear once with authoritative fields › re-observing the same healthy sources on a second sweep does NOT duplicate rows (reconciliation) (72ms)
+  ✓   7 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:95:3 › Scenario 1 signed result manifest › the five Scenario-1 success criteria are present and met (109ms)
+  ✓   9 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:790:3 › AC4 stale/unavailable source marked last-known; health not inferred from stale data › a source that becomes unreachable on refresh flips to a visible gap and is not read as healthy (70ms)
+  ✓  10 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:1010:3 › AC6 unsupported/inaccessible/sensitive/unowned/excluded discovered source stays a governed gap › each governed-source-gap disposition is a distinct, reasoned, visible catalog gap (211ms)
+  ✓  11 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:77:3 › Scenario 1 signed result manifest › gap references stay visible with reason + specific owner action (160ms)
+  ✓  12 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:356:3 › AC1 healthy sources appear once with authoritative fields › a healthy multi-source sweep records each item exactly once, with identity/type/state/observation time (147ms)
+  ✓  13 [discovery] › tests/e2e/discovery-open-boundary.manifest.spec.ts:56:3 › Scenario 1 signed result manifest › binds requirement / assertion / audit references for every US1-AS{n} (348ms)
 
-  4 passed (2.6s)
+  13 passed (4.5s)

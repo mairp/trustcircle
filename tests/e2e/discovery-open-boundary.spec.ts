@@ -58,6 +58,7 @@ const {
   AgentLease,
   EvidenceBuffer,
   SourceCatalog,
+  isMetadataOnly,
   resolveScanAuthorization,
   GAP_REASONS,
   ONBOARDING_STATES,
@@ -337,13 +338,6 @@ async function sweepAndFlush(built: BuiltAgent) {
   const report = await built.agent.runOnce();
   const flushed = await built.evidence.flush();
   return { report, flushed };
-}
-
-// Read the shared work id off a captured discovery record's probe evidence, without `any`.
-function workIdOf(rec: DiscoveryEvidenceRecord): string | undefined {
-  const payload = rec.payload as { evidence?: { workId?: unknown } } | null | undefined;
-  const workId = payload?.evidence?.workId;
-  return typeof workId === 'string' ? workId : undefined;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
@@ -731,31 +725,50 @@ test.describe('AC3 related work across Kanban / agentctl / workflows_orchestrati
     expect(new Set([kanban?.location, agentctl?.location, wf?.location]).size).toBe(3);
     expect(cat.counts().sources).toBe(3);
 
-    // Correlation (the shared work id) is reconstructable from the durable evidence records — the
-    // three distinct source records are joinable WITHOUT collapsing them into one row.
+    // Correlation is reconstructable from the DURABLE, disclosure-safe record identity — NOT from
+    // the probe's raw `evidence` (which the metadata-only guard deliberately never persists; a
+    // leaked `workId` would violate the least-privilege boundary FR-038/SC-019). The shared work key
+    // `WORK-100` is carried by each source's STABLE targetId, so the three distinct source records
+    // are joinable WITHOUT collapsing them into one row and WITHOUT retaining protected content.
+    const correlationKeyOf = (rec: DiscoveryEvidenceRecord): string | undefined =>
+      /WORK-\d+/.exec(rec.targetId)?.[0];
     const byWork = built.sinkPair.flushed
       .filter((r) => r.kind === 'source_discovered')
-      .filter((r) => workIdOf(r) === 'WORK-100');
+      .filter((r) => correlationKeyOf(r) === 'WORK-100');
     expect(byWork.map((r) => r.targetId).sort()).toEqual([
       'agentctl:run-WORK-100',
       'kanban:card-WORK-100',
       'wf:pipeline-WORK-100',
     ]);
+    // Each correlated record is INDEPENDENTLY traceable via its durable correlationId — so the three
+    // rows stay joinable-yet-distinct (FR-008 correlation without silent merge, FR-042 no silent
+    // source choice). Three distinct records, three distinct correlationIds.
+    expect(new Set(byWork.map((r) => r.correlationId)).size).toBe(3);
+    // And the persisted payloads are metadata-only — the raw probe evidence is a shape tag, never
+    // the verbatim content — so this correlation is achieved WITHOUT a disclosure leak.
+    for (const r of byWork) expect(isMetadataOnly(r.payload)).toBe(true);
 
-    // NEGATIVE control: three different work ids do NOT correlate under WORK-100 — proving the
-    // correlation above is content-driven, not an accident of counting three rows.
+    // NEGATIVE control: three sources whose durable identities do NOT share the work key do NOT
+    // correlate under WORK-100 — proving the correlation above is identity-driven, not an accident
+    // of counting three rows.
     const other = buildAgent({
       grantedScopes: ['kanban', 'agentctl', 'workflows_orchestration'],
       authorizerPair: allowAll(),
-      probePair: scriptedProbe((t) => reachable(t.scope, { workId: t.scope + ':other' })()),
+      probePair: scriptedProbe((t) => reachable(t.scope)()),
       targetList: [
-        target({ targetId: 'k', scope: 'kanban', registered: true }),
-        target({ targetId: 'a', scope: 'agentctl', registered: true }),
-        target({ targetId: 'w', scope: 'workflows_orchestration', registered: true }),
+        target({ targetId: 'kanban:card-OTHER-1', scope: 'kanban', registered: true }),
+        target({ targetId: 'agentctl:run-OTHER-2', scope: 'agentctl', registered: true }),
+        target({
+          targetId: 'wf:pipeline-OTHER-3',
+          scope: 'workflows_orchestration',
+          registered: true,
+        }),
       ],
     });
     await sweepAndFlush(other);
-    const otherCorrelated = other.sinkPair.flushed.filter((r) => workIdOf(r) === 'WORK-100');
+    const otherCorrelated = other.sinkPair.flushed
+      .filter((r) => r.kind === 'source_discovered')
+      .filter((r) => correlationKeyOf(r) === 'WORK-100');
     expect(otherCorrelated.length).toBe(0);
   });
 });
@@ -883,10 +896,18 @@ test.describe('AC5 unregistered source in the boundary is added to the catalog w
     );
     expect(rec).toBeTruthy();
     const payload = rec?.payload as
-      { registered?: boolean; location?: string; evidence?: unknown } | undefined;
+      | { registered?: boolean; location?: string; evidenceShape?: string; classification?: string }
+      | undefined;
     expect(payload?.registered).toBe(false); // was unregistered when discovered
     expect(payload?.location).toBe('host://kanban/new');
-    expect(payload?.evidence).toEqual({ banner: 'kanban-api/1.4', foundBy: 'port-scan' });
+    expect(payload?.classification).toBe('kanban'); // type/unknown classification
+    // DISCOVERY EVIDENCE — recorded as a disclosure-safe SHAPE TAG, never the verbatim probe body.
+    // The probe returned `{ banner, foundBy }` (two keys); the durable record proves "evidence was
+    // observed" via `evidenceShape` WITHOUT persisting the content (FR-038/SC-019 least-privilege).
+    // A prior version of this test asserted `payload.evidence` deep-equalled the raw probe object —
+    // that would require the metadata-only guard to leak the probe body, which it correctly refuses.
+    expect(payload?.evidenceShape).toBe('object:keys=2');
+    expect(isMetadataOnly(payload)).toBe(true); // the durable record is provably metadata-only
     expect(typeof rec?.correlationId).toBe('string');
     expect((rec?.correlationId ?? '').length).toBeGreaterThan(0);
 

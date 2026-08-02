@@ -1,4 +1,2 @@
-# eslint green-gate for the 3 Phase-85 source files
-# Command: npx eslint tests/e2e/scenarios/discovery-open-boundary.ts tests/discovery/scenario1-result-manifest.test.mjs tests/e2e/discovery-open-boundary.manifest.spec.ts
+$ eslint <phase-85 files>
 eslint exit code: 0
-eslint result: PASS (no errors, no warnings)

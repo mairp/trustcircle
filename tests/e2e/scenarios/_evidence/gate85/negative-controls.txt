@@ -1,20 +1,23 @@
 Gate 85 — determinism + negative-control witness (independent oracle)
 
-determinism: digestA=54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd
-determinism: digestB=54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd
+determinism: digestA=3e55bee610fed0deab04e74d5650f48d29c1f1e13cff665ed1c20b7a59272e93
+determinism: digestB=3e55bee610fed0deab04e74d5650f48d29c1f1e13cff665ed1c20b7a59272e93
 determinism: digestA==digestB -> PASS
 
 positive control (untouched manifest) verify.ok=true -> PASS
 
 negative controls (each MUST be rejected -> verify.ok=false):
   1. tampered evidence witness   verify.ok=false rejected=true -> PASS
-     reasons: manifestDigest mismatch (recomputed e8b3b6f5aecb… != stored 54a9825755e6…); line US1-AS1 digest mismatch
+     reasons: manifestDigest mismatch (recomputed 2f93bad7e993… != stored 3e55bee610fe…); line US1-AS1 digest mismatch
   2. mis-pinned bundle id        verify.ok=false rejected=true -> PASS
-     reasons: bundle id WRONGBUNDLEID000000000000000 != pinned 36GCYGDJ15PTYP60F91QWRAY2M; manifestDigest mismatch (recomputed 3acd90397885… != stored 54a9825755e6…)
+     reasons: bundle id WRONGBUNDLEID000000000000000 != pinned 36GCYGDJ15PTYP60F91QWRAY2M; manifestDigest mismatch (recomputed 937347f802b1… != stored 3e55bee610fe…)
   3. dropped acceptance line     verify.ok=false rejected=true -> PASS
-     reasons: manifestDigest mismatch (recomputed 7ecf11b12751… != stored 54a9825755e6…); missing acceptance line US1-AS1
+     reasons: manifestDigest mismatch (recomputed 4a662c0bcf36… != stored 3e55bee610fe…); missing acceptance line US1-AS1
   4. forced-unmet success crit   verify.ok=false rejected=true -> PASS
-     reasons: manifestDigest mismatch (recomputed ef0e00586d5c… != stored 54a9825755e6…); success criterion SC-001 not met: 5/5 declared sources represented or listed as gaps
+     reasons: manifestDigest mismatch (recomputed 65e3db0e60cb… != stored 3e55bee610fe…); success criterion SC-001 not met: 5/5 declared sources represented or listed as gaps
+  5. dropped FR MUST-clause      verify.ok=false rejected=true -> PASS
+     reasons: manifestDigest mismatch (recomputed 9cc44c45e7ab… != stored 3e55bee610fe…); missing FR clause witness FR-006
+
+frClauses witnessed: 15 (FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-037, FR-038, FR-039, FR-040, FR-041, FR-042)
 
 OVERALL: PASS
-

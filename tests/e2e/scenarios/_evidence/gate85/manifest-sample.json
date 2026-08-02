@@ -176,13 +176,13 @@
           "readPath": "checkpoint-store",
           "detail": "durable checkpoint distinguishes the refreshed sweep clock from the stale source last-known time",
           "witnessed": [
-            "latestCheckpointSweepClock=none",
+            "latestCheckpointSweepClock=1700000120000",
             "staleLastKnownAt=1700000000000"
           ]
         }
       ],
       "gapRefs": [],
-      "lineDigest": "8ed5d040e05a5fd59b289ada08c14f1671a8be6f7ecfe113e9e928960a4763dd"
+      "lineDigest": "7bdb9dc8f005c8519854c0391c73afb0e3215ba00271b66739fa9466641228be"
     },
     {
       "assertionRef": "US1-AS5",
@@ -250,6 +250,195 @@
       "lineDigest": "03af23ac76472d9c4762bb66424178901d2793705e325e241dbba6717eee53eb"
     }
   ],
+  "frClauses": [
+    {
+      "frId": "FR-001",
+      "clause": "MUST maintain an explicit, versioned deployment and inventory boundary … including authorized scope and exclusions for machine-wide source discovery.",
+      "disposition": "witnessed",
+      "readPath": "status-snapshot",
+      "witness": [
+        "bundleVersion=2|verificationPlanVersion=1 (versioned boundary)",
+        "authorizedScope={agentctl,kanban,unknown,workflows_orchestration} (status.grantedScopes)",
+        "exclusion enforced: secretstore:vault-1 scope=secretstore → gapReason=out_of_scope (out-of-authorized-scope, never scanned)",
+        "boundary total inventory reconciled=8 (sources=5, gaps=3)"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-002",
+      "clause": "MUST discover and continuously reconcile … within that boundary; discovery MUST NOT depend on a fixed list of named source products.",
+      "disposition": "witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "two sweeps reconciled the same catalog (each targetId once): total=8",
+        "open-ended: an UNKNOWN-scope source (unknown:svc-new) was discovered without a named-product list → onboarding=discovered"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-003",
+      "clause": "MUST provide a unified current-state view that preserves each item’s source identity, type, ownership, lifecycle state, … last observation time.",
+      "disposition": "witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "agentctl:agent-7|type=agentctl|lifecycle=registered|observedAt=1700000120000",
+        "agentctl:agent-down|type=agentctl|lifecycle=gap|observedAt=1700000120000",
+        "kanban:board-42|type=kanban|lifecycle=registered|observedAt=1700000120000",
+        "kanban:board-denied|type=kanban|lifecycle=gap|observedAt=1700000120000",
+        "kanban:board-stale|type=kanban|lifecycle=registered|observedAt=1700000000000",
+        "secretstore:vault-1|type=secretstore|lifecycle=gap|observedAt=1700000120000",
+        "unknown:svc-new|type=unknown|lifecycle=discovered|observedAt=1700000120000",
+        "workflows_orchestration:wf-9|type=workflows_orchestration|lifecycle=registered|observedAt=1700000120000"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-004",
+      "clause": "MUST expose provenance, source authority, freshness, confidence, and any disagreement for correlated data.",
+      "disposition": "witnessed",
+      "readPath": "evidence-sink",
+      "witness": [
+        "provenance: every durable record carries a correlationId (15 records, all stamped)",
+        "freshness: stale source kanban:board-stale retains lastKnownAt=1700000000000 < refresh clock=1700000120000",
+        "checkpoint distinguishes fresh sweep clock=1700000120000 from stale last-known"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-005",
+      "clause": "MUST show discovered, unmanaged, unreachable, stale, orphaned, excluded, and uncovered items as explicit gaps with impact, age, reason, and ownership.",
+      "disposition": "witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "agentctl:agent-down|reason=probe_failed|age=0ms|ownerAction=restore_reachability",
+        "kanban:board-denied|reason=unauthorized|age=0ms|ownerAction=grant_or_approve_access",
+        "secretstore:vault-1|reason=out_of_scope|age=0ms|ownerAction=confirm_exclusion_or_extend_scope"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-006",
+      "clause": "MUST present pending human decisions prioritized by business impact, risk, age, expiry, dependency, and escalation status.",
+      "disposition": "boundary-witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "pending-decision set this view produces (discovered-awaiting-onboarding + visible gaps), oldest-first by age:",
+        "#1 unknown:svc-new|kind=awaiting_onboarding|age=0ms",
+        "#2 kanban:board-denied|kind=gap:unauthorized|age=0ms",
+        "#3 agentctl:agent-down|kind=gap:probe_failed|age=0ms",
+        "#4 secretstore:vault-1|kind=gap:out_of_scope|age=0ms"
+      ],
+      "coveredElsewhere": "business-impact/risk/expiry/dependency/escalation ordering is the decision-queue view (US-decision-queue); this discovery emitter durably supplies the age-ordered pending set + reason it prioritizes on."
+    },
+    {
+      "frId": "FR-007",
+      "clause": "Authorized users MUST be able to search, filter, compare, and drill from an aggregate posture into the source records, evidence, decisions, and issues that explain it.",
+      "disposition": "boundary-witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "filter substrate: catalog.sources()=5, catalog.gaps()=3 are independently queryable projections",
+        "drill substrate: aggregate posture (total=8) drills to distinct source records kanban:board-42:kanban, agentctl:agent-7:agentctl, workflows_orchestration:wf-9:workflows_orchestration",
+        "compare substrate: three distinct scopes preserved for the same drill = 3 distinct records"
+      ],
+      "coveredElsewhere": "the interactive search/filter/compare UI is the current-state view surface; this emitter durably supplies the queryable, drillable catalog+evidence substrate it reads."
+    },
+    {
+      "frId": "FR-008",
+      "clause": "MUST correlate work moving through all registered sources … keeping distinct source records.",
+      "disposition": "witnessed",
+      "readPath": "evidence-sink",
+      "witness": [
+        "kanban:board-42|distinct record kept|evidenceRecords=2",
+        "agentctl:agent-7|distinct record kept|evidenceRecords=2",
+        "workflows_orchestration:wf-9|distinct record kept|evidenceRecords=2"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-009",
+      "clause": "Conflicting or uncertain correlations MUST remain visible and MUST NOT be silently resolved.",
+      "disposition": "witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "distinct sources are NEVER silently merged: 3/3 remain separate catalog rows",
+        "indeterminate authorization would surface as a visible gap (authorization_indeterminate) rather than a silent choice — reason vocabulary present in GAP_REASONS"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-037",
+      "clause": "Every discovered source MUST have a catalog entry containing stable identity … lifecycle state, and observation time.",
+      "disposition": "witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "agentctl:agent-7|stableId|lifecycle=registered|observedAt=1700000120000",
+        "kanban:board-42|stableId|lifecycle=registered|observedAt=1700000120000",
+        "kanban:board-stale|stableId|lifecycle=registered|observedAt=1700000000000",
+        "unknown:svc-new|stableId|lifecycle=discovered|observedAt=1700000120000",
+        "workflows_orchestration:wf-9|stableId|lifecycle=registered|observedAt=1700000120000"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-038",
+      "clause": "Discovery MUST use the least information necessary … MUST NOT read protected content, secrets, or credentials … and MUST record any resulting visibility limitation.",
+      "disposition": "witnessed",
+      "readPath": "evidence-sink",
+      "witness": [
+        "least-privilege: out-of-scope target secretstore:vault-1 was NEVER probed (probeCalls excludes it=true)",
+        "every durable payload is metadata-only (shape tag, never verbatim content): 15 records",
+        "visibility limitation recorded: secretstore:vault-1 → gap reason out_of_scope"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-039",
+      "clause": "Authorized source stewards MUST be able to approve onboarding, assign ownership, … quarantine, defer, or exclude a discovered source with a mandatory reason, scope, review date, and audit trail.",
+      "disposition": "boundary-witnessed",
+      "readPath": "checkpoint-store",
+      "witness": [
+        "audit-trail substrate: durable checkpoints=3, each carrying a safeNextAction (none) — the attributable, reasoned trail steward actions append to",
+        "every discovery record is correlationId-stamped (reason/scope carried at write time): 15 records",
+        "the discovered set awaiting a steward onboarding decision: unknown:svc-new"
+      ],
+      "coveredElsewhere": "steward mutation actions (approve/quarantine/defer/exclude with mandatory reason+scope+review-date) are the governed-decision surface (FR-010/FR-011/FR-014); this emitter durably supplies the auditable trail + the discovered set those actions operate on."
+    },
+    {
+      "frId": "FR-040",
+      "clause": "Unsupported, inaccessible, sensitive, unowned, and excluded sources MUST remain visible as source-coverage gaps with impact and requirements for safe onboarding or review.",
+      "disposition": "witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "kanban:board-denied|reason=unauthorized|ownerAction(review requirement)=grant_or_approve_access",
+        "agentctl:agent-down|reason=probe_failed|ownerAction(review requirement)=restore_reachability",
+        "secretstore:vault-1|reason=out_of_scope|ownerAction(review requirement)=confirm_exclusion_or_extend_scope"
+      ],
+      "coveredElsewhere": null
+    },
+    {
+      "frId": "FR-041",
+      "clause": "MUST detect newly appearing, changed, renamed, moved, replaced, split, merged, and disappeared sources while retaining their prior identity, history, correlations, and evidence.",
+      "disposition": "boundary-witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "newly appearing: unknown:svc-new discovered on sweep 1 (onboarding=discovered)",
+        "disappeared: kanban:board-stale dropped from sweep 2 yet its prior identity+last-known observation PERSIST (lastKnownAt=1700000000000, still in catalog=true)",
+        "history retained: append-only evidence sink keeps 15 records across both sweeps (reconstructable history)"
+      ],
+      "coveredElsewhere": "renamed/moved/replaced/split/merged transitions are exercised by the identity-continuity suite; this emitter witnesses the appear + disappear-with-retained-identity edges and the append-only history substrate all of them rely on."
+    },
+    {
+      "frId": "FR-042",
+      "clause": "When multiple sources claim authority for the same field or object, the platform MUST apply an approved precedence rule or expose the unresolved conflict; it MUST NOT silently choose a source.",
+      "disposition": "boundary-witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "no silent source choice: the three same-work sources kanban:board-42, agentctl:agent-7, workflows_orchestration:wf-9 are kept as 3 DISTINCT rows (never collapsed to one)",
+        "unresolved-input visibility: distinct scopes preserved = {kanban,agentctl,workflows_orchestration}"
+      ],
+      "coveredElsewhere": "the approved precedence-rule engine / conflict-resolution UI is the correlation surface (FR-004 disagreement); this emitter guarantees the no-silent-choice invariant by keeping conflicting sources as distinct, individually visible records."
+    }
+  ],
   "gapRegister": [
     {
       "targetId": "agentctl:agent-down",
@@ -273,10 +462,10 @@
       "detail": "out_of_scope"
     }
   ],
-  "manifestDigest": "54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd",
+  "manifestDigest": "3e55bee610fed0deab04e74d5650f48d29c1f1e13cff665ed1c20b7a59272e93",
   "signature": {
     "algorithm": "sha256",
-    "digest": "54a9825755e621d2b401427525954ea26f23cbb0e1f45f8aa05c699bdb7a40fd",
+    "digest": "3e55bee610fed0deab04e74d5650f48d29c1f1e13cff665ed1c20b7a59272e93",
     "boundBundleId": "36GCYGDJ15PTYP60F91QWRAY2M",
     "boundContentHash": "af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b"
   }

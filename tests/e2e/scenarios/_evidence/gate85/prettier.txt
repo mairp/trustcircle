@@ -1,5 +1,4 @@
-# prettier --check green-gate for the 3 Phase-85 source files
-# Command: npx prettier --check tests/e2e/scenarios/discovery-open-boundary.ts tests/discovery/scenario1-result-manifest.test.mjs tests/e2e/discovery-open-boundary.manifest.spec.ts
+$ prettier --check <phase-85 files>
 Checking formatting...
 All matched files use Prettier code style!
 prettier exit code: 0

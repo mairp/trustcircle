@@ -1,0 +1,9 @@
+$ TC_NO_WEBSERVER=1 playwright test --project=discovery -g 'AC3 related work|AC5 unregistered'
+
+Running 2 tests using 2 workers
+
+  ✓  2 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:688:3 › AC3 related work across Kanban / agentctl / workflows_orchestration drills into distinct records › the same work correlated across three named sources yields three distinct records + a reconstructable correlation (77ms)
+  ✓  1 [discovery] › tests/e2e/discovery-open-boundary.spec.ts:865:3 › AC5 unregistered source in the boundary is added to the catalog with discovery evidence › a newly-appearing unregistered source is onboarded as "discovered" with location, classification and durable evidence (260ms)
+
+  2 passed (2.8s)
+ac3-ac5 exit code: 0

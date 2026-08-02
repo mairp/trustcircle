@@ -103,4 +103,39 @@ test.describe('Scenario 1 signed result manifest', () => {
     unmet.successCriteria.find((s) => s.id === 'SC-019')!.met = false;
     expect(verifyScenario1ResultManifest(unmet).ok).toBe(false);
   });
+
+  test('every standalone FR MUST-clause maps to a durable, independently observable witness', async () => {
+    const manifest = await emitScenario1ResultManifest();
+    const present = new Set(manifest.frClauses.map((c) => c.frId));
+    // The six clauses the critic named as unmet in attempt 6 are each now witnessed.
+    for (const id of ['FR-001', 'FR-006', 'FR-007', 'FR-039', 'FR-041', 'FR-042'])
+      expect(present.has(id)).toBe(true);
+    // Plus the rest of the current-state / discovery-family MUST-clauses.
+    for (const id of [
+      'FR-002',
+      'FR-003',
+      'FR-004',
+      'FR-005',
+      'FR-008',
+      'FR-009',
+      'FR-037',
+      'FR-038',
+      'FR-040',
+    ])
+      expect(present.has(id)).toBe(true);
+    // Each witness is non-empty and MISSING-free; boundary-witnessed clauses name their downstream
+    // verification site.
+    for (const c of manifest.frClauses) {
+      expect(c.witness.length).toBeGreaterThan(0);
+      expect(c.witness.some((w) => /MISSING/.test(w))).toBe(false);
+      if (c.disposition === 'boundary-witnessed') expect(c.coveredElsewhere).toBeTruthy();
+    }
+
+    // NEGATIVE control: dropping a required FR clause fails verification.
+    const dropped = deep(manifest);
+    dropped.frClauses = dropped.frClauses.filter((c) => c.frId !== 'FR-041');
+    const v = verifyScenario1ResultManifest(dropped);
+    expect(v.ok).toBe(false);
+    expect(v.reasons.some((r) => /missing FR clause witness FR-041/.test(r))).toBe(true);
+  });
 });

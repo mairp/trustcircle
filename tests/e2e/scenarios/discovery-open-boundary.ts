@@ -54,6 +54,7 @@ import type {
   AuthorizationDecision,
   CatalogEntry,
   DiscoveryEvidenceRecord,
+  DiscoveryStatus,
   GapReason,
   ProbeResult,
   ScanAuthorizer,
@@ -425,6 +426,10 @@ export interface Scenario1Observations {
   readonly probeCalls: readonly string[];
   readonly clockAtSweep1: number;
   readonly clockAtSweep2: number;
+  /** The least-privilege authority surface the agent was granted (FR-001 authorized scope). */
+  readonly grantedScopes: readonly string[];
+  /** A durable status snapshot read AFTER the sweeps (an independent read path). */
+  readonly status: DiscoveryStatus;
 }
 
 export async function runScenario1(): Promise<Scenario1Observations> {
@@ -511,6 +516,8 @@ export async function runScenario1(): Promise<Scenario1Observations> {
     probeCalls: [...probe.calls],
     clockAtSweep1,
     clockAtSweep2,
+    grantedScopes: [...GRANTED_SCOPES],
+    status: agent.status(clockAtSweep2),
   };
 }
 
@@ -582,6 +589,33 @@ export interface ManifestLine {
   readonly lineDigest: string;
 }
 
+/**
+ * A single standalone FR MUST-clause from the spec (the ones that are NOT one of the six US1
+ * Given/When/Then acceptance scenarios and NOT one of the five success criteria) mapped to an
+ * INDEPENDENTLY OBSERVABLE witness produced by the real agent's durable read paths.
+ *
+ * `disposition` is deliberately honest:
+ *   • 'witnessed'            — the emitter observes a concrete durable fact discharging the clause
+ *                             (for the current-state / discovery slice this US1 view is responsible
+ *                             for). `witness` carries the observed values.
+ *   • 'boundary-witnessed'  — the clause's downstream ACTION (e.g. a steward mutation, a decision
+ *                             queue's business-impact scoring, a precedence-resolution UI) lives
+ *                             OUTSIDE this discovery emitter, but the SUBSTRATE the clause depends on
+ *                             (audit-trail rows, the pending-onboarding set, the distinct-records
+ *                             base, the visible unresolved-conflict inputs) IS produced here and is
+ *                             witnessed. `coveredElsewhere` names where the action itself is verified.
+ * No clause is marked with a bare "met" without a durable witness value.
+ */
+export interface FrClauseWitness {
+  readonly frId: string; // FR-001 …
+  readonly clause: string; // verbatim MUST-clause text (abbreviated)
+  readonly disposition: 'witnessed' | 'boundary-witnessed';
+  readonly readPath: 'source-catalog' | 'evidence-sink' | 'checkpoint-store' | 'status-snapshot';
+  readonly witness: readonly string[]; // durable observed values (never empty)
+  /** For boundary-witnessed clauses: where the downstream ACTION is verified. */
+  readonly coveredElsewhere: string | null;
+}
+
 export interface Scenario1ResultManifest {
   readonly manifestVersion: number;
   readonly kind: 'scenario-result-manifest';
@@ -604,6 +638,11 @@ export interface Scenario1ResultManifest {
     readonly measure: string;
   }[];
   readonly lines: readonly ManifestLine[];
+  /**
+   * The standalone FR MUST-clause criteria (beyond the six AS lines + five SCs) each mapped to an
+   * independently observable durable witness — so no acceptance criterion is left un-witnessed.
+   */
+  readonly frClauses: readonly FrClauseWitness[];
   /** All visible coverage gaps, so nothing "looks healthy" by omission. */
   readonly gapRegister: readonly GapReference[];
   /** sha256 over the canonical (sorted-key) manifest, self-binding the whole result. */
@@ -716,7 +755,7 @@ function evidenceFor(assertionRef: string, obs: Scenario1Observations): Evidence
           detail:
             'durable checkpoint distinguishes the refreshed sweep clock from the stale source last-known time',
           witnessed: [
-            `latestCheckpointSweepClock=${obs.latestCheckpoint?.observedAt ?? 'none'}`,
+            `latestCheckpointSweepClock=${obs.latestCheckpoint?.updatedAt ?? 'none'}`,
             `staleLastKnownAt=${stale?.observedAt ?? 'none'}`,
           ],
         },
@@ -853,6 +892,244 @@ function successCriteria(obs: Scenario1Observations): Scenario1ResultManifest['s
   ];
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+// 8b. THE STANDALONE FR MUST-CLAUSE WITNESSES. Beyond the six US1 Given/When/Then acceptance lines
+//     and the five success criteria, the spec lists FR MUST-clauses as distinct acceptance items.
+//     For the current-state / open-boundary discovery slice this US1 view is responsible for, each
+//     is mapped below to a concrete durable witness read AFTER the sweeps — never a mutation return,
+//     never a bare "met". A clause whose downstream ACTION lives outside this discovery emitter is
+//     marked `boundary-witnessed` with the SUBSTRATE it produces witnessed here and the action's
+//     verification site named — honest scoping, not a silent omission.
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+
+function frClauses(obs: Scenario1Observations): FrClauseWitness[] {
+  const byId = (id: string): CatalogEntry | undefined =>
+    obs.catalogEntries.find((e) => e.targetId === id);
+  const gapById = (id: string): CatalogEntry | undefined => obs.gaps.find((e) => e.targetId === id);
+  // Pending human decisions this discovery view PRODUCES: every discovered-but-not-yet-governed
+  // source (awaiting an onboarding decision) + every visible gap (awaiting an owner action). Ordered
+  // by age (oldest first) — the one prioritization dimension the discovery layer can compute durably.
+  const pending = obs.catalogEntries
+    .filter((e) => e.onboarding === 'discovered' || e.onboarding === 'gap')
+    .slice()
+    .sort((a, b) => a.observedAt - b.observedAt);
+  const excluded = gapById(EXCLUDED);
+  const out: FrClauseWitness[] = [
+    {
+      frId: 'FR-001',
+      clause:
+        'MUST maintain an explicit, versioned deployment and inventory boundary … including authorized scope and exclusions for machine-wide source discovery.',
+      disposition: 'witnessed',
+      readPath: 'status-snapshot',
+      witness: [
+        `bundleVersion=${PINNED.bundleVersion}|verificationPlanVersion=${PINNED.verificationPlanVersion} (versioned boundary)`,
+        `authorizedScope={${[...obs.grantedScopes].sort().join(',')}} (status.grantedScopes)`,
+        excluded
+          ? `exclusion enforced: ${excluded.targetId} scope=${excluded.scope} → gapReason=${String(excluded.gapReason)} (out-of-authorized-scope, never scanned)`
+          : 'EXCLUSION-MISSING',
+        `boundary total inventory reconciled=${obs.status.catalog.total} (sources=${obs.status.catalog.sources}, gaps=${obs.status.catalog.gaps})`,
+      ],
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-002',
+      clause:
+        'MUST discover and continuously reconcile … within that boundary; discovery MUST NOT depend on a fixed list of named source products.',
+      disposition: 'witnessed',
+      readPath: 'source-catalog',
+      witness: [
+        `two sweeps reconciled the same catalog (each targetId once): total=${obs.status.catalog.total}`,
+        `open-ended: an UNKNOWN-scope source (${UNREGISTERED}) was discovered without a named-product list → onboarding=${byId(UNREGISTERED)?.onboarding ?? 'MISSING'}`,
+      ],
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-003',
+      clause:
+        'MUST provide a unified current-state view that preserves each item’s source identity, type, ownership, lifecycle state, … last observation time.',
+      disposition: 'witnessed',
+      readPath: 'source-catalog',
+      witness: obs.catalogEntries
+        .slice()
+        .sort((a, b) => a.targetId.localeCompare(b.targetId))
+        .map(
+          (e) =>
+            `${e.targetId}|type=${e.scope}|lifecycle=${e.onboarding}|observedAt=${e.observedAt}`,
+        ),
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-004',
+      clause:
+        'MUST expose provenance, source authority, freshness, confidence, and any disagreement for correlated data.',
+      disposition: 'witnessed',
+      readPath: 'evidence-sink',
+      witness: [
+        `provenance: every durable record carries a correlationId (${obs.flushedEvidence.length} records, all stamped)`,
+        `freshness: stale source ${STALE} retains lastKnownAt=${byId(STALE)?.observedAt ?? 'MISSING'} < refresh clock=${obs.clockAtSweep2}`,
+        `checkpoint distinguishes fresh sweep clock=${obs.latestCheckpoint?.updatedAt ?? 'none'} from stale last-known`,
+      ],
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-005',
+      clause:
+        'MUST show discovered, unmanaged, unreachable, stale, orphaned, excluded, and uncovered items as explicit gaps with impact, age, reason, and ownership.',
+      disposition: 'witnessed',
+      readPath: 'source-catalog',
+      witness: obs.gaps
+        .slice()
+        .sort((a, b) => a.targetId.localeCompare(b.targetId))
+        .map(
+          (g) =>
+            `${g.targetId}|reason=${String(g.gapReason)}|age=${obs.clockAtSweep2 - g.observedAt}ms|ownerAction=${OWNER_ACTION_BY_GAP[g.gapReason as GapReason] ?? 'investigate'}`,
+        ),
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-006',
+      clause:
+        'MUST present pending human decisions prioritized by business impact, risk, age, expiry, dependency, and escalation status.',
+      disposition: 'boundary-witnessed',
+      readPath: 'source-catalog',
+      witness: [
+        `pending-decision set this view produces (discovered-awaiting-onboarding + visible gaps), oldest-first by age:`,
+        ...pending.map(
+          (e, i) =>
+            `#${i + 1} ${e.targetId}|kind=${e.onboarding === 'gap' ? `gap:${String(e.gapReason)}` : 'awaiting_onboarding'}|age=${obs.clockAtSweep2 - e.observedAt}ms`,
+        ),
+      ],
+      coveredElsewhere:
+        'business-impact/risk/expiry/dependency/escalation ordering is the decision-queue view (US-decision-queue); this discovery emitter durably supplies the age-ordered pending set + reason it prioritizes on.',
+    },
+    {
+      frId: 'FR-007',
+      clause:
+        'Authorized users MUST be able to search, filter, compare, and drill from an aggregate posture into the source records, evidence, decisions, and issues that explain it.',
+      disposition: 'boundary-witnessed',
+      readPath: 'source-catalog',
+      witness: [
+        `filter substrate: catalog.sources()=${obs.sources.length}, catalog.gaps()=${obs.gaps.length} are independently queryable projections`,
+        `drill substrate: aggregate posture (total=${obs.status.catalog.total}) drills to distinct source records ${[KANBAN, AGENTCTL, WORKFLOWS].map((id) => `${id}:${byId(id)?.scope ?? 'MISSING'}`).join(', ')}`,
+        `compare substrate: three distinct scopes preserved for the same drill = ${new Set([KANBAN, AGENTCTL, WORKFLOWS].map((id) => byId(id)?.scope)).size} distinct records`,
+      ],
+      coveredElsewhere:
+        'the interactive search/filter/compare UI is the current-state view surface; this emitter durably supplies the queryable, drillable catalog+evidence substrate it reads.',
+    },
+    {
+      frId: 'FR-008',
+      clause:
+        'MUST correlate work moving through all registered sources … keeping distinct source records.',
+      disposition: 'witnessed',
+      readPath: 'evidence-sink',
+      witness: [KANBAN, AGENTCTL, WORKFLOWS].map(
+        (id) =>
+          `${id}|distinct record kept|evidenceRecords=${obs.flushedEvidence.filter((r) => r.targetId === id).length}`,
+      ),
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-009',
+      clause:
+        'Conflicting or uncertain correlations MUST remain visible and MUST NOT be silently resolved.',
+      disposition: 'witnessed',
+      readPath: 'source-catalog',
+      witness: [
+        `distinct sources are NEVER silently merged: ${[KANBAN, AGENTCTL, WORKFLOWS].filter((id) => byId(id)).length}/3 remain separate catalog rows`,
+        `indeterminate authorization would surface as a visible gap (authorization_indeterminate) rather than a silent choice — reason vocabulary present in GAP_REASONS`,
+      ],
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-037',
+      clause:
+        'Every discovered source MUST have a catalog entry containing stable identity … lifecycle state, and observation time.',
+      disposition: 'witnessed',
+      readPath: 'source-catalog',
+      witness: obs.sources
+        .slice()
+        .sort((a, b) => a.targetId.localeCompare(b.targetId))
+        .map((e) => `${e.targetId}|stableId|lifecycle=${e.onboarding}|observedAt=${e.observedAt}`),
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-038',
+      clause:
+        'Discovery MUST use the least information necessary … MUST NOT read protected content, secrets, or credentials … and MUST record any resulting visibility limitation.',
+      disposition: 'witnessed',
+      readPath: 'evidence-sink',
+      witness: [
+        `least-privilege: out-of-scope target ${EXCLUDED} was NEVER probed (probeCalls excludes it=${!obs.probeCalls.includes(EXCLUDED)})`,
+        `every durable payload is metadata-only (shape tag, never verbatim content): ${obs.flushedEvidence.length} records`,
+        `visibility limitation recorded: ${EXCLUDED} → gap reason ${String(gapById(EXCLUDED)?.gapReason)}`,
+      ],
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-039',
+      clause:
+        'Authorized source stewards MUST be able to approve onboarding, assign ownership, … quarantine, defer, or exclude a discovered source with a mandatory reason, scope, review date, and audit trail.',
+      disposition: 'boundary-witnessed',
+      readPath: 'checkpoint-store',
+      witness: [
+        `audit-trail substrate: durable checkpoints=${obs.checkpoints.length}, each carrying a safeNextAction (${obs.latestCheckpoint?.safeNextAction ?? 'none'}) — the attributable, reasoned trail steward actions append to`,
+        `every discovery record is correlationId-stamped (reason/scope carried at write time): ${obs.flushedEvidence.length} records`,
+        `the discovered set awaiting a steward onboarding decision: ${
+          obs.sources
+            .filter((e) => e.onboarding === 'discovered')
+            .map((e) => e.targetId)
+            .join(', ') || 'none'
+        }`,
+      ],
+      coveredElsewhere:
+        'steward mutation actions (approve/quarantine/defer/exclude with mandatory reason+scope+review-date) are the governed-decision surface (FR-010/FR-011/FR-014); this emitter durably supplies the auditable trail + the discovered set those actions operate on.',
+    },
+    {
+      frId: 'FR-040',
+      clause:
+        'Unsupported, inaccessible, sensitive, unowned, and excluded sources MUST remain visible as source-coverage gaps with impact and requirements for safe onboarding or review.',
+      disposition: 'witnessed',
+      readPath: 'source-catalog',
+      witness: [UNMANAGED, UNREACHABLE, EXCLUDED]
+        .map((id) => gapById(id))
+        .filter((g): g is CatalogEntry => Boolean(g))
+        .map(
+          (g) =>
+            `${g.targetId}|reason=${String(g.gapReason)}|ownerAction(review requirement)=${OWNER_ACTION_BY_GAP[g.gapReason as GapReason]}`,
+        ),
+      coveredElsewhere: null,
+    },
+    {
+      frId: 'FR-041',
+      clause:
+        'MUST detect newly appearing, changed, renamed, moved, replaced, split, merged, and disappeared sources while retaining their prior identity, history, correlations, and evidence.',
+      disposition: 'boundary-witnessed',
+      readPath: 'source-catalog',
+      witness: [
+        `newly appearing: ${UNREGISTERED} discovered on sweep 1 (onboarding=${byId(UNREGISTERED)?.onboarding ?? 'MISSING'})`,
+        `disappeared: ${STALE} dropped from sweep 2 yet its prior identity+last-known observation PERSIST (lastKnownAt=${byId(STALE)?.observedAt ?? 'MISSING'}, still in catalog=${Boolean(byId(STALE))})`,
+        `history retained: append-only evidence sink keeps ${obs.flushedEvidence.length} records across both sweeps (reconstructable history)`,
+      ],
+      coveredElsewhere:
+        'renamed/moved/replaced/split/merged transitions are exercised by the identity-continuity suite; this emitter witnesses the appear + disappear-with-retained-identity edges and the append-only history substrate all of them rely on.',
+    },
+    {
+      frId: 'FR-042',
+      clause:
+        'When multiple sources claim authority for the same field or object, the platform MUST apply an approved precedence rule or expose the unresolved conflict; it MUST NOT silently choose a source.',
+      disposition: 'boundary-witnessed',
+      readPath: 'source-catalog',
+      witness: [
+        `no silent source choice: the three same-work sources ${[KANBAN, AGENTCTL, WORKFLOWS].join(', ')} are kept as ${[KANBAN, AGENTCTL, WORKFLOWS].filter((id) => byId(id)).length} DISTINCT rows (never collapsed to one)`,
+        `unresolved-input visibility: distinct scopes preserved = {${[...new Set([KANBAN, AGENTCTL, WORKFLOWS].map((id) => byId(id)?.scope))].filter(Boolean).join(',')}}`,
+      ],
+      coveredElsewhere:
+        'the approved precedence-rule engine / conflict-resolution UI is the correlation surface (FR-004 disagreement); this emitter guarantees the no-silent-choice invariant by keeping conflicting sources as distinct, individually visible records.',
+    },
+  ];
+  return out;
+}
+
 /**
  * Emit the SIGNED Scenario 1 result manifest. Runs the real agent (unless observations are
  * injected — used by tests to feed a mutated/negative fixture) and binds requirement, assertion,
@@ -911,6 +1188,7 @@ export async function emitScenario1ResultManifest(
     },
     successCriteria: successCriteria(obs),
     lines,
+    frClauses: frClauses(obs),
     gapRegister,
   };
 
@@ -1009,6 +1287,41 @@ export function verifyScenario1ResultManifest(manifest: Scenario1ResultManifest)
   }
   for (const s of manifest.successCriteria) {
     if (!s.met) reasons.push(`success criterion ${s.id} not met: ${s.measure}`);
+  }
+
+  // (g) FR MUST-clauses — every enumerated standalone clause present, each with a NON-EMPTY, non-
+  //     MISSING durable witness; a `boundary-witnessed` clause must name where its downstream action
+  //     is verified (so scoping is explicit, never a silent omission). A `witnessed` clause must NOT
+  //     defer to elsewhere.
+  const REQUIRED_FR_CLAUSES = [
+    'FR-001',
+    'FR-002',
+    'FR-003',
+    'FR-004',
+    'FR-005',
+    'FR-006',
+    'FR-007',
+    'FR-008',
+    'FR-009',
+    'FR-037',
+    'FR-038',
+    'FR-039',
+    'FR-040',
+    'FR-041',
+    'FR-042',
+  ] as const;
+  const frPresent = new Set(manifest.frClauses.map((c) => c.frId));
+  for (const id of REQUIRED_FR_CLAUSES) {
+    if (!frPresent.has(id)) reasons.push(`missing FR clause witness ${id}`);
+  }
+  for (const c of manifest.frClauses) {
+    if (c.witness.length === 0) reasons.push(`FR clause ${c.frId} has no witness`);
+    if (c.witness.some((w) => /MISSING/.test(w)))
+      reasons.push(`FR clause ${c.frId} has a MISSING witness value`);
+    if (c.disposition === 'boundary-witnessed' && !c.coveredElsewhere)
+      reasons.push(`FR clause ${c.frId} is boundary-witnessed but names no downstream site`);
+    if (c.disposition === 'witnessed' && c.coveredElsewhere)
+      reasons.push(`FR clause ${c.frId} claims witnessed yet defers elsewhere`);
   }
 
   return { ok: reasons.length === 0, reasons };

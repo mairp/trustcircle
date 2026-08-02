@@ -42,6 +42,11 @@ const unmet = JSON.parse(JSON.stringify(a));
 unmet.successCriteria[0].met = false;
 const okUnmet = verifyScenario1ResultManifest(unmet);
 
+// --- Negative control 5: drop an FR MUST-clause witness -> FR-coverage check rejects ---------
+const droppedFr = JSON.parse(JSON.stringify(a));
+droppedFr.frClauses = droppedFr.frClauses.filter((c) => c.frId !== 'FR-006');
+const okDroppedFr = verifyScenario1ResultManifest(droppedFr);
+
 // --- Emit the sample manifest (committed-visible) ------------------------------------------
 writeFileSync(here + 'manifest-sample.json', JSON.stringify(a, null, 2) + '\n');
 
@@ -74,10 +79,24 @@ lines.push(
   `  4. forced-unmet success crit   verify.ok=${okUnmet.ok} rejected=${!okUnmet.ok} -> ${!okUnmet.ok ? 'PASS' : 'FAIL'}`,
 );
 lines.push(`     reasons: ${okUnmet.reasons.join('; ')}`);
+lines.push(
+  `  5. dropped FR MUST-clause      verify.ok=${okDroppedFr.ok} rejected=${!okDroppedFr.ok} -> ${!okDroppedFr.ok ? 'PASS' : 'FAIL'}`,
+);
+lines.push(`     reasons: ${okDroppedFr.reasons.join('; ')}`);
+lines.push('');
+lines.push(
+  `frClauses witnessed: ${a.frClauses.length} (${a.frClauses.map((c) => c.frId).join(', ')})`,
+);
 lines.push('');
 
 const allPass =
-  deterministic && okPos.ok && !okTamper.ok && !okMispin.ok && !okDropped.ok && !okUnmet.ok;
+  deterministic &&
+  okPos.ok &&
+  !okTamper.ok &&
+  !okMispin.ok &&
+  !okDropped.ok &&
+  !okUnmet.ok &&
+  !okDroppedFr.ok;
 lines.push(`OVERALL: ${allPass ? 'PASS' : 'FAIL'}`);
 writeFileSync(here + 'negative-controls.txt', lines.join('\n') + '\n');
 
@@ -85,7 +104,7 @@ writeFileSync(here + 'negative-controls.txt', lines.join('\n') + '\n');
 console.log(lines.join('\n'));
 console.log('');
 console.log(
-  `manifest-sample.json written: verify.ok=${okPos.ok}, digest=${digestA}, lines=${a.lines.length}, gaps=${a.gapRegister.length}, successCriteria=${a.successCriteria.length}`,
+  `manifest-sample.json written: verify.ok=${okPos.ok}, digest=${digestA}, lines=${a.lines.length}, gaps=${a.gapRegister.length}, successCriteria=${a.successCriteria.length}, frClauses=${a.frClauses.length}`,
 );
 if (!allPass) process.exitCode = 1;
 

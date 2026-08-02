@@ -241,3 +241,65 @@ test('AS1 witness: reconciliation keeps each item exactly once across two sweeps
     );
   }
 });
+
+// ── 10. FR MUST-CLAUSE WITNESSES — every standalone FR MUST-clause the current-state view is ──
+//        responsible for maps to a NON-EMPTY, non-MISSING durable witness; boundary-witnessed
+//        clauses name where the downstream action is verified. Non-vacuous: a dropped witness or a
+//        witnessed clause that defers elsewhere must make the verifier fail.
+test('FR-clauses: every enumerated FR MUST-clause has an independent durable witness', () => {
+  const REQUIRED = [
+    'FR-001',
+    'FR-002',
+    'FR-003',
+    'FR-004',
+    'FR-005',
+    'FR-006',
+    'FR-007',
+    'FR-008',
+    'FR-009',
+    'FR-037',
+    'FR-038',
+    'FR-039',
+    'FR-040',
+    'FR-041',
+    'FR-042',
+  ];
+  const present = new Set(manifest.frClauses.map((c) => c.frId));
+  for (const id of REQUIRED) assert.ok(present.has(id), `FR clause ${id} must be witnessed`);
+  for (const c of manifest.frClauses) {
+    assert.ok(c.witness.length > 0, `${c.frId} has a witness`);
+    assert.ok(!c.witness.some((w) => /MISSING/.test(w)), `${c.frId} witness has no MISSING value`);
+    if (c.disposition === 'boundary-witnessed')
+      assert.ok(c.coveredElsewhere, `${c.frId} names its downstream verification site`);
+    if (c.disposition === 'witnessed')
+      assert.ok(!c.coveredElsewhere, `${c.frId} witnessed here does not defer elsewhere`);
+  }
+  // The six critic-named clauses are specifically present.
+  for (const id of ['FR-001', 'FR-006', 'FR-007', 'FR-039', 'FR-041', 'FR-042'])
+    assert.ok(present.has(id), `critic-named clause ${id} present`);
+
+  // POSITIVE: the untouched manifest (with the FR-clause section) verifies.
+  assert.equal(verifyScenario1ResultManifest(manifest).ok, true);
+
+  // NEGATIVE control A: drop a required FR clause → verifier rejects.
+  const dropped = deep(manifest);
+  dropped.frClauses = dropped.frClauses.filter((c) => c.frId !== 'FR-006');
+  const vA = verifyScenario1ResultManifest(dropped);
+  assert.equal(vA.ok, false);
+  assert.ok(vA.reasons.some((r) => /missing FR clause witness FR-006/.test(r)));
+
+  // NEGATIVE control B: blank a witness value → verifier rejects (empty witness).
+  const blanked = deep(manifest);
+  blanked.frClauses.find((c) => c.frId === 'FR-005').witness = [];
+  const vB = verifyScenario1ResultManifest(blanked);
+  assert.equal(vB.ok, false);
+  assert.ok(vB.reasons.some((r) => /FR-005 has no witness/.test(r)));
+
+  // NEGATIVE control C: a witnessed clause that also defers elsewhere is inconsistent → rejected.
+  const inconsistent = deep(manifest);
+  const w = inconsistent.frClauses.find((c) => c.disposition === 'witnessed');
+  w.coveredElsewhere = 'somewhere';
+  const vC = verifyScenario1ResultManifest(inconsistent);
+  assert.equal(vC.ok, false);
+  assert.ok(vC.reasons.some((r) => /defers elsewhere/.test(r)));
+});
