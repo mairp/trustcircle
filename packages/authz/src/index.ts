@@ -8,3 +8,10 @@ export * from './separation-of-duties.ts';
 export * from './oidc.ts';
 export * from './workload-identity.ts';
 export * from './authority.ts';
+
+// Re-exports the INDEPENDENT COMPLIANCE-REVIEW distinctness guard (Phase 7 / User Story 5 —
+// Demonstrate Compliance and Audit Readiness / FR-053, FR-055, SC-022): the applicability-review
+// independence verdict (reviewer distinct from proposer AND affected control owner, carrying the
+// independent-reviewer role, and only `approve` activating), decided here (authz owns WHO-MAY) while
+// the durable shape/version invariants live in @trustcircle/domain compliance.ts. Additive.
+export * from './compliance-review.ts';

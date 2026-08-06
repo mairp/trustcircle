@@ -6,6 +6,8 @@
 // Uses the deterministic in-memory SqlDriver so it runs with no live PostgreSQL. Every property
 // has a negative control so the oracle is non-vacuous.
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 import {
@@ -89,5 +91,37 @@ describe('migration runner (expand→migrate→contract)', () => {
     const c = checksumMigration(M('0001', 'init', 'expand', 'CREATE TABLE a (id bigint)'));
     expect(a).toEqual(b);
     expect(a).not.toEqual(c);
+  });
+});
+
+describe('0070 operations command center schema controls', () => {
+  const sql = readFileSync(
+    fileURLToPath(
+      new URL('../../db/migrations/0070_operations_command_center.sql', import.meta.url),
+    ),
+    'utf8',
+  );
+
+  it('declares tenant-scoped durable case, history, escalation, and idempotency tables', () => {
+    for (const table of [
+      'operational_case',
+      'operational_case_source',
+      'operational_case_evidence',
+      'operational_case_transition',
+      'operational_case_escalation',
+      'operational_case_idempotency',
+    ]) {
+      expect(sql).toContain(`CREATE TABLE IF NOT EXISTS ${table}`);
+      expect(sql).toContain(`ALTER TABLE ${table} FORCE ROW LEVEL SECURITY`);
+    }
+  });
+
+  it('enforces optimistic versions, idempotency identity, valid states, and append-only history', () => {
+    expect(sql).toMatch(/operational_case_version_positive/);
+    expect(sql).toMatch(/PRIMARY KEY \(tenant_id, command_scope, idempotency_key\)/);
+    expect(sql).toMatch(/operational_case_closed_verified/);
+    expect(sql).toMatch(/operations_history_block_update/);
+    expect(sql).toMatch(/operational_case_transition_immutable/);
+    expect(sql).toMatch(/UNIQUE \(tenant_id, idempotency_identity\)/);
   });
 });

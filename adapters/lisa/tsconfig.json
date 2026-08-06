@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../../.tsbuild/adapters/lisa",
+    "tsBuildInfoFile": "../../.tsbuild/adapters/lisa/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../packages/adapter-sdk"
+    },
+    {
+      "path": "../../packages/contracts"
+    }
+  ]
+}

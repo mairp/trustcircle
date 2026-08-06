@@ -1,0 +1,34 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "Scenario-6",
+  "scenarioTitle": "Integrity Surfaces Accessibility — WCAG 2.2 AA presenters and honest empty models",
+  "emittedBy": "tests/e2e/scenarios/integrity-remediation.ts",
+  "version": {
+    "feature": "001-governance-control-plane",
+    "userStory": "US3",
+    "userStoryTitle": "Contain and Repair Damaged Work Safely",
+    "priority": "P1"
+  },
+  "resultDigest": "sha256:c9a2ba37f8e7b36a63c1b4e5aa9fa64c88380a4bdc51d3ab7dc6f0875e5427c9",
+  "allSatisfied": true,
+  "criteria": [
+    {
+      "ref": "SC-006 / SC-007 / SC-009",
+      "statement": "The three integrity presenters carry zero structural/semantic accessibility violations.",
+      "satisfied": true,
+      "evidence": "presenters audited=3; findings=0",
+      "observedVia": "auditIntegrityAccessibility(...) over the shipped renderers",
+      "negativeControl": "findings would be non-empty if a state were color-only or a banner missing (currently 0)"
+    },
+    {
+      "ref": "FR-017 / FR-022 / GAR-004",
+      "statement": "An un-fed presenter is honest: not intact, not closed, execute disabled, empty queue stated.",
+      "satisfied": true,
+      "evidence": "empty-model honesty findings=0",
+      "observedVia": "auditEmptyModelsAreHonest(tenant) over EMPTY_* models",
+      "negativeControl": "were an empty comparison to claim intact, or an empty detail to claim closed, this would report a finding"
+    }
+  ],
+  "manifestDigest": "sha256:64647f1b7b36a44a8c4cd2cd4a4f94467898df4d6796d9de15b9941ada3b3670"
+}

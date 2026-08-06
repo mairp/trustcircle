@@ -332,3 +332,53 @@ test('no undeclared @trustcircle workspace member exists on disk', () => {
     }
   }
 });
+
+test('operations command center keeps web, API, application and persistence boundaries explicit', () => {
+  const web = readJson('apps/web/package.json');
+  assert.ok(web.dependencies['@trustcircle/contracts']);
+  assert.ok(web.dependencies['@trustcircle/domain']);
+  assert.equal(web.dependencies['@trustcircle/persistence'], undefined);
+  assert.equal(web.dependencies['@trustcircle/application'], undefined);
+
+  const api = readJson('apps/api/package.json');
+  for (const dependency of [
+    '@trustcircle/application',
+    '@trustcircle/contracts',
+    '@trustcircle/domain',
+    '@trustcircle/persistence',
+  ]) {
+    assert.ok(api.dependencies[dependency], `API composition must declare ${dependency}`);
+  }
+
+  const webLoader = readFileSync(join(ROOT, 'apps/web/src/lib/operations-loader.ts'), 'utf8');
+  assert.doesNotMatch(
+    webLoader,
+    /@trustcircle\/(?:persistence|application)/,
+    'server-rendered web must consume versioned HTTP contracts, not internal services or storage',
+  );
+
+  const route = readFileSync(
+    join(ROOT, 'apps/api/src/routes/operations-command-center.ts'),
+    'utf8',
+  );
+  assert.doesNotMatch(
+    route,
+    /from ['"](?:pg|@trustcircle\/persistence)/,
+    'route boundary must depend on application ports, not a database adapter',
+  );
+
+  const exports = [
+    ['packages/domain/src/index.ts', './operations.ts'],
+    ['packages/application/src/index.ts', './attention-queue.ts'],
+    ['packages/application/src/index.ts', './operational-case-service.ts'],
+    ['packages/contracts/src/index.ts', './operations-api.ts'],
+    ['packages/persistence/src/index.ts', './operational-case-repository.ts'],
+  ];
+  for (const [path, target] of exports) {
+    assert.match(
+      readFileSync(join(ROOT, path), 'utf8'),
+      new RegExp(`export \\* from ['"]${target.replace('.', '\\.')}['"]`),
+      `${path} must expose the additive operations surface`,
+    );
+  }
+});

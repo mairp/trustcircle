@@ -124,6 +124,15 @@ function render(rows) {
   lines.push('# Requirements Traceability Matrix');
   lines.push('');
   lines.push(
+    '> **Prospective traceability note (2026-08-04):** The running host-14000 root remains ' +
+      'the temporary JSON readiness proxy. The graphical candidate and its not-yet-human-approved ' +
+      'evidence are traced separately under ' +
+      '`specs/c00a3659-463d-44fb-96c0-f5f3efab97d8/`. This matrix does not treat candidate ' +
+      'files, an internal readiness result, or a passing automated test as graphical release ' +
+      'evidence, compliance, certification, or deployment approval.',
+  );
+  lines.push('');
+  lines.push(
     '**Artifact**: `specs/001-governance-control-plane/traceability.md` · **Task**: T273 · ' +
       '**Obligation**: VO-52d0780c11bcc6fd7583 (versioned & validated onboarded source ' +
       'contracts; correlated / deduplicated / reconcilable / retry-bounded mutating ' +

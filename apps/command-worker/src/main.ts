@@ -698,8 +698,10 @@ export class GovernedWorker {
         await this.#sleep(this.#idleDelayMs, this.#stopController.signal);
       }
     }
-    // Loop exited: either a clean stop (draining) or a lost lease.
-    if (this.#state === 'lost_lease') {
+    // Loop exited: either a clean stop (draining) or a lost lease. Read through the public getter so
+    // the compiler does not over-narrow `#state` to the loop-entry `'running'` — `#onLeaseLost()`
+    // reassigns it through a method call the control-flow analysis cannot see across.
+    if (this.state === 'lost_lease') {
       // Persist the lost-lease state DURABLY so an operator (or a restart) reads the fail-visible
       // condition from the checkpoint row rather than a stale `running`. The lease is already gone,
       // so we do NOT release/renew — we only record where we paused and the safe next action.
@@ -897,9 +899,11 @@ export function bootstrapWorker(inputs: BootstrapInputs): BootstrappedWorker {
     checkpoints: inputs.checkpoints,
     evidence,
     clock: inputs.clock,
-    sleep: inputs.sleep,
-    batchSize: inputs.batchSize,
-    idleDelayMs: inputs.idleDelayMs,
+    // exactOptionalPropertyTypes: only forward an optional when it was actually supplied, so an
+    // absent input keeps the GovernedWorker's own default rather than passing an explicit undefined.
+    ...(inputs.sleep !== undefined ? { sleep: inputs.sleep } : {}),
+    ...(inputs.batchSize !== undefined ? { batchSize: inputs.batchSize } : {}),
+    ...(inputs.idleDelayMs !== undefined ? { idleDelayMs: inputs.idleDelayMs } : {}),
   });
   return { worker, lease, config: parsed.env };
 }

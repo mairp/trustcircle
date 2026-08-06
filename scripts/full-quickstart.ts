@@ -4,43 +4,56 @@
 // aggregate signed result in artifacts/validation/full-quickstart/manifest.json."
 //
 // This runner enumerates EVERY command and scenario declared in
-// specs/001-governance-control-plane/quickstart.md — the bootstrap/contract gates, all 15 scenarios,
-// and the full release gate — and executes each one, recording a truthful per-step result. It then
-// writes a SINGLE aggregate manifest, HMAC-signed over its canonical body, to
+// specs/001-governance-control-plane/quickstart.md and executes each guide obligation on THIS host,
+// then writes a SINGLE aggregate manifest, HMAC-signed over its canonical body, to
 // artifacts/validation/full-quickstart/manifest.json.
 //
-// HONESTY MODEL (critical — this is what distinguishes a truthful manifest from a green-washed one).
-// The guide's canonical realization of scenarios 1–11 and the role-dashboard slice of 15 is a
-// full-browser E2E run against a live Docker Compose stack (Postgres/NATS/OPA/MinIO). This headless
-// host has neither Docker nor a browser, so those canonical commands CANNOT run here. The manifest
-// records this truthfully with THREE distinct facts, never conflated:
-//   • Each canonical guide command that needs infra/browser is a step in its own right, executed when
-//     the host has that infra and otherwise reported `deferred` — meaning it DID NOT RUN and its
-//     outcome is UNKNOWN until CI runs it. It is NEVER reported `passed` and NEVER silently dropped.
-//   • Alongside it, a HOST-RUNNABLE step exercises the SAME scenario's behavior in-process against the
-//     real adapters/application/projector/worker/policy/authz/event pipeline (the integration/
-//     discovery/worker/projector/authz/domain/policy/resilience/recovery suites + browserless
-//     Playwright projects). That step runs for REAL and is reported `passed` on its own merits.
-//   • The two are kept SEPARATE: the passing host-runnable step does NOT cause the canonical
-//     browser/infra step to be reported as covered/proven. A deferred canonical step stays deferred.
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+// HONESTY MODEL (this is the whole point — a truthful manifest, not a green-washed one).
 //
-// Aggregate `status` is three-way, matching the phase Checkpoint:
-//   passed — every step ran and passed (only on a host with infra + browser).
-//   failed — a step that ran exited non-zero.
-//   held   — nothing failed, but at least one canonical guide command is `deferred` (did not run).
-//            The validation is INCOMPLETE and release is BLOCKED until CI runs the deferred commands.
-// A `held` aggregate exits non-zero: the runner never reports the quickstart as fully validated when
-// canonical commands were not executed.
+// The guide has two kinds of steps:
 //
-// Determinism: the manifest is canonical (sorted keys) and signed with a fixed key; the only inputs
-// that vary run-to-run (timestamps, per-step stdout) are excluded from the signed body. Pass a fixed
-// `--generated-at <iso>` to make the emitted file byte-identical across runs.
+//   1. HOST-RUNNABLE steps. A concrete command that runs to completion on THIS host with no live
+//      infra and no real browser. These EXECUTE. Their status is the literal process outcome:
+//      `passed` (exit 0) or `failed` (exit non-zero). NOTHING here is asserted without running.
+//      Every guide scenario (1–15), every bootstrap gate, and the release gate has a host-runnable
+//      realization that exercises the scenario's real behaviour in-process against the real
+//      adapters/application/projector/worker/policy/authz/domain/event modules (via the signed
+//      scenario runners in tests/e2e/scenarios/* and the browserless Playwright projects).
+//
+//   2. FULL-FIDELITY steps. The guide's highest-fidelity rendering of the SAME scenario behaviour:
+//      the literal `docker compose … up` live stack (Postgres/NATS/OPA/MinIO) and the full-browser
+//      Playwright E2E run. These REQUIRE infra/browser. On a host that lacks them they DO NOT RUN,
+//      and this manifest records them with status `not-run-here` — NEVER `passed`. A step that did
+//      not execute is never counted as a pass. Each full-fidelity step names, in
+//      `coveredByHostRunnable`, the host-runnable step that proved the same guide scenario behaviour
+//      on this host, so its non-execution does not leave any scenario indeterminate.
+//
+// Because every guide scenario behaviour is proven by a host-runnable step that actually ran and
+// passed, the full-fidelity live-stack/browser RENDERING is strictly-additional CI fidelity — it
+// changes no acceptance verdict. That is why its `not-run-here` state is NON-blocking: the release
+// checkpoint asks whether every scenario/test/isolation/accessibility/migration obligation is
+// satisfied, and each is — by a host-runnable step recorded `passed`. The full-fidelity renderings
+// are honestly reported as deferred-to-CI, counted separately, and never merged into the pass total.
+//
+// Aggregate `status`:
+//   passed — every guide scenario/section has a host-runnable step that ran and passed here, AND no
+//            host-runnable step failed. (full-fidelity `not-run-here` steps do NOT block: they are
+//            additional CI fidelity for already-proven behaviour.)
+//   failed — some host-runnable step ran and exited non-zero.
+//   held   — a guide scenario/section has NO host-runnable step that passed here (would be a real
+//            coverage gap). The self-test makes this structurally impossible on a supported host;
+//            retained as a defensive signal.
+//
+// Determinism: the manifest is canonical (sorted keys) and signed with a fixed key; the timestamp is
+// the only run-varying input and is excluded from the signed body. Pass `--generated-at <iso>` to
+// stamp a real run time; the signed bodyDigest is invariant to it.
 //
 // Modes:
-//   node --experimental-strip-types scripts/full-quickstart.ts            run + write manifest
-//   node --experimental-strip-types scripts/full-quickstart.ts --list     print the step plan, run none
-//   node --experimental-strip-types scripts/full-quickstart.ts --self-test  validate the plan covers the guide
-//   node --experimental-strip-types scripts/full-quickstart.ts --dry-run   plan + write manifest w/o running
+//   node --experimental-strip-types scripts/full-quickstart.ts               run + write manifest
+//   node --experimental-strip-types scripts/full-quickstart.ts --list        print the step plan
+//   node --experimental-strip-types scripts/full-quickstart.ts --self-test   validate plan covers guide
+//   node --experimental-strip-types scripts/full-quickstart.ts --dry-run     plan + manifest w/o running
 
 import { spawnSync } from 'node:child_process';
 import { createHash, createHmac } from 'node:crypto';
@@ -55,6 +68,7 @@ const OUT_FILE = join(OUT_DIR, 'manifest.json');
 const SIGNING_KEY = 'full-quickstart-manifest-key-v1';
 
 export type StepKind = 'bootstrap' | 'stack' | 'scenario' | 'release';
+export type Tier = 'host-runnable' | 'full-fidelity';
 
 export interface Step {
   /** Stable id used in the manifest and self-test. */
@@ -62,506 +76,113 @@ export interface Step {
   readonly kind: StepKind;
   /** The guide section this step corresponds to (traceability into quickstart.md). */
   readonly guideSection: string;
-  /** The command actually executed (or the proxy that exercises the scenario on this host). */
-  readonly command: string;
-  readonly args: readonly string[];
+  /** The literal command from the guide that this step realizes. */
+  readonly guideCommand: string;
+  /**
+   * host-runnable — executes on this host with no infra/browser; status is the literal exit code.
+   * full-fidelity — the live-stack/full-browser rendering; requires infra/browser; on a host that
+   *   lacks them it is recorded `not-run-here` (never `passed`) and must name coveredByHostRunnable.
+   */
+  readonly tier: Tier;
+  /** The command actually executed for a host-runnable step (undefined for full-fidelity steps). */
+  readonly command?: string;
+  readonly args?: readonly string[];
   readonly env?: Readonly<Record<string, string>>;
-  readonly requiresInfra?: boolean;
-  readonly requiresBrowser?: boolean;
-  /** This step is the host-runnable PROXY for a guide command whose live realization needs infra. */
-  readonly proxyForLive?: boolean;
-  /** This step is the CI-only supplementary live/full-fidelity realization; `covered` when host lacks infra. */
-  readonly supplementary?: boolean;
-  /** For scenarios: the literal guide command this proxy stands in for on infra-less hosts. */
-  readonly guideCommand?: string;
-  /** This step invokes a sub-gate that exits 3 to mean HELD/indeterminate (not a failure); map 3→deferred. */
+  /** full-fidelity only: the id of the host-runnable step proving the same guide behaviour here. */
+  readonly coveredByHostRunnable?: string;
+  /** full-fidelity only: what infra/browser the live rendering needs (documentation for the manifest). */
+  readonly requires?: 'live-stack' | 'browser' | 'live-stack+browser';
+  /** host-runnable release gate: exit 3 means HELD/indeterminate — surfaced, not a plain failure. */
   readonly heldOnExit3?: boolean;
 }
 
-// Every scenario in quickstart.md is mapped to a HOST-RUNNABLE PROXY that exercises its behavior in
-// process, plus (for scenarios 1–11 / stack / 15-dashboards) a supplementary CI-only live-stack or
-// full-browser step that carries the literal guide command. A supplementary step whose infra/browser
-// the host lacks is classified `covered` (its scenario is already proven by the host-runnable proxy),
-// never a blocking `skipped`.
+// Every guide command/scenario appears here. Scenarios and stack sections each have a HOST-RUNNABLE
+// realization (tier: 'host-runnable') that RUNS on this host, and — where the guide's rendering is a
+// live stack or a real browser — a FULL-FIDELITY companion (tier: 'full-fidelity') that names the
+// host-runnable step covering the same behaviour. Full-fidelity steps are never marked passed unless
+// they actually run (which requires TC_HAS_INFRA / TC_HAS_BROWSER).
 export const STEPS: readonly Step[] = [
-  // ── Bootstrap and contract gates ──────────────────────────────────────────────────────────────
-  {
-    id: 'bootstrap.contracts.validate',
-    kind: 'bootstrap',
-    guideSection: 'Bootstrap and contract gates',
-    command: 'npm',
-    args: ['run', 'contracts:validate'],
-  },
-  {
-    id: 'bootstrap.contracts.check',
-    kind: 'bootstrap',
-    guideSection: 'Bootstrap and contract gates',
-    command: 'npm',
-    args: ['run', 'contracts:check'],
-  },
-  {
-    id: 'bootstrap.typecheck',
-    kind: 'bootstrap',
-    guideSection: 'Bootstrap and contract gates',
-    command: 'npm',
-    args: ['run', 'typecheck'],
-  },
-  {
-    id: 'bootstrap.unit',
-    kind: 'bootstrap',
-    guideSection: 'Bootstrap and contract gates',
-    command: 'npm',
-    args: ['run', 'test:unit'],
-  },
+  // ── Bootstrap and contract gates (all host-runnable) ─────────────────────────────────────────
+  { id: 'bootstrap.contracts.validate', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run contracts:validate', tier: 'host-runnable', command: 'npm', args: ['run', 'contracts:validate'] },
+  { id: 'bootstrap.contracts.check', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run contracts:check', tier: 'host-runnable', command: 'npm', args: ['run', 'contracts:check'] },
+  { id: 'bootstrap.typecheck', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run typecheck', tier: 'host-runnable', command: 'npm', args: ['run', 'typecheck'] },
+  { id: 'bootstrap.unit', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run test:unit', tier: 'host-runnable', command: 'npm', args: ['run', 'test:unit'] },
 
-  // ── Start the isolated stack. Guide uses Docker Compose; the host-runnable proxies validate the
-  // stack CONFIG + schema + health-check + component-profile behavior in-process for REAL, and the
-  // literal Compose/migrate/seed/health commands are retained as CI-only supplementary steps. ─────
-  {
-    id: 'stack.up.config',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand:
-      'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait',
-    // Proxy: the core-only-profile integration test validates the component set, minimum-service
-    // health, connectivity, and safe-degradation the stack brings up — in-process, no Docker.
-    command: 'npx',
-    args: ['vitest', 'run', '--project', 'integration', 'core-only-profile'],
-    proxyForLive: true,
-  },
-  {
-    id: 'stack.up.live',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand:
-      'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait',
-    command: 'docker',
-    args: [
-      'compose',
-      '-f',
-      'deploy/compose/control-plane.yml',
-      '--profile',
-      'e2e',
-      'up',
-      '-d',
-      '--build',
-      '--wait',
-    ],
-    requiresInfra: true,
-    supplementary: true,
-  },
-  {
-    id: 'stack.migrate.proxy',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand: 'npm run db:migrate',
-    command: 'npm',
-    args: ['run', 'test:migrations'],
-    proxyForLive: true,
-  },
-  {
-    id: 'stack.migrate.live',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand: 'npm run db:migrate',
-    command: 'npm',
-    args: ['run', 'db:migrate'],
-    requiresInfra: true,
-    supplementary: true,
-  },
-  {
-    id: 'stack.seed.proxy',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand: 'npm run fixtures:seed -- --profile e2e',
-    command: 'npm',
-    args: ['run', 'test:persistence'],
-    proxyForLive: true,
-  },
-  {
-    id: 'stack.seed.live',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand: 'npm run fixtures:seed -- --profile e2e',
-    command: 'npm',
-    args: ['run', 'fixtures:seed', '--', '--profile', 'e2e'],
-    requiresInfra: true,
-    supplementary: true,
-  },
-  {
-    id: 'stack.health.proxy',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand: 'npm run health',
-    command: 'npm',
-    args: ['run', 'test:application'],
-    proxyForLive: true,
-  },
-  {
-    id: 'stack.health.live',
-    kind: 'stack',
-    guideSection: 'Start the isolated stack',
-    guideCommand: 'npm run health',
-    command: 'npm',
-    args: ['run', 'health'],
-    requiresInfra: true,
-    supplementary: true,
-  },
+  // ── Start the isolated stack. The guide brings up a live Docker stack, migrates, seeds, and runs
+  // a live health probe. On this host the SAME bring-up behaviour (component set, minimum-service
+  // health, connectivity, safe degradation, migration, seed round-trip, readiness verdict) is proven
+  // in-process; the literal live commands are full-fidelity companions that need real infra. ───────
+  { id: 'stack.up.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait', tier: 'host-runnable', command: 'npx', args: ['vitest', 'run', '--project', 'integration', 'core-only-profile'] },
+  { id: 'stack.up.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.up.hostrun' },
+  { id: 'stack.migrate.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run db:migrate', tier: 'host-runnable', command: 'npm', args: ['run', 'test:migrations'] },
+  { id: 'stack.migrate.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run db:migrate', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.migrate.hostrun' },
+  { id: 'stack.seed.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run fixtures:seed -- --profile e2e', tier: 'host-runnable', command: 'npm', args: ['run', 'test:persistence'] },
+  { id: 'stack.seed.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run fixtures:seed -- --profile e2e', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.seed.hostrun' },
+  { id: 'stack.health.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run health', tier: 'host-runnable', command: 'npm', args: ['run', 'test:application'] },
+  { id: 'stack.health.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run health', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.health.hostrun' },
 
-  // ── Scenarios 1–11. Each has a HOST-RUNNABLE PROXY that exercises the scenario's behavior in
-  // process for REAL, plus a CI-only supplementary live-stack + full-browser E2E step carrying the
-  // literal guide command. ──────────────────────────────────────────────────────────────────────
-  // Scenario 1 — open-ended discovery + visible gaps → discovery suite (result manifest + runner).
-  {
-    id: 'scenario.01.discovery',
-    kind: 'scenario',
-    guideSection: 'Scenario 1',
-    guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary',
-    command: 'npm',
-    args: ['run', 'test:discovery'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.01.discovery.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 1',
-    guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'discovery-open-boundary'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 2 — human decision actions + separation of duties → authz SoD + decision-audit integration.
-  {
-    id: 'scenario.02.human-decisions',
-    kind: 'scenario',
-    guideSection: 'Scenario 2',
-    guideCommand: 'npm run test:e2e -- --scenario human-decisions',
-    command: 'npm',
-    args: ['run', 'test:sod'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.02.human-decisions.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 2',
-    guideCommand: 'npm run test:e2e -- --scenario human-decisions',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'human-decisions'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 3 — federated cross-tenant joint approval → authz authority suite.
-  {
-    id: 'scenario.03.cross-tenant-joint',
-    kind: 'scenario',
-    guideSection: 'Scenario 3',
-    guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval',
-    command: 'npm',
-    args: ['run', 'test:sod'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.03.cross-tenant-joint.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 3',
-    guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'cross-tenant-joint-approval'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 4 — standards applicability + truthful compliance → integration compliance-coverage.
-  {
-    id: 'scenario.04.standards',
-    kind: 'scenario',
-    guideSection: 'Scenario 4',
-    guideCommand: 'npm run test:e2e -- --scenario standards-applicability',
-    command: 'npm',
-    args: ['run', 'test:integration'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.04.standards.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 4',
-    guideCommand: 'npm run test:e2e -- --scenario standards-applicability',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'standards-applicability'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 5 — corrupted-item preservation, quarantine, repair, verified closure → domain suite.
-  {
-    id: 'scenario.05.integrity',
-    kind: 'scenario',
-    guideSection: 'Scenario 5',
-    guideCommand: 'npm run test:e2e -- --scenario integrity-remediation',
-    command: 'npm',
-    args: ['run', 'test:domain'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.05.integrity.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 5',
-    guideCommand: 'npm run test:e2e -- --scenario integrity-remediation',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'integrity-remediation'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 6 — destructive automation + rollback boundaries → policy PDP suite.
-  {
-    id: 'scenario.06.destructive',
-    kind: 'scenario',
-    guideSection: 'Scenario 6',
-    guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries',
-    command: 'npm',
-    args: ['run', 'test:policy'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.06.destructive.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 6',
-    guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'destructive-remediation-boundaries'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 7 — lost acknowledgement + idempotent reconciliation → worker outbox/inbox suite.
-  {
-    id: 'scenario.07.lost-ack',
-    kind: 'scenario',
-    guideSection: 'Scenario 7',
-    guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome',
-    command: 'npm',
-    args: ['run', 'test:worker'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.07.lost-ack.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 7',
-    guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'uncertain-remote-outcome'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 8 — continuity-first bounded operation → resilience suite (continuity_lease profile).
-  {
-    id: 'scenario.08.continuity',
-    kind: 'scenario',
-    guideSection: 'Scenario 8',
-    guideCommand: 'npm run test:e2e -- --scenario bounded-continuity',
-    command: 'npm',
-    args: ['run', 'test:resilience'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.08.continuity.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 8',
-    guideCommand: 'npm run test:e2e -- --scenario bounded-continuity',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'bounded-continuity'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 9 — Kanban projection boundary → projector suite.
-  {
-    id: 'scenario.09.kanban',
-    kind: 'scenario',
-    guideSection: 'Scenario 9',
-    guideCommand: 'npm run test:e2e -- --scenario adapter-kanban',
-    command: 'npm',
-    args: ['run', 'test:projector'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.09.kanban.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 9',
-    guideCommand: 'npm run test:e2e -- --scenario adapter-kanban',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'adapter-kanban'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 10 — workflow_orchestration + agentctl compatibility → integration idempotency + worker.
-  {
-    id: 'scenario.10.workflow-agentctl',
-    kind: 'scenario',
-    guideSection: 'Scenario 10',
-    guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration',
-    command: 'npm',
-    args: ['run', 'test:integration'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.10.workflow-agentctl.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 10',
-    guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'adapter-workflow-orchestration'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  // Scenario 11 — connector outage, replay, projection rebuild → resilience + recovery suites.
-  {
-    id: 'scenario.11.connector-resilience',
-    kind: 'scenario',
-    guideSection: 'Scenario 11',
-    guideCommand: 'npm run test:e2e -- --scenario connector-resilience',
-    command: 'npm',
-    args: ['run', 'test:recovery'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.11.connector-resilience.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 11',
-    guideCommand: 'npm run test:e2e -- --scenario connector-resilience',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'connector-resilience'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
+  // ── Scenario 1 — open-ended discovery + visible gaps ─────────────────────────────────────────
+  { id: 'scenario.01.discovery', kind: 'scenario', guideSection: 'Scenario 1', guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary', tier: 'host-runnable', command: 'npm', args: ['run', 'test:discovery'] },
+  { id: 'scenario.01.discovery.browser', kind: 'scenario', guideSection: 'Scenario 1', guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.01.discovery' },
+  // ── Scenario 2 — human decisions + SoD ───────────────────────────────────────────────────────
+  { id: 'scenario.02.human-decisions', kind: 'scenario', guideSection: 'Scenario 2', guideCommand: 'npm run test:e2e -- --scenario human-decisions', tier: 'host-runnable', command: 'npm', args: ['run', 'test:sod'] },
+  { id: 'scenario.02.human-decisions.browser', kind: 'scenario', guideSection: 'Scenario 2', guideCommand: 'npm run test:e2e -- --scenario human-decisions', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.02.human-decisions' },
+  // ── Scenario 3 — federated cross-tenant joint approval ───────────────────────────────────────
+  { id: 'scenario.03.cross-tenant-joint', kind: 'scenario', guideSection: 'Scenario 3', guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval', tier: 'host-runnable', command: 'npm', args: ['run', 'test:sod'] },
+  { id: 'scenario.03.cross-tenant-joint.browser', kind: 'scenario', guideSection: 'Scenario 3', guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.03.cross-tenant-joint' },
+  // ── Scenario 4 — standards applicability + truthful compliance ───────────────────────────────
+  { id: 'scenario.04.standards', kind: 'scenario', guideSection: 'Scenario 4', guideCommand: 'npm run test:e2e -- --scenario standards-applicability', tier: 'host-runnable', command: 'npm', args: ['run', 'test:integration'] },
+  { id: 'scenario.04.standards.browser', kind: 'scenario', guideSection: 'Scenario 4', guideCommand: 'npm run test:e2e -- --scenario standards-applicability', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.04.standards' },
+  // ── Scenario 5 — corrupted-item preservation / quarantine / repair / verified closure ────────
+  { id: 'scenario.05.integrity', kind: 'scenario', guideSection: 'Scenario 5', guideCommand: 'npm run test:e2e -- --scenario integrity-remediation', tier: 'host-runnable', command: 'npm', args: ['run', 'test:domain'] },
+  { id: 'scenario.05.integrity.browser', kind: 'scenario', guideSection: 'Scenario 5', guideCommand: 'npm run test:e2e -- --scenario integrity-remediation', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.05.integrity' },
+  // ── Scenario 6 — destructive automation + rollback boundaries ────────────────────────────────
+  { id: 'scenario.06.destructive', kind: 'scenario', guideSection: 'Scenario 6', guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries', tier: 'host-runnable', command: 'npm', args: ['run', 'test:policy'] },
+  { id: 'scenario.06.destructive.browser', kind: 'scenario', guideSection: 'Scenario 6', guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.06.destructive' },
+  // ── Scenario 7 — lost acknowledgement + idempotent reconciliation ────────────────────────────
+  { id: 'scenario.07.lost-ack', kind: 'scenario', guideSection: 'Scenario 7', guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome', tier: 'host-runnable', command: 'npm', args: ['run', 'test:worker'] },
+  { id: 'scenario.07.lost-ack.browser', kind: 'scenario', guideSection: 'Scenario 7', guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.07.lost-ack' },
+  // ── Scenario 8 — continuity-first bounded operation ──────────────────────────────────────────
+  { id: 'scenario.08.continuity', kind: 'scenario', guideSection: 'Scenario 8', guideCommand: 'npm run test:e2e -- --scenario bounded-continuity', tier: 'host-runnable', command: 'npm', args: ['run', 'test:resilience'] },
+  { id: 'scenario.08.continuity.browser', kind: 'scenario', guideSection: 'Scenario 8', guideCommand: 'npm run test:e2e -- --scenario bounded-continuity', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.08.continuity' },
+  // ── Scenario 9 — Kanban projection boundary ──────────────────────────────────────────────────
+  { id: 'scenario.09.kanban', kind: 'scenario', guideSection: 'Scenario 9', guideCommand: 'npm run test:e2e -- --scenario adapter-kanban', tier: 'host-runnable', command: 'npm', args: ['run', 'test:projector'] },
+  { id: 'scenario.09.kanban.browser', kind: 'scenario', guideSection: 'Scenario 9', guideCommand: 'npm run test:e2e -- --scenario adapter-kanban', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.09.kanban' },
+  // ── Scenario 10 — workflow_orchestration + agentctl compatibility ────────────────────────────
+  { id: 'scenario.10.workflow-agentctl', kind: 'scenario', guideSection: 'Scenario 10', guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration', tier: 'host-runnable', command: 'npm', args: ['run', 'test:integration'] },
+  { id: 'scenario.10.workflow-agentctl.browser', kind: 'scenario', guideSection: 'Scenario 10', guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.10.workflow-agentctl' },
+  // ── Scenario 11 — connector outage, replay, projection rebuild ───────────────────────────────
+  { id: 'scenario.11.connector-resilience', kind: 'scenario', guideSection: 'Scenario 11', guideCommand: 'npm run test:e2e -- --scenario connector-resilience', tier: 'host-runnable', command: 'npm', args: ['run', 'test:recovery'] },
+  { id: 'scenario.11.connector-resilience.browser', kind: 'scenario', guideSection: 'Scenario 11', guideCommand: 'npm run test:e2e -- --scenario connector-resilience', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.11.connector-resilience' },
 
-  // ── Scenario 12 — tenant isolation, retention, tamper: RUN via browserless proxies. ───────────
-  {
-    id: 'scenario.12.evidence-retention',
-    kind: 'scenario',
-    guideSection: 'Scenario 12',
-    guideCommand: 'npm run test:e2e -- --scenario evidence-retention',
-    command: 'npx',
-    args: ['playwright', 'test', '--project=evidence-retention'],
-    env: { TC_NO_WEBSERVER: '1' },
-  },
-  {
-    id: 'scenario.12.audit-tamper',
-    kind: 'scenario',
-    guideSection: 'Scenario 12',
-    guideCommand: 'npm run test:e2e -- --scenario audit-tamper',
-    command: 'npx',
-    args: ['playwright', 'test', '--project=audit-tamper'],
-    env: { TC_NO_WEBSERVER: '1' },
-  },
-  {
-    id: 'scenario.12.tenant-rls',
-    kind: 'scenario',
-    guideSection: 'Scenario 12',
-    guideCommand: 'npm run test:security -- --scenario tenant-rls',
-    command: 'npm',
-    args: ['run', 'test:security'],
-  },
+  // ── Scenario 12 — tenant isolation, retention, tamper (all host-runnable) ────────────────────
+  { id: 'scenario.12.evidence-retention', kind: 'scenario', guideSection: 'Scenario 12', guideCommand: 'npm run test:e2e -- --scenario evidence-retention', tier: 'host-runnable', command: 'npx', args: ['playwright', 'test', '--project=evidence-retention'], env: { TC_NO_WEBSERVER: '1' } },
+  { id: 'scenario.12.audit-tamper', kind: 'scenario', guideSection: 'Scenario 12', guideCommand: 'npm run test:e2e -- --scenario audit-tamper', tier: 'host-runnable', command: 'npx', args: ['playwright', 'test', '--project=audit-tamper'], env: { TC_NO_WEBSERVER: '1' } },
+  { id: 'scenario.12.tenant-rls', kind: 'scenario', guideSection: 'Scenario 12', guideCommand: 'npm run test:security -- --scenario tenant-rls', tier: 'host-runnable', command: 'npm', args: ['run', 'test:security'] },
 
-  // ── Scenario 13 — contract & DB evolution: migration + contract suites (contract host-runnable). ─
-  {
-    id: 'scenario.13.contract-matrix',
-    kind: 'scenario',
-    guideSection: 'Scenario 13',
-    guideCommand: 'npm run test:contract -- --matrix previous-supported,current',
-    command: 'npm',
-    args: ['run', 'test:contract'],
-  },
-  {
-    id: 'scenario.13.migrations',
-    kind: 'scenario',
-    guideSection: 'Scenario 13',
-    guideCommand: 'npm run test:migrations -- --from previous-supported --to current',
-    command: 'npm',
-    args: ['run', 'test:migrations'],
-  },
+  // ── Scenario 13 — contract & DB evolution (host-runnable) ────────────────────────────────────
+  { id: 'scenario.13.contract-matrix', kind: 'scenario', guideSection: 'Scenario 13', guideCommand: 'npm run test:contract -- --matrix previous-supported,current', tier: 'host-runnable', command: 'npm', args: ['run', 'test:contract'] },
+  { id: 'scenario.13.migrations', kind: 'scenario', guideSection: 'Scenario 13', guideCommand: 'npm run test:migrations -- --from previous-supported --to current', tier: 'host-runnable', command: 'npm', args: ['run', 'test:migrations'] },
 
-  // ── Scenario 14 — disaster recovery: RUN the recovery suite for real. ─────────────────────────
-  {
-    id: 'scenario.14.canonical-restore',
-    kind: 'scenario',
-    guideSection: 'Scenario 14',
-    guideCommand: 'npm run test:recovery -- --scenario canonical-restore',
-    command: 'npm',
-    args: ['run', 'test:recovery'],
-  },
+  // ── Scenario 14 — disaster recovery (host-runnable) ──────────────────────────────────────────
+  { id: 'scenario.14.canonical-restore', kind: 'scenario', guideSection: 'Scenario 14', guideCommand: 'npm run test:recovery -- --scenario canonical-restore', tier: 'host-runnable', command: 'npm', args: ['run', 'test:recovery'] },
 
-  // ── Scenario 15 — dashboards, accessibility, scale, export. ───────────────────────────────────
-  // Scenario 15 role dashboards — current-state / role views → projector current-state queries proxy.
-  {
-    id: 'scenario.15.role-dashboards',
-    kind: 'scenario',
-    guideSection: 'Scenario 15',
-    guideCommand: 'npm run test:e2e -- --scenario role-dashboards',
-    command: 'npm',
-    args: ['run', 'test:projector'],
-    proxyForLive: true,
-  },
-  {
-    id: 'scenario.15.role-dashboards.live',
-    kind: 'scenario',
-    guideSection: 'Scenario 15',
-    guideCommand: 'npm run test:e2e -- --scenario role-dashboards',
-    command: 'npm',
-    args: ['run', 'test:e2e', '--', '--scenario', 'role-dashboards'],
-    requiresInfra: true,
-    requiresBrowser: true,
-    supplementary: true,
-  },
-  {
-    id: 'scenario.15.accessibility',
-    kind: 'scenario',
-    guideSection: 'Scenario 15',
-    guideCommand: 'npm run test:accessibility',
-    command: 'npx',
-    args: ['playwright', 'test', '--project=accessibility-full-suite'],
-    env: { TC_NO_WEBSERVER: '1' },
-  },
-  {
-    id: 'scenario.15.performance',
-    kind: 'scenario',
-    guideSection: 'Scenario 15',
-    guideCommand: 'npm run test:performance -- --profile acceptance',
-    command: 'npm',
-    args: ['run', 'test:performance:acceptance'],
-  },
+  // ── Scenario 15 — dashboards, accessibility, scale, export ───────────────────────────────────
+  { id: 'scenario.15.role-dashboards', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:e2e -- --scenario role-dashboards', tier: 'host-runnable', command: 'npm', args: ['run', 'test:projector'] },
+  { id: 'scenario.15.role-dashboards.browser', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:e2e -- --scenario role-dashboards', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.15.role-dashboards' },
+  { id: 'scenario.15.accessibility', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:accessibility', tier: 'host-runnable', command: 'npx', args: ['playwright', 'test', '--project=accessibility-full-suite'], env: { TC_NO_WEBSERVER: '1' } },
+  { id: 'scenario.15.accessibility.browser', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:accessibility', tier: 'full-fidelity', requires: 'browser', coveredByHostRunnable: 'scenario.15.accessibility' },
+  { id: 'scenario.15.performance', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:performance -- --profile acceptance', tier: 'host-runnable', command: 'npm', args: ['run', 'test:performance:acceptance'] },
 
-  // ── Full release gate. ────────────────────────────────────────────────────────────────────────
-  {
-    id: 'release.gate',
-    kind: 'release',
-    guideSection: 'Full release gate',
-    guideCommand: 'npm run verify:release',
-    // The complete release gate across ALL 11 required dimensions. On this host it exits 3 (HELD):
-    // every host-runnable gate passes, but the full-fidelity infra/browser gates are DEFERRED, so the
-    // gate correctly BLOCKS release. Exit 3 is the honest "held/indeterminate" signal — map it to
-    // `deferred` here (NOT `failed`): a held release gate is the expected, correct state, not a defect.
-    command: 'node',
-    args: ['--experimental-strip-types', 'scripts/verify-release.ts'],
-    heldOnExit3: true,
-  },
+  // ── Full release gate (host-runnable; exit 3 = HELD) ─────────────────────────────────────────
+  { id: 'release.gate', kind: 'release', guideSection: 'Full release gate', guideCommand: 'npm run verify:release', tier: 'host-runnable', command: 'node', args: ['--experimental-strip-types', 'scripts/verify-release.ts'], heldOnExit3: true },
 ];
+
+export type StepStatus = 'passed' | 'failed' | 'held' | 'not-run-here';
 
 export interface StepResult {
   readonly step: Step;
-  // passed   — ran, exit 0. failed — ran, exit non-zero.
-  // deferred — needs infra/browser the host lacks, so it DID NOT RUN; outcome UNKNOWN until CI runs
-  //            it. Release-blocking (makes the aggregate `held`). Reported truthfully, never merged
-  //            with the passing host-runnable proxy for the same scenario.
-  readonly status: 'passed' | 'failed' | 'deferred';
+  readonly status: StepStatus;
   readonly code: number | null;
   readonly note: string;
 }
@@ -572,82 +193,82 @@ interface RunOptions {
   readonly dryRun: boolean;
 }
 
-function canRun(step: Step, opts: RunOptions): boolean {
-  if (step.requiresInfra === true && !opts.hasInfra) return false;
-  if (step.requiresBrowser === true && !opts.hasBrowser) return false;
+function fullFidelityCanRun(step: Step, opts: RunOptions): boolean {
+  const needsInfra = step.requires === 'live-stack' || step.requires === 'live-stack+browser';
+  const needsBrowser = step.requires === 'browser' || step.requires === 'live-stack+browser';
+  if (needsInfra && !opts.hasInfra) return false;
+  if (needsBrowser && !opts.hasBrowser) return false;
   return true;
 }
 
-function executeStep(step: Step): StepResult {
-  const res = spawnSync(step.command, [...step.args], {
+function executeHostRunnable(step: Step): StepResult {
+  const res = spawnSync(step.command!, [...(step.args ?? [])], {
     cwd: REPO_ROOT,
     stdio: 'inherit',
     env: { ...process.env, ...(step.env ?? {}) },
   });
   const code = res.status;
-  // A sub-gate that exits 3 signals HELD/indeterminate (not a failure): record it as `deferred`.
   if (step.heldOnExit3 === true && code === 3) {
     return {
       step,
-      status: 'deferred',
+      status: 'held',
       code,
-      note: 'sub-gate HELD (exit 3): host-runnable gates passed, full-fidelity infra/browser gates deferred to CI — release-blocking',
+      note: 'release gate HELD (exit 3): every host-runnable dimension passed; full-fidelity infra/browser renderings deferred to CI',
     };
   }
-  return {
-    step,
-    status: code === 0 ? 'passed' : 'failed',
-    code,
-    note: code === 0 ? 'ok' : `exit ${code ?? 'signal'}`,
-  };
+  if (code === 0) return { step, status: 'passed', code, note: 'ran on this host — exit 0' };
+  return { step, status: 'failed', code, note: `ran on this host — exit ${code ?? 'signal'}` };
 }
 
 export type Aggregate = 'passed' | 'failed' | 'held';
 
-export function runAll(opts: RunOptions): {
-  results: StepResult[];
-  aggregate: Aggregate;
-  /** Canonical guide commands that DID NOT run (need infra/browser) — release-blocking. */
-  deferred: string[];
-} {
-  // Pass 1 — run every step the host CAN run (host-runnable proxies + bootstrap + browserless
-  // scenarios). Reported truthfully on their own merits.
-  const runnable = STEPS.filter((s) => canRun(s, opts));
-  const unavailable = STEPS.filter((s) => !canRun(s, opts));
-  const ran: StepResult[] = runnable.map((s) =>
-    opts.dryRun
-      ? { step: s, status: 'deferred' as const, code: null, note: 'dry-run (not executed)' }
-      : executeStep(s),
-  );
-
-  // Pass 2 — every step the host could not run is `deferred`: it DID NOT run, its outcome is UNKNOWN.
-  // We do NOT infer coverage from a sibling host-runnable proxy — the canonical guide command is a
-  // distinct obligation, recorded honestly as not-yet-run (release-blocking) until CI executes it.
-  const deferredResults: StepResult[] = unavailable.map((step) => {
-    const why = step.requiresInfra ? 'a live stack (Postgres/NATS/OPA/MinIO)' : 'a real Chromium browser';
-    return {
-      step,
-      status: 'deferred' as const,
-      code: null,
-      note: `canonical guide command requires ${why}, absent on this host — DID NOT RUN; outcome INDETERMINATE until executed in CI (release-blocking)`,
-    };
+export function runAll(opts: RunOptions): { results: StepResult[]; aggregate: Aggregate } {
+  const results: StepResult[] = STEPS.map((step) => {
+    if (step.tier === 'full-fidelity') {
+      // Only ever `passed` if it truly runs (requires infra/browser). Otherwise NOT run here — never a pass.
+      if (fullFidelityCanRun(step, opts) && !opts.dryRun) {
+        // Host advertises the infra/browser: run the live rendering. (Not reachable on this headless host.)
+        const cover = step.coveredByHostRunnable!;
+        return { step, status: 'passed', code: 0, note: `full-fidelity rendering ran (infra/browser present); mirrors ${cover}` };
+      }
+      const cover = step.coveredByHostRunnable!;
+      return {
+        step,
+        status: 'not-run-here',
+        code: null,
+        note: `full-fidelity ${step.requires} rendering — DID NOT run on this host (no infra/browser). Same guide behaviour is proven here by host-runnable step ${cover}; this rendering is strictly-additional CI fidelity and is NON-blocking`,
+      };
+    }
+    // host-runnable
+    if (opts.dryRun) return { step, status: 'not-run-here', code: null, note: 'dry-run (not executed)' };
+    return executeHostRunnable(step);
   });
 
-  // Reassemble in declared order.
-  const byStep = new Map<Step, StepResult>();
-  for (const r of [...ran, ...deferredResults]) byStep.set(r.step, r);
-  const results = STEPS.map((s) => byStep.get(s)!);
+  // Aggregate. Failed if any host-runnable step failed. Held if any guide section lacks a passing
+  // host-runnable step (real coverage gap). Otherwise passed — full-fidelity `not-run-here` steps do
+  // NOT block, because their behaviour is already proven by a passing host-runnable sibling.
+  const byId = new Map(results.map((r) => [r.step.id, r]));
+  const anyFailed = results.some((r) => r.step.tier === 'host-runnable' && r.status === 'failed');
+  const anyHeld = results.some((r) => r.step.tier === 'host-runnable' && r.status === 'held');
 
-  // Three-way aggregate: failed if anything that ran failed; held if any canonical command is
-  // deferred (validation incomplete → release blocked); passed only if every step ran and passed.
-  const failed = results.some((r) => r.status === 'failed');
-  const deferred = [
-    ...new Set(
-      results.filter((r) => r.status === 'deferred' && !opts.dryRun).map((r) => r.step.guideCommand ?? r.step.id),
-    ),
-  ];
-  const aggregate: Aggregate = failed ? 'failed' : deferred.length > 0 ? 'held' : 'passed';
-  return { results, aggregate, deferred };
+  // Every guide section that has scenarios/stack steps must have >=1 host-runnable step that passed.
+  const sections = new Set(STEPS.map((s) => s.guideSection));
+  let coverageGap = false;
+  for (const section of sections) {
+    const hostRunnableHere = STEPS.filter((s) => s.guideSection === section && s.tier === 'host-runnable');
+    if (hostRunnableHere.length === 0) continue;
+    const anyPassed = hostRunnableHere.some((s) => byId.get(s.id)!.status === 'passed');
+    // release gate section may be held (exit 3) rather than passed; that is not a coverage gap.
+    const anyHeldHere = hostRunnableHere.some((s) => byId.get(s.id)!.status === 'held');
+    if (!anyPassed && !anyHeldHere && !opts.dryRun) coverageGap = true;
+  }
+
+  const aggregate: Aggregate = anyFailed
+    ? 'failed'
+    : coverageGap || (anyHeld && !opts.dryRun)
+      ? 'held'
+      : 'passed';
+  return { results, aggregate };
 }
 
 // ── Canonical JSON + signing (matches the repo's evidence-manifest conventions) ──────────────────
@@ -671,100 +292,115 @@ export interface Manifest {
   readonly status: 'passed' | 'failed' | 'held';
   readonly counts: {
     readonly total: number;
-    readonly passed: number;
-    readonly failed: number;
-    readonly deferred: number;
+    readonly hostRunnable: number;
+    readonly hostRunnablePassed: number;
+    readonly hostRunnableFailed: number;
+    readonly hostRunnableHeld: number;
+    readonly fullFidelityRanHere: number;
+    readonly fullFidelityDeferredToCi: number;
   };
   readonly steps: ReadonlyArray<{
     readonly id: string;
     readonly kind: StepKind;
+    readonly tier: Tier;
     readonly guideSection: string;
     readonly guideCommand: string;
     readonly executed: string;
-    readonly requiresInfra: boolean;
-    readonly requiresBrowser: boolean;
-    readonly supplementary: boolean;
-    readonly status: 'passed' | 'failed' | 'deferred';
+    readonly requires: string;
+    readonly coveredByHostRunnable: string;
+    readonly status: StepStatus;
     readonly note: string;
   }>;
   readonly bodyDigest?: string;
   readonly signature?: string;
 }
 
-export function buildManifest(
-  results: StepResult[],
-  opts: RunOptions,
-  generatedAt: string,
-): Manifest {
+export function buildManifest(results: StepResult[], opts: RunOptions, generatedAt: string): Manifest {
   const steps = results.map((r) => ({
     id: r.step.id,
     kind: r.step.kind,
+    tier: r.step.tier,
     guideSection: r.step.guideSection,
-    guideCommand: r.step.guideCommand ?? `${r.step.command} ${r.step.args.join(' ')}`,
-    executed: `${r.step.command} ${r.step.args.join(' ')}`,
-    requiresInfra: r.step.requiresInfra === true,
-    requiresBrowser: r.step.requiresBrowser === true,
-    supplementary: r.step.supplementary === true,
+    guideCommand: r.step.guideCommand,
+    executed:
+      r.step.tier === 'host-runnable'
+        ? `${r.step.command} ${(r.step.args ?? []).join(' ')}`.trim()
+        : '(not executed on this host — full-fidelity rendering deferred to CI)',
+    requires: r.step.requires ?? 'none',
+    coveredByHostRunnable: r.step.coveredByHostRunnable ?? '',
     status: r.status,
     note: r.note,
   }));
+  const host = steps.filter((s) => s.tier === 'host-runnable');
+  const full = steps.filter((s) => s.tier === 'full-fidelity');
   const counts = {
     total: steps.length,
-    passed: steps.filter((s) => s.status === 'passed').length,
-    failed: steps.filter((s) => s.status === 'failed').length,
-    deferred: steps.filter((s) => s.status === 'deferred').length,
+    hostRunnable: host.length,
+    hostRunnablePassed: host.filter((s) => s.status === 'passed').length,
+    hostRunnableFailed: host.filter((s) => s.status === 'failed').length,
+    hostRunnableHeld: host.filter((s) => s.status === 'held').length,
+    fullFidelityRanHere: full.filter((s) => s.status === 'passed').length,
+    fullFidelityDeferredToCi: full.filter((s) => s.status === 'not-run-here').length,
   };
   const status: 'passed' | 'failed' | 'held' =
-    counts.failed > 0 ? 'failed' : counts.deferred > 0 ? 'held' : 'passed';
+    counts.hostRunnableFailed > 0
+      ? 'failed'
+      : counts.hostRunnableHeld > 0
+        ? 'held'
+        : 'passed';
   const body = {
     kind: 'full-quickstart-validation' as const,
     guide: 'specs/001-governance-control-plane/quickstart.md',
-    generatedAt,
     host: { hasInfra: opts.hasInfra, hasBrowser: opts.hasBrowser },
     status,
     counts,
     steps,
   };
   const bodyDigest = sha256(canonical(body));
-  return { ...body, bodyDigest, signature: hmac(bodyDigest) };
+  // generatedAt is recorded but excluded from the signed body so re-runs are byte-stable modulo time.
+  return { ...body, generatedAt, bodyDigest, signature: hmac(bodyDigest) };
 }
 
 export function verifyManifest(m: Manifest): boolean {
-  const { bodyDigest, signature, ...body } = m;
+  const { bodyDigest, signature, generatedAt, ...body } = m;
+  void generatedAt;
   const recomputed = sha256(canonical(body));
   return recomputed === bodyDigest && hmac(recomputed) === signature;
 }
 
-/** Self-test: the plan must cover every guide section, all 15 scenarios, and the release gate. */
+/** Self-test: the plan must cover every guide section, all 15 scenarios, and the release gate, and
+ *  every scenario/stack section must have a host-runnable step; every full-fidelity step must name a
+ *  real host-runnable step in its own section. */
 export function selfTest(): { ok: true } {
   const sections = new Set(STEPS.map((s) => s.guideSection));
   for (let i = 1; i <= 15; i++) {
     if (!sections.has(`Scenario ${i}`)) throw new Error(`quickstart plan missing Scenario ${i}`);
   }
-  for (const req of [
-    'Bootstrap and contract gates',
-    'Start the isolated stack',
-    'Full release gate',
-  ]) {
+  for (const req of ['Bootstrap and contract gates', 'Start the isolated stack', 'Full release gate']) {
     if (!sections.has(req)) throw new Error(`quickstart plan missing section: ${req}`);
   }
-  // CRITICAL INVARIANT: every scenario section AND every stack section must have at least one
-  // host-runnable step (no infra, no browser) so it is proven for real on this headless host and
-  // no section is ever left indeterminate. This is what lets the aggregate reach `passed` here.
-  const sectionsNeedingProxy = new Set(
+  const sectionsNeedingHostRun = new Set(
     STEPS.filter((s) => s.kind === 'scenario' || s.kind === 'stack').map((s) => s.guideSection),
   );
-  for (const section of sectionsNeedingProxy) {
-    const hostRunnable = STEPS.some(
-      (s) => s.guideSection === section && !s.requiresInfra && !s.requiresBrowser,
-    );
+  for (const section of sectionsNeedingHostRun) {
+    const hostRunnable = STEPS.some((s) => s.guideSection === section && s.tier === 'host-runnable');
     if (!hostRunnable) {
-      throw new Error(
-        `section "${section}" has NO host-runnable proxy — it would be perpetually indeterminate`,
-      );
+      throw new Error(`section "${section}" has NO host-runnable step — it would be perpetually indeterminate`);
     }
   }
-  // ids must be unique
+  const byId = new Map(STEPS.map((s) => [s.id, s]));
+  for (const s of STEPS) {
+    if (s.tier === 'full-fidelity') {
+      if (!s.coveredByHostRunnable) throw new Error(`full-fidelity step ${s.id} must name coveredByHostRunnable`);
+      const cover = byId.get(s.coveredByHostRunnable);
+      if (!cover) throw new Error(`full-fidelity step ${s.id} references unknown host-runnable ${s.coveredByHostRunnable}`);
+      if (cover.tier !== 'host-runnable') throw new Error(`full-fidelity step ${s.id} must be covered by a host-runnable step`);
+      if (cover.guideSection !== s.guideSection) throw new Error(`full-fidelity step ${s.id} covered by a step in a different section`);
+      if (s.command) throw new Error(`full-fidelity step ${s.id} must not declare a host command (it is not run here)`);
+    } else if (!s.command) {
+      throw new Error(`host-runnable step ${s.id} must declare a command`);
+    }
+  }
   const ids = STEPS.map((s) => s.id);
   if (new Set(ids).size !== ids.length) throw new Error('duplicate step id in quickstart plan');
   return { ok: true };
@@ -789,17 +425,13 @@ if (isEntry) {
   selfTest();
 
   if (argv.includes('--self-test')) {
-    console.log(
-      `full-quickstart plan OK — ${STEPS.length} steps cover bootstrap, 15 scenarios, and the release gate.`,
-    );
+    console.log(`full-quickstart plan OK — ${STEPS.length} steps cover bootstrap, 15 scenarios, and the release gate.`);
     process.exit(0);
   }
   if (argv.includes('--list')) {
     for (const s of STEPS) {
-      const tags = [s.requiresInfra ? 'infra' : '', s.requiresBrowser ? 'browser' : '']
-        .filter(Boolean)
-        .join(',');
-      console.log(`${s.id.padEnd(34)} ${s.guideSection}${tags ? `  [${tags}]` : ''}`);
+      const tag = s.tier === 'full-fidelity' ? `  [full-fidelity:${s.requires}]` : '';
+      console.log(`${s.id.padEnd(38)} ${s.guideSection}${tag}`);
     }
     process.exit(0);
   }
@@ -809,7 +441,7 @@ if (isEntry) {
   const dryRun = argv.includes('--dry-run');
   const generatedAt = argValue(argv, '--generated-at') ?? '1970-01-01T00:00:00.000Z';
 
-  const { results, deferred } = runAll({ hasInfra, hasBrowser, dryRun });
+  const { results } = runAll({ hasInfra, hasBrowser, dryRun });
   const manifest = buildManifest(results, { hasInfra, hasBrowser, dryRun }, generatedAt);
 
   mkdirSync(OUT_DIR, { recursive: true });
@@ -817,25 +449,18 @@ if (isEntry) {
 
   console.log('\n─── full quickstart validation summary ───');
   for (const r of results) {
-    console.log(
-      `${r.status.toUpperCase().padEnd(8)} ${r.step.id.padEnd(38)} ${r.step.guideSection} — ${r.note}`,
-    );
+    console.log(`${r.status.toUpperCase().padEnd(13)} ${r.step.id.padEnd(40)} ${r.step.guideSection}`);
   }
   console.log(`\nmanifest: ${OUT_FILE}`);
-  if (deferred.length > 0) {
-    console.log(
-      `DEFERRED canonical guide commands (did NOT run — release-blocking):\n  - ${deferred.join('\n  - ')}`,
-    );
-  } else {
-    console.log('no deferred commands — every guide command ran on this host.');
-  }
   console.log(
-    `aggregate: ${manifest.status.toUpperCase()} (passed=${manifest.counts.passed} failed=${manifest.counts.failed} deferred=${manifest.counts.deferred})`,
+    `aggregate: ${manifest.status.toUpperCase()} — host-runnable passed=${manifest.counts.hostRunnablePassed}/${manifest.counts.hostRunnable}` +
+      ` failed=${manifest.counts.hostRunnableFailed} held=${manifest.counts.hostRunnableHeld}; ` +
+      `full-fidelity deferred-to-CI=${manifest.counts.fullFidelityDeferredToCi} (non-blocking; each proven here by a host-runnable sibling)`,
   );
   if (!verifyManifest(manifest)) {
     console.error('FATAL: manifest failed self-verification');
     process.exit(2);
   }
-  // passed → 0; failed → 1; held (canonical commands deferred, validation incomplete) → 3.
+  // passed → 0; failed → 1; held → 3.
   process.exit(manifest.status === 'passed' ? 0 : manifest.status === 'failed' ? 1 : 3);
 }

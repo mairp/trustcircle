@@ -37,7 +37,7 @@ const GEN = join(REPO_ROOT, 'packages', 'contracts', 'src', 'generated', 'eviden
 /** Run the validator CLI; returns {status, stdout, stderr}. Never throws on exit code. */
 function runCli(args) {
   try {
-    const stdout = execFileSync('node', [SCRIPT, ...args], {
+    const stdout = execFileSync('node', ['--experimental-strip-types', SCRIPT, ...args], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

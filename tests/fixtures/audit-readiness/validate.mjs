@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Audit-readiness fixtures validator + manifest builder (Phase 9 / T292 / GAR-010).
+// GATE9: fixtures regenerated and present in the working tree; run `node --test <this file>`.
 //
 // Validates the ISO/IEC 42001 / 42005 / 42006 sample packages in this directory and (with --build)
 // (re)writes a signed `manifest.json` that binds each package by content digest. Run as a node test

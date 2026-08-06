@@ -1,0 +1,38 @@
+{
+  "package": "ISO/IEC 42006 audit-readiness index (for a certification-body assessment)",
+  "certificationClaimed": false,
+  "disclaimer": "Readiness index only. No licensed standard text reproduced; clause identifiers only. Certification can only be granted by an accredited body; none is claimed here.",
+  "provenance": "Phase 9 T292 sample fixture regenerated for GATE9; committed and present in the working tree.",
+  "readiness": [
+    {
+      "clause": "competence-of-auditors",
+      "obligationParaphrase": "The assessment presumes competent, impartial auditors; we provide reproducible evidence they can independently verify.",
+      "shippedControl": "Every evidence pointer targets a runnable artifact an assessor can execute.",
+      "evidencePointer": "scripts/verify-release.ts (complete release gate)"
+    },
+    {
+      "clause": "audit-evidence",
+      "obligationParaphrase": "Objective, verifiable audit evidence is available.",
+      "shippedControl": "Signed validation manifests + tamper-evident audit ledger.",
+      "evidencePointer": "tests/evidence/verify-manifests.ts"
+    },
+    {
+      "clause": "impartiality-records",
+      "obligationParaphrase": "Records support impartial review across independent reviewers.",
+      "shippedControl": "Independent multi-discipline release review recorded as a signed manifest.",
+      "evidencePointer": "artifacts/release/approval-manifest.json"
+    },
+    {
+      "clause": "supply-chain-transparency",
+      "obligationParaphrase": "Supply-chain composition and exceptions are disclosed.",
+      "shippedControl": "SBOM + license inventory + vulnerability evidence + approved exceptions.",
+      "evidencePointer": "scripts/supply-chain-evidence.ts"
+    },
+    {
+      "clause": "recoverability",
+      "obligationParaphrase": "Continuity and recoverability are demonstrable.",
+      "shippedControl": "Four-hour canonical restore with no committed loss.",
+      "evidencePointer": "tests/recovery/canonical-restore.test.ts"
+    }
+  ]
+}

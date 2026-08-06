@@ -1,3 +1,5 @@
+<!-- Phase 9 · T292 · GAR-010 — fixtures regenerated and present in the working tree for GATE9. -->
+
 # Audit-Readiness Fixtures (ISO/IEC 42001 · 42005 · 42006)
 
 Phase 9 · T292 · GAR-010. This directory is a **sample, non-certified** audit-readiness package that

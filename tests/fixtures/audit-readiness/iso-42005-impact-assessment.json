@@ -7,6 +7,7 @@
     "purpose": "Assist human approvers in governance decisions; humans remain accountable.",
     "autonomy": "recommend-only; no autonomous consequential action without human approval"
   },
+  "provenance": "Phase 9 T292 sample fixture regenerated for GATE9; committed and present in the working tree.",
   "assessment": [
     {
       "clause": "impact-identification",

@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "@trustcircle/application": "*",
+    "@trustcircle/domain": "*",
     "@trustcircle/persistence": "*",
     "@trustcircle/contracts": "*",
-    "@trustcircle/observability": "*"
+    "@trustcircle/observability": "*",
+    "@trustcircle/adapter-sdk": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

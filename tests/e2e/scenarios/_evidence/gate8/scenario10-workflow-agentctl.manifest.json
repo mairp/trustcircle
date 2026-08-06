@@ -1,0 +1,126 @@
+{
+  "manifestVersion": 1,
+  "kind": "journey-result-manifest",
+  "journeyScope": "scenario-10-workflow-agentctl",
+  "journeyTitle": "Scenario 10 — workflow_orchestration + agentctl activation (read-only, JSON fallback)",
+  "parentScenario": "US6-named-adapters",
+  "emittedBy": "tests/e2e/scenarios/named-adapters.ts#projectJourneyManifest",
+  "version": {
+    "scenario": "US6-named-adapters",
+    "requirementRefs": [
+      "FR-008",
+      "FR-029"
+    ],
+    "worldDigest": "sha256:a2cfdf99d53966d922e49552fa5d8cb02962ed32077a43b5bc271056e2c75f2f"
+  },
+  "successCriteria": [
+    {
+      "id": "SC-024",
+      "text": "Absence is never inferred as health, and no connector is ever granted governance authority.",
+      "met": true,
+      "measure": "no adapter in journey grants governance authority=true (scope=scenario-10-workflow-agentctl, full-run SC-024 met=true)"
+    }
+  ],
+  "adapterLines": [
+    {
+      "runnerRef": "workflow-orchestration",
+      "assertionRef": "US6-AS1",
+      "requirementRefs": [
+        "FR-008",
+        "FR-029",
+        "NFR-010"
+      ],
+      "auditRef": {
+        "obligationRef": "VO-nam3dc0rrel4t3d1",
+        "safeNextAction": "owner_approved_activation_to_enable_optional_sources"
+      },
+      "sourceClass": "workflow_orchestration",
+      "negotiatedCapabilities": [
+        "collect_evidence",
+        "discover",
+        "inspect",
+        "reconcile",
+        "snapshot",
+        "subscribe"
+      ],
+      "grantsGovernanceAuthority": false,
+      "evidence": [
+        {
+          "readPath": "adapter-sdk-verdict",
+          "detail": "the shipped manifest validates, negotiates a least-privilege capability SUBSET, and refuses an undeclared capability (real SDK verdicts, never re-implemented)",
+          "witnessed": [
+            "workflow-orchestration: valid=true|sourceClass=workflow_orchestration|digest=4f580a6d2662…",
+            "negotiated: ok=true|enabled=[collect_evidence,discover,inspect,reconcile,snapshot,subscribe]",
+            "undeclared refused=true|reason=not_declared",
+            "contract gate (NS-005): supportedMajor=true|driftedMajor=false|negotiatedContractOk=true"
+          ]
+        },
+        {
+          "readPath": "adapter-sdk-verdict",
+          "detail": "NO governance authority: no authoritative field names an approval/decision/closure, and forbidden inferences are declared (SC-024)",
+          "witnessed": [
+            "grantsGovernanceAuthority=false",
+            "authoritativeFields=[run.id,run.status,run.started_at,run.finished_at,step.id,step.status,step.attempts,runtime.worker_id,runtime.heartbeat_at,pmo.program_id,pmo.milestone,agent.id,agent.role,evidence.artifact_ref]",
+            "forbiddenInferences=5"
+          ]
+        }
+      ],
+      "lineDigest": "3d8e0720bf186cef2795b31b7d0d5d7a9f33e184f038884ba53540a6a311bb73"
+    },
+    {
+      "runnerRef": "agentctl",
+      "assertionRef": "US6-AS1",
+      "requirementRefs": [
+        "FR-008",
+        "FR-029",
+        "NFR-010"
+      ],
+      "auditRef": {
+        "obligationRef": "VO-nam3dc0rrel4t3d1",
+        "safeNextAction": "owner_approved_activation_to_enable_optional_sources"
+      },
+      "sourceClass": "agentctl",
+      "negotiatedCapabilities": [
+        "collect_evidence",
+        "discover",
+        "execute",
+        "inspect",
+        "reconcile",
+        "snapshot"
+      ],
+      "grantsGovernanceAuthority": false,
+      "evidence": [
+        {
+          "readPath": "adapter-sdk-verdict",
+          "detail": "the shipped manifest validates, negotiates a least-privilege capability SUBSET, and refuses an undeclared capability (real SDK verdicts, never re-implemented)",
+          "witnessed": [
+            "agentctl: valid=true|sourceClass=agentctl|digest=ca45ee1ccaa6…",
+            "negotiated: ok=true|enabled=[collect_evidence,discover,execute,inspect,reconcile,snapshot]",
+            "undeclared refused=true|reason=not_declared",
+            "contract gate (NS-005): supportedMajor=true|driftedMajor=false|negotiatedContractOk=true"
+          ]
+        },
+        {
+          "readPath": "adapter-sdk-verdict",
+          "detail": "NO governance authority: no authoritative field names an approval/decision/closure, and forbidden inferences are declared (SC-024)",
+          "witnessed": [
+            "grantsGovernanceAuthority=false",
+            "authoritativeFields=[command.name,command.args,command.operation_id,invocation.exit_code,invocation.stdout_digest,invocation.stderr_digest,invocation.json_payload,agent.id,agent.status]",
+            "forbiddenInferences=5"
+          ]
+        }
+      ],
+      "lineDigest": "adf99acefaacda0766f1650ad225b936b383ce21366d6157d3df0dd54c95327d"
+    }
+  ],
+  "coreActivation": null,
+  "gapRegister": [],
+  "manifestDigest": "65e5c0c23fe30f6060a7820277720ada9d0073b3906432c911631284ad5c3c79",
+  "signature": {
+    "algorithm": "sha256",
+    "digest": "65e5c0c23fe30f6060a7820277720ada9d0073b3906432c911631284ad5c3c79",
+    "boundScenario": "US6-named-adapters",
+    "boundWorldDigest": "sha256:a2cfdf99d53966d922e49552fa5d8cb02962ed32077a43b5bc271056e2c75f2f",
+    "boundJourney": "scenario-10-workflow-agentctl"
+  }
+}

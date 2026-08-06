@@ -37,6 +37,8 @@ const IGNORES = [
   '**/*.tsbuildinfo',
   '**/dist/**',
   '**/build/**',
+  '**/.next/**',
+  'apps/web/next-env.d.ts',
   '**/coverage/**',
   '.lisa/**', // Lisa runtime state (git-ignored)
   '.git/**',
@@ -54,6 +56,13 @@ const IGNORES = [
   // tools agree these are not authored source. Kept tracked so gate snapshots can read them.
   'tests/e2e/scenarios/_evidence/**',
   'tests/tooling/_evidence/**',
+  // Generated, signed release-evidence artifacts (Phase 9 / GAR-010): the full-quickstart
+  // validation manifest and the release approval manifest are emitted verbatim by their
+  // generator scripts (scripts/full-quickstart.ts, scripts/release-approval.ts) and pinned by
+  // digest/signature. Formatting them would break the signature reproducibility. Mirrors
+  // .prettierignore. The canonical single-line audit-readiness manifest is likewise generated.
+  'artifacts/**',
+  'tests/fixtures/audit-readiness/manifest.json',
 ];
 
 // ---------------------------------------------------------------------------------------

@@ -386,7 +386,11 @@ export function responseSchema(op: JsonObject, status: string): Json {
 
 /** Validate a `POST /v1/decisions` create request body. */
 export function validateCreateDecisionRequest(doc: GovernanceApiDocument, body: Json): string[] {
-  return validateAgainstSchema(doc, requestBodySchema(doc.operation('post', '/v1/decisions')), body);
+  return validateAgainstSchema(
+    doc,
+    requestBodySchema(doc.operation('post', '/v1/decisions')),
+    body,
+  );
 }
 
 /** Validate a `POST /v1/decisions/{decisionId}/actions` action request body. */
@@ -473,11 +477,7 @@ export function requiredHeaders(doc: GovernanceApiDocument, op: JsonObject): Req
     const refPtr = asString(prop(p, '$ref'));
     const param = refPtr !== undefined ? doc.ref(refPtr) : p;
     const name = asString(prop(param, 'name'));
-    if (
-      prop(param, 'in') === 'header' &&
-      prop(param, 'required') === true &&
-      name !== undefined
-    ) {
+    if (prop(param, 'in') === 'header' && prop(param, 'required') === true && name !== undefined) {
       out.push({ name, schema: prop(param, 'schema') ?? { type: 'string' } });
     }
   }

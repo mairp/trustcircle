@@ -51,6 +51,43 @@ const BUNDLE = {
   contentHash: 'af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b',
 };
 
+const OPERATIONS_MANIFEST = 'specs/002-operations-command-center/evidence-manifest.json';
+const OPERATIONS_CONTROL_VERSIONS = {
+  attentionRanking: 'attention-ranking/v1',
+  caseLifecycle: 'operational-case-lifecycle/v1',
+  serviceLevelPolicy: 'governance-{priority}/1.0.0',
+  authorityPlan: 'operations-authority/v1',
+  apiContract: 'operations-command-center.openapi/1.0.0',
+};
+const OPERATIONS_EVIDENCE_PATHS = [
+  'specs/002-operations-command-center/spec.md',
+  'specs/002-operations-command-center/plan.md',
+  'specs/002-operations-command-center/contracts/operations-command-center.openapi.yaml',
+  'packages/domain/src/operations.ts',
+  'packages/application/src/attention-queue.ts',
+  'packages/application/src/operational-case-service.ts',
+  'packages/application/src/operations-authority.ts',
+  'packages/contracts/src/operations-api.ts',
+  'packages/persistence/src/operational-case-repository.ts',
+  'apps/api/src/routes/operations-command-center.ts',
+  'apps/api/src/operations-runtime.ts',
+  'apps/web/src/lib/operations-loader.ts',
+  'apps/web/src/features/operations/AttentionQueue.tsx',
+  'apps/web/src/features/operations/CaseWorkspace.tsx',
+  'db/migrations/0070_operations_command_center.sql',
+  'tests/unit/operations-command-center.test.ts',
+  'tests/unit/operations-workspace.unit.test.ts',
+  'tests/contract/operations-api.contract.test.ts',
+  'tests/integration/operational-case-audit.test.ts',
+  'tests/integration/operations-command-center-runtime.test.ts',
+  'tests/integration/operations-command-center-rollback.test.ts',
+  'tests/security/operations-command-center-access.test.ts',
+  'tests/performance/operations-command-center.performance.test.ts',
+  'tests/e2e/operations-command-center.spec.ts',
+  'tests/evidence/audit-readiness/operations-command-center.mjs',
+  'docs/runbooks/operations-command-center.md',
+];
+
 function sha256(buf) {
   return createHash('sha256').update(buf).digest('hex');
 }
@@ -111,6 +148,22 @@ function buildManifest() {
   return manifest;
 }
 
+function buildOperationsManifest() {
+  const artifacts = [...OPERATIONS_EVIDENCE_PATHS].sort().map((path) => {
+    const abs = rel(path);
+    if (!existsSync(abs)) throw new Error(`operations evidence artifact is missing: ${path}`);
+    return { path, digest: sha256(readFileSync(abs)) };
+  });
+  const manifest = {
+    manifestVersion: 1,
+    feature: '002-operations-command-center',
+    controls: OPERATIONS_CONTROL_VERSIONS,
+    artifacts,
+  };
+  manifest.inventoryDigest = sha256(canonical(manifest));
+  return manifest;
+}
+
 // Canonical stable JSON (sorted keys) excluding a volatile self-reference field.
 function canonical(obj) {
   const clone = JSON.parse(JSON.stringify(obj));
@@ -150,6 +203,40 @@ function cmdBuild(outPath) {
   process.stdout.write(
     `evidence-manifest: wrote ${outPath} — ${manifest.contracts.length} governed contracts ` +
       `(${present} present), ${manifest.evidence.length} gate evidence records\n`,
+  );
+  return 0;
+}
+
+function cmdBuildOperations(outPath) {
+  const manifest = buildOperationsManifest();
+  writeFileSync(rel(outPath), JSON.stringify(manifest, null, 2) + '\n');
+  process.stdout.write(
+    `operations-evidence-manifest: wrote ${outPath} — ${manifest.artifacts.length} artifacts, ` +
+      `${Object.keys(manifest.controls).length} control versions\n`,
+  );
+  return 0;
+}
+
+function cmdVerifyOperations(manifestPath) {
+  const abs = rel(manifestPath);
+  if (!existsSync(abs)) {
+    process.stderr.write(`operations-evidence-manifest: missing ${manifestPath}\n`);
+    return 2;
+  }
+  const committed = JSON.parse(readFileSync(abs, 'utf8'));
+  if (committed.inventoryDigest !== sha256(canonical(committed))) {
+    process.stderr.write('operations-evidence-manifest: inventory digest is invalid\n');
+    return 1;
+  }
+  const current = buildOperationsManifest();
+  if (stableStringify(committed) !== stableStringify(current)) {
+    process.stderr.write(
+      'operations-evidence-manifest: DRIFT DETECTED — rebuild the scoped feature manifest\n',
+    );
+    return 1;
+  }
+  process.stdout.write(
+    `operations-evidence-manifest: OK — ${current.artifacts.length} artifacts and control versions verified\n`,
   );
   return 0;
 }
@@ -223,14 +310,27 @@ function main(argv) {
   };
   if (mode === 'build') return cmdBuild(flag('--out', DEFAULT_MANIFEST));
   if (mode === 'verify') return cmdVerify(flag('--manifest', DEFAULT_MANIFEST));
+  if (mode === 'build-operations') return cmdBuildOperations(flag('--out', OPERATIONS_MANIFEST));
+  if (mode === 'verify-operations')
+    return cmdVerifyOperations(flag('--manifest', OPERATIONS_MANIFEST));
   process.stderr.write(
-    'usage: evidence-manifest.mjs <build|verify> [--out <path>|--manifest <path>]\n',
+    'usage: evidence-manifest.mjs <build|verify|build-operations|verify-operations> ' +
+      '[--out <path>|--manifest <path>]\n',
   );
   return 2;
 }
 
 // Exported for the tooling test (imported without executing main via the guard below).
-export { buildManifest, canonical, sha256, readGovernedContracts, assertPinnedIdentity, BUNDLE };
+export {
+  buildManifest,
+  buildOperationsManifest,
+  canonical,
+  sha256,
+  readGovernedContracts,
+  assertPinnedIdentity,
+  BUNDLE,
+  OPERATIONS_CONTROL_VERSIONS,
+};
 
 // Run as an entrypoint ONLY when invoked directly (`node scripts/ci/evidence-manifest.mjs ...`),
 // never on import (so the tooling test can import the pure helpers safely).

@@ -1,0 +1,98 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "Scenario-9",
+  "scenarioTitle": "Demonstrate Compliance and Audit Readiness — standards registry, independent applicability, coverage without inference, reproducible signed export, truthful boundaries",
+  "emittedBy": "tests/e2e/scenarios/standards-applicability.ts",
+  "version": {
+    "feature": "001-governance-control-plane",
+    "userStory": "US5",
+    "userStoryTitle": "Demonstrate Compliance and Audit Readiness",
+    "priority": "P2"
+  },
+  "resultDigest": "sha256:8f5cb99e78ee235c59afd1173097ea9c15862c6e79fef32d260722676d5bc938",
+  "allSatisfied": true,
+  "criteria": [
+    {
+      "ref": "FR-031 / FR-051",
+      "statement": "A registered ISO/IEC 42006 publication is an immutable, versioned fact classified as certification-body criteria — audit-readiness, NOT an organizational conformity duty.",
+      "satisfied": true,
+      "evidence": "42006.materialType=certification_body_criteria; publicationDutyClass(42006,false)=certification_body_criteria",
+      "observedVia": "publicationDutyClass(PUBLICATION_42006, false) over the frozen fixture publication fields (domain oracle)",
+      "negativeControl": "were the tenant an approved certification body the class would flip to 'organizational_obligation' — the class is a computed fact of the publication, not a label"
+    },
+    {
+      "ref": "FR-051 / SC-012",
+      "statement": "The standards importer admits a hypothetical future ISO/IEC 42007 draft as immutable, deterministic publication facts — without asserting any tenant conformity.",
+      "satisfied": true,
+      "evidence": "imported 1 pub / 1 clause; digests stable=true; duplicate threw StandardsImportError",
+      "observedVia": "importStandardsSeed(futureSeed, NOW) — the real application standards importer",
+      "negativeControl": "a duplicate identifier@registryVersion seed throws StandardsImportError — the registry never silently overwrites or double-registers a fact"
+    },
+    {
+      "ref": "FR-032",
+      "statement": "An independent, activating review turns a proposed applicability decision into an ACTIVE, superseding decision; a self-review never activates.",
+      "satisfied": true,
+      "evidence": "reviewed.state=active; active=true; supersedes=true",
+      "observedVia": "reviewApplicability(...) + applicabilityIsActive + applicabilityVersionSupersedes (application service + domain oracles)",
+      "negativeControl": "a reviewer==proposer verdict yields rejectionCode=NOT_INDEPENDENTLY_REVIEWED and an inactive decision — self-review can never activate applicability"
+    },
+    {
+      "ref": "FR-033 / FR-054",
+      "statement": "A not_applicable decision whose review instant has lapsed REOPENS its coverage gap; the coverage engine surfaces it as reopened_non_applicability.",
+      "satisfied": true,
+      "evidence": "nonApplicabilityReopensGap(REOPENED,NOW)=true; reopened coverage gaps=[\"reopened_non_applicability\"]",
+      "observedVia": "nonApplicabilityReopensGap(...) + reconstructCoverage('reopened-non-applicability').gaps (domain predicate + coverage engine)",
+      "negativeControl": "an active, in-window applicable decision (DECISION_READY) does NOT reopen a gap (false) — only a lapsed non-applicability reopens"
+    },
+    {
+      "ref": "FR-054",
+      "statement": "A control whose evidence is stale surfaces a stale_evidence gap and caps the boundary BELOW ready — current operation is never inferred from stale evidence.",
+      "satisfied": true,
+      "evidence": "stale boundary=operating, gaps=[\"stale_evidence\"]; ready boundary=ready, complete=true",
+      "observedVia": "reconstructCoverage('stale') vs reconstructCoverage('ready') — claimBoundary + gaps + complete (coverage engine)",
+      "negativeControl": "the READY scenario (current, sufficient evidence) has zero gaps and reaches ready+complete — the gap is a fact of the stale evidence, not of every scope"
+    },
+    {
+      "ref": "FR-055 / SC-012",
+      "statement": "The claim boundary is truthful: internal readiness reads ready; only a valid, displayable external certification reaches certified; an expired certificate NEVER promotes readiness to certified.",
+      "satisfied": true,
+      "evidence": "ready=ready; certified=certified; expired-cert=ready",
+      "observedVia": "reconstructCoverage over the READY / CERTIFIED / EXPIRED-CERT input bundles — claimBoundary (coverage engine)",
+      "negativeControl": "the EXPIRED-cert scope has the identical readiness picture yet stays ready (never certified) — an out-of-window certificate cannot lift the boundary"
+    },
+    {
+      "ref": "FR-053",
+      "statement": "Evidence + obligations are tenant-isolated: authorizing references for TENANT excludes every OTHER_TENANT reference, and TENANT coverage never includes another tenant’s obligation.",
+      "satisfied": true,
+      "evidence": "TENANT kept=2, excluded=1; cross-tenant obligationCount=1",
+      "observedVia": "authorizeReferences(refs, TENANT) + reconstructCoverage('cross-tenant') (audit-export filter + coverage engine)",
+      "negativeControl": "authorizing the SAME refs for OTHER_TENANT keeps only OTHER_TENANT rows and excludes 2 TENANT ref(s) — isolation is symmetric, not one-sided"
+    },
+    {
+      "ref": "FR-052 / FR-056 / SC-022 / SC-013",
+      "statement": "The audit export is a signed, tamper-evident, byte-reproducible package whose gaps are copied verbatim, whose cross-tenant references are excluded, and whose truthful external-claim note is always present.",
+      "satisfied": true,
+      "evidence": "verify=true; custodyIntact=true; gaps=[\"reopened_non_applicability\",\"stale_evidence\",\"unmapped_obligation\"]; refCount=2; excluded=1; byteIdentical=true",
+      "observedVia": "buildAuditExportPackage → verifyManifest + custodyChainIsIntact + body.gaps + body.referenceCount (audit-export builders)",
+      "negativeControl": "reversing one custody link breaks custodyChainIsIntact AND verifyManifest; corrupting the manifest body digest fails verifyManifest — any tamper is detectable"
+    },
+    {
+      "ref": "FR-034",
+      "statement": "A nonconformity finding retains its due date and surfaces as overdue when lapsed; its corrective action requires a root cause, and closure requires a verified-effective review.",
+      "satisfied": true,
+      "evidence": "findingOverdue=true; corrective opened=true; closed status=closed",
+      "observedVia": "raiseFinding → findingOverdue → openCorrectiveAction → reviewEffectiveness → closeCorrectiveAction (corrective-action service predicates)",
+      "negativeControl": "a corrective action with no root cause is refused (MISSING_ROOT_CAUSE) and a still-open finding past due reads overdue — closure is never inferred"
+    },
+    {
+      "ref": "FR-035",
+      "statement": "A management review is recorded with participants + inputs on a declared cadence, and a lapsed cadence is surfaced as due — never inferred as still-current.",
+      "satisfied": true,
+      "evidence": "lapsed review cadence lapsed=true; current review cadence lapsed=false",
+      "observedVia": "holdManagementReview → reviewCadenceLapsed(review, NOW) (management-review service predicate)",
+      "negativeControl": "a review held 5 days ago on the same quarterly cadence reports NOT lapsed — lapse is derived from the cadence + held instant, not asserted"
+    }
+  ],
+  "manifestDigest": "sha256:416c2d1dff57d9c33c37c20ab1c052e8e233e958ae4fcfb7380330882fa036c6"
+}

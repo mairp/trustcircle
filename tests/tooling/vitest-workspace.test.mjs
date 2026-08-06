@@ -93,3 +93,16 @@ test('`vitest run` executes the seeded unit and security tests (suites are non-v
   }).toString();
   assert.match(out, /passed/, 'a full vitest run must report passing tests');
 });
+
+test('operations command-center focused suites are discovered by their governed project', async () => {
+  const mod = await import(pathToFileURL(rel('vitest.workspace.ts')).href);
+  const projects = new Map(
+    mod.default.map((project) => [project.test?.name, project.test?.include ?? []]),
+  );
+  assert.ok(projects.get('unit')?.some((pattern) => pattern.includes('tests/unit')));
+  assert.ok(projects.get('contract')?.some((pattern) => pattern.includes('tests/contract')));
+  assert.ok(projects.get('integration')?.some((pattern) => pattern.includes('tests/integration')));
+  assert.ok(projects.get('security')?.some((pattern) => pattern.includes('tests/security')));
+  assert.ok(projects.get('migration')?.some((pattern) => pattern.includes('tests/migration')));
+  assert.ok(projects.get('performance')?.some((pattern) => pattern.includes('tests/performance')));
+});

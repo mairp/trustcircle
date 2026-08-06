@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import type { ReactNode } from 'react';
+
 // TrustCircleAI — accessible, role-aware application SHELL (Phase 77 /
 // apps/web/src/app/layout.tsx).
 //
@@ -767,8 +771,33 @@ export function renderAppShell(props: AppShellProps = DEFAULT_SHELL_PROPS): stri
 </html>`;
 }
 
-/**
- * Default export: the shell renderer. The accessible contract is `renderAppShell`; a framework
- * adopter wraps it and injects a derived `currentState` model.
- */
-export default renderAppShell;
+export const metadata: Metadata = {
+  title: 'TrustCircle operator console',
+  description: 'Tenant-scoped, read-only governance operating picture',
+};
+
+/** Next.js production document frame. Legacy string presenters remain named exports above. */
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('trustcircle-theme');var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}})()`,
+          }}
+        />
+        <link rel="stylesheet" href="/console.css" />
+        <link rel="stylesheet" href="/console-details.css" />
+      </head>
+      <body>
+        <a className="skip-link" href="#main-content">
+          Skip to operating picture
+        </a>
+        {children}
+      </body>
+    </html>
+  );
+}

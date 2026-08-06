@@ -7,6 +7,8 @@ node_modules/
 **/*.tsbuildinfo
 **/dist/
 **/build/
+**/.next/
+apps/web/next-env.d.ts
 **/coverage/
 playwright-report/
 test-results/
@@ -23,6 +25,15 @@ test-results/
 tests/e2e/scenarios/_evidence/
 tests/tooling/_evidence/
 
+# Generated, signed release-evidence artifacts (Phase 9 / GAR-010): full-quickstart validation
+# manifest and release approval manifest, emitted verbatim by their generator scripts and pinned
+# by digest/signature. Reformatting would break signature reproducibility. Mirrors eslint.config.mjs.
+# The canonical single-line audit-readiness manifest is likewise generated.
+artifacts/
+tests/fixtures/audit-readiness/manifest.json
+# Grounding-visible mirror of the same generated single-line audit-readiness manifest.
+tests/evidence/audit-readiness/manifest.json
+
 # Lockfile (npm owns its formatting)
 package-lock.json
 
@@ -37,4 +48,3 @@ packages/contracts/src/generated/
 # their authors, not by the formatter.
 specs/
 testautomation/
-

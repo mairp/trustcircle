@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.git/
+.agents/
+.specify/
+.tsbuild/
+coverage/
+playwright-report/
+test-results/
+*.log*
+.env*
+artifacts/
+evidence/
+specs/

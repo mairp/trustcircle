@@ -1,0 +1,123 @@
+{
+  "manifest_version": "1.0.0",
+  "adapter_id": "kanban",
+  "name": "Kanban Board Adapter",
+  "vendor": "TrustCircleAI",
+  "adapter_version": "0.1.0",
+  "contract_range": { "minimum": "1.0.0", "maximum": "1.0.0" },
+  "source_classes": ["kanban"],
+  "capabilities": [
+    "discover",
+    "inspect",
+    "snapshot",
+    "subscribe",
+    "reconcile",
+    "collect_evidence"
+  ],
+  "authority": {
+    "authoritative_fields": [
+      "card.id",
+      "card.title",
+      "card.column",
+      "card.position",
+      "card.labels",
+      "card.assignees",
+      "card.workflow_link",
+      "card.workflow_status",
+      "card.created_at",
+      "card.updated_at",
+      "card.archived",
+      "board.columns"
+    ],
+    "forbidden_inferences": [
+      "kanban `done` is NOT an approval, an acceptance, or a governance closure — it maps only to source_reports_done",
+      "moving a card between columns cannot approve, accept risk, release a quarantine, or close verified work",
+      "archiving or deleting a card is a tombstone, never a governance closure or sign-off",
+      "the adapter never grants itself governance authority; it emits raw observations only, never conclusions",
+      "an unknown column or status opens a mapping gap and never silently retains a prior governance stage"
+    ],
+    "operation_risk": {
+      "discover": "read_only",
+      "inspect": "read_only",
+      "snapshot": "read_only",
+      "subscribe": "read_only",
+      "reconcile": "read_only",
+      "collect_evidence": "read_only"
+    }
+  },
+  "security": {
+    "identity_mode": "oauth2_client_credentials",
+    "tenant_mode": "tenant_context_per_request",
+    "credential_reference_mode": "external_secret_reference",
+    "network_egress": ["kanban-api.internal"],
+    "required_scopes": ["kanban:boards:read", "kanban:cards:read", "kanban:events:read"],
+    "content_access": "metadata_only"
+  },
+  "schemas": {
+    "observation": {
+      "uri": "https://schemas.trustcircle.ai/kanban/observation/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "f3105012cc1c0009b5dfe7b6b88f58f3b3fa3f7b6fc5db9a891ae5fed967ef63"
+    },
+    "command": {
+      "uri": "https://schemas.trustcircle.ai/kanban/command/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "4c17d22765d74088f8cf5c4d38016c5382bdd7d9d665121c4fb2efecc6aa9d3a"
+    },
+    "result": {
+      "uri": "https://schemas.trustcircle.ai/kanban/result/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "5c093b3330507fe3dcceac37256b599f41a1a568288f2a35d5d19c2b171fb58a"
+    },
+    "health": {
+      "uri": "https://schemas.trustcircle.ai/kanban/health/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "32bd277b34bebad35c331d18093482b9bbdc57adfc4891f0bffadb0cfe821cb6"
+    }
+  },
+  "delivery": {
+    "ordering": "aggregate_sequence",
+    "idempotency": "read_only_only",
+    "supports_operation_lookup": true,
+    "supports_tombstones": true
+  },
+  "limits": {
+    "requests_per_minute": 300,
+    "maximum_concurrency": 8,
+    "maximum_batch_size": 100,
+    "operation_timeout_seconds": 30
+  },
+  "retry": {
+    "retryable_classes": ["rate_limited", "transient", "dependency_unavailable"],
+    "terminal_classes": ["unauthenticated", "unauthorized", "invalid_request", "unsupported_contract"],
+    "maximum_attempts": 5,
+    "initial_backoff_ms": 250,
+    "maximum_backoff_ms": 30000,
+    "jitter": true
+  },
+  "reconciliation": {
+    "supported": true,
+    "scope": "collection",
+    "cursor_model": "aggregate_sequence_per_board",
+    "drift_classes": ["missing", "duplicate", "stale", "conflicting", "orphaned", "unknown"],
+    "safe_during_source_degradation": true
+  },
+  "evidence": {
+    "original_capture": true,
+    "result_capture": true,
+    "content_hash": "sha256",
+    "chain_of_custody": true,
+    "redaction_supported": true
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness_endpoint": "/health/ready",
+    "non_mutating": true,
+    "freshness_seconds": 60,
+    "owner_contact": "governance-adapters@trustcircle.ai"
+  },
+  "lifecycle": {
+    "status": "proposed",
+    "released_at": "2026-08-03T00:00:00.000Z"
+  }
+}

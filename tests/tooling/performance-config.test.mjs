@@ -167,12 +167,12 @@ test('importing the config never runs the self-check entrypoint', async () => {
 test('test:performance runs the config artifact directly and exits 0', () => {
   assert.equal(
     pkg.scripts['test:performance'],
-    'node tests/performance/config.ts',
+    'node --experimental-strip-types tests/performance/config.ts',
     'test:performance must run the config artifact under Node (no missing tsx dependency)',
   );
   // Behavioral proof: actually run it. The self-check entrypoint exits 0 on a consistent
   // contract and prints its summary. execFileSync throws on non-zero exit.
-  const out = execFileSync('node', ['tests/performance/config.ts'], {
+  const out = execFileSync('node', ['--experimental-strip-types', 'tests/performance/config.ts'], {
     cwd: ROOT,
     encoding: 'utf8',
   });

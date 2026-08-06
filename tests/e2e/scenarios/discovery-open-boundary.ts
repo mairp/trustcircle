@@ -1041,6 +1041,20 @@ function frClauses(obs: Scenario1Observations): FrClauseWitness[] {
       coveredElsewhere: null,
     },
     {
+      frId: 'FR-036',
+      clause:
+        'The platform MUST perform machine-wide source discovery periodically and on demand across authorized source classes without requiring each source to be named in advance.',
+      disposition: 'witnessed',
+      readPath: 'source-catalog',
+      witness: [
+        `periodic + on-demand: two independent sweeps ran across the SAME authorized boundary and reconciled deterministically (each targetId once): total=${obs.status.catalog.total}`,
+        `machine-wide across authorized classes: distinct scopes observed = {${[...new Set(obs.catalogEntries.map((e) => e.scope))].sort().join(',')}} within authorizedScope={${[...obs.grantedScopes].sort().join(',')}}`,
+        `no fixed named-product list required: the UNKNOWN-scope source ${UNREGISTERED} was discovered without being named in advance → onboarding=${byId(UNREGISTERED)?.onboarding ?? 'MISSING'}`,
+        `re-run picks up drift: sweep 2 (clock=${obs.clockAtSweep2}) re-observed the boundary and dropped the disappeared source ${STALE} while retaining its last-known identity (still in catalog=${Boolean(byId(STALE))})`,
+      ],
+      coveredElsewhere: null,
+    },
+    {
       frId: 'FR-037',
       clause:
         'Every discovered source MUST have a catalog entry containing stable identity … lifecycle state, and observation time.',
@@ -1303,6 +1317,7 @@ export function verifyScenario1ResultManifest(manifest: Scenario1ResultManifest)
     'FR-007',
     'FR-008',
     'FR-009',
+    'FR-036',
     'FR-037',
     'FR-038',
     'FR-039',

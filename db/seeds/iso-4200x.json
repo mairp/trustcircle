@@ -1,0 +1,73 @@
+{
+  "$comment": "CENTRAL, IMMUTABLE standards-registry seed for the ISO/IEC 4200x AI-management family (Phase 7 / User Story 5 — Demonstrate Compliance and Audit Readiness / FR-051, FR-055, SC-012, SC-022). Each entry is a versioned StandardPublication fact loaded at the platform scope (tenant_id NULL) by packages/application/src/standards-import.ts and shaped by makeStandardPublication in packages/domain/src/compliance.ts. Fields are aligned column-for-column with db/migrations/0050_compliance.sql standard_publication / clause_version and with the governance-api StandardPublication schema (id, publisher, identifier, exact_title, edition, publication_date [ISO YYYY-MM-DD], status, material_type, source_uri, registry_version). material_type records the PUBLISHER's own classification of the document: 42001 states requirements, 42005 is guidance, and 42006 carries certification_body_criteria — which the domain's publicationDutyClass reclassifies as an audit-readiness input for an ordinary tenant and only as a directly-applicable obligation when the tenant is itself accredited as a certification body (FR-055). These are the publication FACTS (title/edition/date/publisher/URI) as recorded by ISO; they are NOT an assertion that any tenant conforms to, is accredited under, or is certified against any of them.",
+  "registryVersion": 1,
+  "scope": "platform",
+  "publications": [
+    {
+      "id": "iso-iec-42001-2023",
+      "publisher": "ISO/IEC",
+      "identifier": "ISO/IEC 42001:2023",
+      "exactTitle": "Information technology — Artificial intelligence — Management system",
+      "edition": "First edition",
+      "publicationDate": "2023-12-18",
+      "status": "published",
+      "materialType": "requirements",
+      "sourceUri": "https://www.iso.org/standard/81230.html",
+      "registryVersion": 1,
+      "supersedesId": null,
+      "clauses": [
+        { "clauseRef": "4", "title": "Context of the organization", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "5", "title": "Leadership", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "6", "title": "Planning", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "6.1.2", "title": "AI risk assessment", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "6.1.4", "title": "AI system impact assessment", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "7", "title": "Support", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "8", "title": "Operation", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "9", "title": "Performance evaluation", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "9.2", "title": "Internal audit", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "9.3", "title": "Management review", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "10", "title": "Improvement", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "10.2", "title": "Nonconformity and corrective action", "materialType": "requirements", "version": 1 },
+        { "clauseRef": "A.1", "title": "Annex A reference controls — Policies related to AI", "materialType": "requirements", "version": 1 }
+      ]
+    },
+    {
+      "id": "iso-iec-42005-2025",
+      "publisher": "ISO/IEC",
+      "identifier": "ISO/IEC 42005:2025",
+      "exactTitle": "Information technology — Artificial intelligence — AI system impact assessment",
+      "edition": "First edition",
+      "publicationDate": "2025-05-06",
+      "status": "published",
+      "materialType": "impact_assessment_guidance",
+      "sourceUri": "https://www.iso.org/standard/44545.html",
+      "registryVersion": 1,
+      "supersedesId": null,
+      "clauses": [
+        { "clauseRef": "5", "title": "Considerations for AI system impact assessments", "materialType": "guidance", "version": 1 },
+        { "clauseRef": "6", "title": "Timing and integration into the AI system life cycle", "materialType": "guidance", "version": 1 },
+        { "clauseRef": "7", "title": "Documenting the AI system impact assessment process", "materialType": "guidance", "version": 1 },
+        { "clauseRef": "8", "title": "AI system impact assessment content", "materialType": "guidance", "version": 1 },
+        { "clauseRef": "8.4", "title": "Potential harms and benefits to individuals and groups", "materialType": "guidance", "version": 1 }
+      ]
+    },
+    {
+      "id": "iso-iec-42006-2025",
+      "publisher": "ISO/IEC",
+      "identifier": "ISO/IEC 42006:2025",
+      "exactTitle": "Information technology — Artificial intelligence — Requirements for bodies providing audit and certification of artificial intelligence management systems",
+      "edition": "First edition",
+      "publicationDate": "2025-07-14",
+      "status": "published",
+      "materialType": "certification_body_criteria",
+      "sourceUri": "https://www.iso.org/standard/44546.html",
+      "registryVersion": 1,
+      "supersedesId": null,
+      "clauses": [
+        { "clauseRef": "5", "title": "General requirements for certification bodies", "materialType": "certification_body_criteria", "version": 1 },
+        { "clauseRef": "7", "title": "Resource requirements — competence of personnel", "materialType": "certification_body_criteria", "version": 1 },
+        { "clauseRef": "9", "title": "Process requirements — audit and certification", "materialType": "certification_body_criteria", "version": 1 }
+      ]
+    }
+  ]
+}

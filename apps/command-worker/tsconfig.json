@@ -11,6 +11,9 @@
       "path": "../../packages/application"
     },
     {
+      "path": "../../packages/domain"
+    },
+    {
       "path": "../../packages/persistence"
     },
     {
@@ -18,6 +21,9 @@
     },
     {
       "path": "../../packages/observability"
+    },
+    {
+      "path": "../../packages/adapter-sdk"
     }
   ]
 }

@@ -130,6 +130,83 @@ export type PlaywrightProjectName = (typeof PLAYWRIGHT_PROJECT_NAMES)[number];
 export const DISCOVERY_PROJECT_NAME = 'discovery' as const;
 
 /**
+ * The browserless ECOSYSTEM-HEALTH project (Phase 8 / User Story 6 / ecosystem-health.spec.ts).
+ *
+ * Like the DISCOVERY project above, this exercises a SENSING/RESILIENCE edge of the platform — the
+ * connector ecosystem's outage / bounded-retry / dead-letter / replay / reconciliation / projection-
+ * rebuild path and the named-adapter + core-only activation profile — as PURE application/worker
+ * logic driven through the signed-manifest scenario runners
+ * (`tests/e2e/scenarios/connector-resilience.ts`, `tests/e2e/scenarios/named-adapters.ts`). No
+ * `page`, no browser, no web server: an `ecosystem-health.spec.ts` test never opens a browser
+ * context, so it runs on any host under `playwright test --project=ecosystem-health` even where a
+ * browser binary / the apps/web preview server is absent. Kept as its own project (not a WCAG
+ * capability project) so it neither depends on `setup` nor triggers the browser device profile, and
+ * so the WCAG project contract (PLAYWRIGHT_PROJECT_NAMES) is unchanged and non-breaking.
+ */
+export const ECOSYSTEM_HEALTH_PROJECT_NAME = 'ecosystem-health' as const;
+
+/**
+ * The browserless AUDIT-TAMPER release gate (Phase 9 / T280 / audit-tamper.spec.ts).
+ *
+ * Drives the REAL `packages/audit-ledger/src/hash-chain.ts` + `checkpoints.ts` and a deterministic
+ * incident/freeze responder to prove that a tamper of the append-only audit ledger (a mutated field,
+ * a dropped/reordered record, a truncated checkpoint range) is DETECTED, that detection OPENS a
+ * critical incident, and that the incident FREEZES the affected tenant's consequential/destructive
+ * actions. No `page`, no browser, no web server: an `audit-tamper.spec.ts` test never opens a browser
+ * context, so it runs on any host under `playwright test --project=audit-tamper`. Kept as its own
+ * browserless project so it neither depends on `setup` nor triggers the browser device profile, and
+ * so the WCAG project contract (PLAYWRIGHT_PROJECT_NAMES) is unchanged and non-breaking.
+ */
+export const AUDIT_TAMPER_PROJECT_NAME = 'audit-tamper' as const;
+
+/**
+ * The browserless EVIDENCE-RETENTION release gate (Phase 9 / T281 / evidence-retention.spec.ts).
+ *
+ * Drives the REAL `packages/evidence/src/retention.ts` to prove longest-applicable retention, the
+ * missing-policy gap surface, active legal-hold enforcement, authorized release, signed disposition,
+ * and access-history preservation. No `page`, no browser, no web server, so it runs on any host under
+ * `playwright test --project=evidence-retention`. Kept as its own browserless project so it neither
+ * depends on `setup` nor triggers the browser device profile, and so the WCAG project contract
+ * (PLAYWRIGHT_PROJECT_NAMES) is unchanged and non-breaking.
+ */
+export const EVIDENCE_RETENTION_PROJECT_NAME = 'evidence-retention' as const;
+
+/**
+ * The browserless SCENARIO-SUITE release gate (Phase 9 / T294 / scenario-suite.spec.ts).
+ *
+ * Drives the REAL signed-result scenario runners in `tests/e2e/scenarios/*` (human decisions, federated
+ * joint approval, standards applicability, integrity remediation, destructive rollback boundaries,
+ * uncertain-remote-outcome reconciliation, bounded continuity, and controller-operations / role
+ * dashboards) as PURE application/domain/policy/authz logic — the hermetic, host-runnable realization
+ * of quickstart scenarios 2–8, 10, and the 15-dashboards slice whose full-browser+live-stack rendering
+ * cannot run on a Docker-less / Chromium-less host. No `page`, no browser, no web server, so it runs on
+ * any host under `playwright test --project=scenario-suite`. Kept as its own browserless project so it
+ * neither depends on `setup` nor triggers the browser device profile, and so the WCAG project contract
+ * (PLAYWRIGHT_PROJECT_NAMES) is unchanged and non-breaking.
+ */
+export const SCENARIO_SUITE_PROJECT_NAME = 'scenario-suite' as const;
+
+/**
+ * The browserless ACCESSIBILITY FULL-SUITE release gate (Phase 9 / T276 / full-suite.spec.ts).
+ *
+ * The `accessibility-current-state` project below (and the WCAG capability projects) drive a REAL
+ * browser; on a host with no Chromium binary they cannot run. This release-gate project instead
+ * asserts the WCAG 2.2 AA obligations (AR-001..AR-008 + SC-014) as PURE checks over the SAME
+ * deterministic, dependency-free HTML that the shipped views render
+ * (tests/accessibility/support/current-state-view.ts renderCurrentStateView()) — landmark/lang
+ * structure, keyboard operability (skip link, focusable controls, min target size), programmatic
+ * name/role/state + live regions, non-color meaning, focus-visible styling, 400%-reflow layout
+ * rules, an accessible time-limit warning with an extension path, and non-visual chart/table
+ * parity — plus a red-witness (deliberately regressed markup) per gate so the oracle is
+ * non-vacuous. No `page`, no browser, no web server: a `full-suite.spec.ts` test never opens a
+ * browser context, so it runs on any host under `playwright test --project=accessibility-full-suite`.
+ * Kept as its OWN project (not one of the four contract names, no `setup` dependency, no browser
+ * device) so the supported PLAYWRIGHT_PROJECT_NAMES surface is unchanged and non-breaking — exactly
+ * as the browserless discovery / ecosystem-health projects are kept separate.
+ */
+export const ACCESSIBILITY_FULL_SUITE_PROJECT_NAME = 'accessibility-full-suite' as const;
+
+/**
  * The self-contained CURRENT-STATE ACCESSIBILITY project (Phase 61 /
  * tests/accessibility/current-state.spec.ts).
  *
@@ -150,6 +227,75 @@ export const DISCOVERY_PROJECT_NAME = 'discovery' as const;
  * discovery project is kept separate.
  */
 export const ACCESSIBILITY_CURRENT_STATE_PROJECT_NAME = 'accessibility-current-state' as const;
+
+/**
+ * The self-contained HUMAN-DECISION project (Phase 4 / User Story 2 / tests/e2e/human-decisions.spec.ts).
+ *
+ * Like `accessibility-current-state`, this project drives a real browser (Desktop Chrome) against a
+ * HERMETIC in-page render — here the accessible decision queue, joint (cross-tenant) status, and
+ * emergency-intervention surfaces mounted with `page.setContent(...)` over the fixed decision
+ * projection (tests/fixtures/decisions.ts). It asserts queue prioritization, context, textual time
+ * warnings, the full/withheld action sets, the three federated-approval gates + no evidence leak, and
+ * the emergency stop-only / open-review contract, and scans each with axe-core (WCAG 2.2 AA). Because
+ * the DOM is injected in-page it needs NO web server and NO tenant-auth `setup`, so it runs anywhere a
+ * browser is present under `TC_NO_WEBSERVER=1`. Kept as its OWN project (not one of the four contract
+ * names, no `setup` dependency) so the supported PLAYWRIGHT_PROJECT_NAMES surface is unchanged.
+ */
+export const HUMAN_DECISIONS_PROJECT_NAME = 'human-decisions' as const;
+
+/**
+ * The self-contained INTEGRITY-REMEDIATION project (Phase 5 / User Story 3 /
+ * tests/e2e/integrity-remediation.spec.ts).
+ *
+ * Like `human-decisions`, this project drives a real browser (Desktop Chrome) against a HERMETIC
+ * in-page render — here the accessible damaged-work QUEUE, the preserved-original EVIDENCE COMPARISON,
+ * and the REMEDIATION DETAIL (bounded-automation gating + verified closure) surfaces mounted with
+ * `page.setContent(...)` over the fixed integrity projection (tests/fixtures/integrity.ts). It asserts
+ * queue prioritization + ownership honesty, original-intact + quarantine-containment banners, the
+ * execute-if-pre-authorized gate, succeeded-is-not-closed, and the independent nine-gate verified
+ * closure, and scans each with axe-core (WCAG 2.2 AA). Because the DOM is injected in-page it needs NO
+ * web server and NO tenant-auth `setup`, so it runs anywhere a browser is present under
+ * `TC_NO_WEBSERVER=1`. Kept as its OWN project (not one of the four contract names, no `setup`
+ * dependency) so the supported PLAYWRIGHT_PROJECT_NAMES surface is unchanged and non-breaking.
+ */
+export const INTEGRITY_REMEDIATION_PROJECT_NAME = 'integrity-remediation' as const;
+
+/**
+ * The self-contained CONTROLLER-OPERATIONS project (Phase 6 / User Story 4 /
+ * tests/e2e/controller-operations.spec.ts).
+ *
+ * Like `integrity-remediation`, this project drives a real browser (Desktop Chrome) against a HERMETIC
+ * in-page render — here the accessible controller REGISTRY (drift never masked, exact permitted actions),
+ * the OPERATION DETAIL (uncertainty ≠ success, awaiting-reconciliation, duplicate-effect, bounded
+ * continuity, rollback-protects-newer), and the OPERATION ACTIONS surface (permitted-and-gated buttons,
+ * required idempotency key) mounted with `page.setContent(...)` over the fixed controller world
+ * (tests/fixtures/controllers.ts). It asserts the honest-control invariants and scans each with axe-core
+ * (WCAG 2.2 AA). Because the DOM is injected in-page it needs NO web server and NO tenant-auth `setup`,
+ * so it runs anywhere a browser is present under TC_NO_WEBSERVER=1. Kept as its OWN project (not one of
+ * the four contract names, no `setup` dependency) so the supported PLAYWRIGHT_PROJECT_NAMES surface is
+ * unchanged and non-breaking — exactly as the prior US4/US3/US2 hermetic projects are kept separate.
+ */
+export const CONTROLLER_OPERATIONS_PROJECT_NAME = 'controller-operations' as const;
+
+/**
+ * The self-contained COMPLIANCE-AUDIT-READINESS project (Phase 7 / User Story 5 /
+ * tests/e2e/compliance-audit-readiness.spec.ts).
+ *
+ * Like `controller-operations`, this project drives a real browser (Desktop Chrome) against a HERMETIC
+ * in-page render — here the accessible COVERAGE view (truthful design/operating/readiness/assessment/
+ * certification boundary, readiness never promoted to certification), the APPLICABILITY REVIEW
+ * (independent review, non-applicability expiry + reopened gap), the EVIDENCE EXPLORER (metadata /
+ * provenance / custody / retention / hold / integrity without leaking unauthorized bodies), and the
+ * AUDITOR TRACE (exact scope + instant reconstruction, ledger checkpoint, signed export manifests, and
+ * explicit gaps) mounted with `page.setContent(...)` over the fixed compliance world
+ * (tests/fixtures/compliance.ts). It asserts the truthful-claim invariants and scans each with axe-core
+ * (WCAG 2.2 AA). Because the DOM is injected in-page it needs NO web server and NO tenant-auth `setup`,
+ * so it runs anywhere a browser is present under TC_NO_WEBSERVER=1. Kept as its OWN project (not one of
+ * the four contract names, no `setup` dependency) so the supported PLAYWRIGHT_PROJECT_NAMES surface is
+ * unchanged and non-breaking — exactly as the prior US4/US3/US2 hermetic projects are kept separate.
+ */
+export const COMPLIANCE_AUDIT_PROJECT_NAME = 'compliance-audit-readiness' as const;
+export const OPERATOR_CONSOLE_PROJECT_NAME = 'operator-console' as const;
 
 /**
  * `playwright test` starts the apps/web preview server (see `webServer` below) so the WCAG
@@ -234,6 +380,51 @@ export default defineConfig({
       testMatch: /discovery-.*\.spec\.ts/,
     },
 
+    // (5b) ECOSYSTEM HEALTH — browserless pure-logic journeys over the connector-resilience +
+    // named-adapter scenario runners (Phase 8 / US6). No `setup` dependency, no browser device
+    // profile, no web server: an ecosystem-health.spec.ts test never touches `page`, so it runs
+    // anywhere under `playwright test --project=ecosystem-health`.
+    {
+      name: ECOSYSTEM_HEALTH_PROJECT_NAME,
+      testMatch: /ecosystem-health\.spec\.ts/,
+    },
+
+    // (5b-i) AUDIT TAMPER — browserless pure-logic proof (Phase 9 / T280) that a tamper of the
+    // append-only audit ledger is detected, opens a critical incident, and freezes the affected
+    // tenant's consequential/destructive actions. No `setup`, no browser device, no web server.
+    {
+      name: AUDIT_TAMPER_PROJECT_NAME,
+      testMatch: /audit-tamper\.spec\.ts/,
+    },
+
+    // (5b-ii) EVIDENCE RETENTION — browserless pure-logic proof (Phase 9 / T281) of longest-policy
+    // retention, missing-policy gaps, legal holds, authorized release, signed disposition, and access
+    // history preservation over the real retention module. No `setup`, no browser, no web server.
+    {
+      name: EVIDENCE_RETENTION_PROJECT_NAME,
+      testMatch: /evidence-retention\.spec\.ts/,
+    },
+
+    // (5b-iii) SCENARIO SUITE — browserless hermetic realization of quickstart scenarios 2–8, 10 and
+    // the 15-dashboards slice (Phase 9 / T294), driving the real signed-result scenario runners in
+    // tests/e2e/scenarios/*. No `setup`, no browser device, no web server: a scenario-suite.spec.ts
+    // test never touches `page`, so it runs anywhere under `playwright test --project=scenario-suite`.
+    {
+      name: SCENARIO_SUITE_PROJECT_NAME,
+      testMatch: /scenario-suite\.spec\.ts/,
+    },
+
+    // (5c) ACCESSIBILITY FULL-SUITE — browserless WCAG 2.2 AA release gate (Phase 9 / US-cross /
+    // T276). Asserts AR-001..AR-008 + SC-014 as pure checks over the deterministic rendered HTML
+    // of the officer's views. No `setup`, no browser device, no web server: a full-suite.spec.ts
+    // test never touches `page`, so it runs anywhere under
+    // `playwright test --project=accessibility-full-suite`.
+    {
+      name: ACCESSIBILITY_FULL_SUITE_PROJECT_NAME,
+      testDir: './tests/accessibility',
+      testMatch: /full-suite\.spec\.ts/,
+    },
+
     // (6) CURRENT-STATE ACCESSIBILITY — hermetic, browser-driven WCAG 2.2 AA verification of
     // the officer's current-state views (keyboard, screen-reader, non-color, table-alternative,
     // 400% reflow) mounted in-page via setContent. Own testDir, own device+viewport, no `setup`
@@ -242,6 +433,9 @@ export default defineConfig({
       name: ACCESSIBILITY_CURRENT_STATE_PROJECT_NAME,
       testDir: './tests/accessibility',
       testMatch: /.*\.spec\.ts/,
+      // The browserless full-suite release gate (T276) runs under its own no-browser project above;
+      // exclude it here so this browser-driven WCAG project never tries to launch Chromium for it.
+      testIgnore: /full-suite\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         // Pin the 400%-reflow layout viewport so the reflow assertions collapse to the
@@ -251,6 +445,69 @@ export default defineConfig({
         // Use a full (non-headless-shell) Chromium so `zoom`/reflow and the full a11y tree
         // behave like a real browser, and fall back to any installed build on hosts that
         // cannot download Playwright's exact pinned revision.
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
+    },
+
+    // (7) HUMAN DECISIONS — hermetic, browser-driven WCAG 2.2 AA + behavioral verification of the
+    // decision queue / joint status / emergency-intervention surfaces (Phase 4 / US2). Own testMatch,
+    // no `setup` dependency, no web server: runs anywhere a browser is present under TC_NO_WEBSERVER=1.
+    {
+      name: HUMAN_DECISIONS_PROJECT_NAME,
+      testMatch: /human-decisions\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
+    },
+
+    // (8) INTEGRITY REMEDIATION — hermetic, browser-driven WCAG 2.2 AA + behavioral verification of the
+    // damaged-work queue / evidence comparison / remediation detail surfaces (Phase 5 / US3). Own
+    // testMatch, no `setup` dependency, no web server: runs anywhere a browser is present under
+    // TC_NO_WEBSERVER=1.
+    {
+      name: INTEGRITY_REMEDIATION_PROJECT_NAME,
+      testMatch: /integrity-remediation\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
+    },
+
+    // (9) CONTROLLER OPERATIONS — hermetic, browser-driven WCAG 2.2 AA + behavioral verification of the
+    // controller registry / operation detail / operation actions surfaces (Phase 6 / US4). Own testMatch,
+    // no `setup` dependency, no web server: runs anywhere a browser is present under TC_NO_WEBSERVER=1.
+    {
+      name: CONTROLLER_OPERATIONS_PROJECT_NAME,
+      testMatch: /controller-operations\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
+    },
+
+    // (10) COMPLIANCE AUDIT READINESS — hermetic, browser-driven WCAG 2.2 AA + behavioral verification of
+    // the coverage / applicability-review / evidence-explorer / auditor-trace surfaces (Phase 7 / US5). Own
+    // testMatch, no `setup` dependency, no web server: runs anywhere a browser is present under
+    // TC_NO_WEBSERVER=1.
+    {
+      name: COMPLIANCE_AUDIT_PROJECT_NAME,
+      testMatch: /compliance-audit-readiness\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
+    },
+    {
+      name: OPERATOR_CONSOLE_PROJECT_NAME,
+      testDir: './tests',
+      testMatch: [
+        /e2e\/operator-console.*\.spec\.ts/,
+        /e2e\/operations-command-center\.spec\.ts/,
+        /accessibility\/operator-console\.spec\.ts/,
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
         ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
       },
     },

@@ -1,0 +1,120 @@
+{
+  "manifest_version": "1.0.0",
+  "adapter_id": "agentctl",
+  "name": "agentctl Compatibility Facade Adapter",
+  "vendor": "TrustCircleAI",
+  "adapter_version": "0.1.0",
+  "contract_range": { "minimum": "1.0.0", "maximum": "1.0.0" },
+  "source_classes": ["agentctl"],
+  "capabilities": [
+    "discover",
+    "inspect",
+    "snapshot",
+    "execute",
+    "reconcile",
+    "collect_evidence"
+  ],
+  "authority": {
+    "authoritative_fields": [
+      "command.name",
+      "command.args",
+      "command.operation_id",
+      "invocation.exit_code",
+      "invocation.stdout_digest",
+      "invocation.stderr_digest",
+      "invocation.json_payload",
+      "agent.id",
+      "agent.status"
+    ],
+    "forbidden_inferences": [
+      "agentctl is a governed compatibility facade; it dispatches via the owning API and cannot approve, gate, or sign off",
+      "a successful CLI exit code is NOT a governance approval or closure",
+      "a CLI timeout is UNCERTAIN, never a failure — the adapter must reconcile actual dispatched state by operation id",
+      "the adapter never parses prose output; only version-pinned structured --json output is authoritative",
+      "the adapter never grants itself governance authority; it emits raw observations only, never conclusions"
+    ],
+    "operation_risk": {
+      "discover": "read_only",
+      "inspect": "read_only",
+      "snapshot": "read_only",
+      "execute": "consequential",
+      "reconcile": "read_only",
+      "collect_evidence": "read_only"
+    }
+  },
+  "security": {
+    "identity_mode": "oauth2_client_credentials",
+    "tenant_mode": "tenant_context_per_request",
+    "credential_reference_mode": "external_secret_reference",
+    "network_egress": ["workflow-api.internal"],
+    "required_scopes": ["agentctl:dispatch", "agentctl:read", "workflow:runs:read"],
+    "content_access": "scoped_content"
+  },
+  "schemas": {
+    "observation": {
+      "uri": "https://schemas.trustcircle.ai/agentctl/observation/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "ab0323b15c518deb1480e21b3406badecfa59fcc0adba21702343b38ac8390c0"
+    },
+    "command": {
+      "uri": "https://schemas.trustcircle.ai/agentctl/command/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "05eaf9553039f36c3f9559c68bc03358cd572a92419137b66ec753d125069491"
+    },
+    "result": {
+      "uri": "https://schemas.trustcircle.ai/agentctl/result/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "d36d83360b778b1b40c5930001624b7e6f37a48a2ccfa30465ea44377d6a1885"
+    },
+    "health": {
+      "uri": "https://schemas.trustcircle.ai/agentctl/health/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "72f81af6f265743cd5522098d3624e3e3ccb0e688c29d1432610cff4e027906d"
+    }
+  },
+  "delivery": {
+    "ordering": "source_revision",
+    "idempotency": "source_operation_id",
+    "supports_operation_lookup": true,
+    "supports_tombstones": true
+  },
+  "limits": {
+    "requests_per_minute": 120,
+    "maximum_concurrency": 4,
+    "maximum_batch_size": 25,
+    "operation_timeout_seconds": 120
+  },
+  "retry": {
+    "retryable_classes": ["rate_limited", "transient", "dependency_unavailable", "timeout_before_dispatch"],
+    "terminal_classes": ["unauthenticated", "unauthorized", "invalid_request", "unsupported_contract", "precondition_failed"],
+    "maximum_attempts": 4,
+    "initial_backoff_ms": 500,
+    "maximum_backoff_ms": 60000,
+    "jitter": true
+  },
+  "reconciliation": {
+    "supported": true,
+    "scope": "item",
+    "cursor_model": "operation_id",
+    "drift_classes": ["missing", "duplicate", "stale", "conflicting", "unknown"],
+    "safe_during_source_degradation": true
+  },
+  "evidence": {
+    "original_capture": true,
+    "result_capture": true,
+    "content_hash": "sha256",
+    "chain_of_custody": true,
+    "redaction_supported": true
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness_endpoint": "/health/ready",
+    "non_mutating": true,
+    "freshness_seconds": 60,
+    "owner_contact": "governance-adapters@trustcircle.ai"
+  },
+  "lifecycle": {
+    "status": "proposed",
+    "released_at": "2026-08-03T00:00:00.000Z"
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "manifest_version": "1.0.0",
+  "adapter_id": "lisa",
+  "name": "TrustCircleAI LISA Governance Observer",
+  "vendor": "TrustCircleAI",
+  "adapter_version": "0.1.0",
+  "contract_range": {
+    "minimum": "1.0.0",
+    "maximum": "1.0.0"
+  },
+  "source_classes": ["lisa"],
+  "capabilities": [
+    "discover",
+    "inspect",
+    "snapshot",
+    "subscribe",
+    "reconcile",
+    "collect_evidence"
+  ],
+  "authority": {
+    "authoritative_fields": [
+      "lisa.repository_identity",
+      "lisa.deployment_identity",
+      "lisa.workspace_scope",
+      "lisa.job_state",
+      "lisa.phase_state",
+      "lisa.attempt_state",
+      "lisa.plan_revision",
+      "lisa.proposer_verdict",
+      "lisa.critic_verdict",
+      "lisa.orchestrator_state",
+      "lisa.budget_state",
+      "lisa.schedule_state",
+      "lisa.checkpoint_state",
+      "lisa.lock_state",
+      "lisa.provider_state",
+      "lisa.plugin_state",
+      "lisa.memory_state",
+      "lisa.telemetry_state"
+    ],
+    "forbidden_inferences": [
+      "A LISA proposer verdict is NOT human approval; it is bound to its spec/nonce hash and preserved as evidence, and never bypasses human governance authority.",
+      "A LISA critic verdict is NOT human approval; it is bound to its spec/nonce hash and preserved as evidence, and never bypasses human governance authority.",
+      "A LISA orchestrator gate or desired-state marker is NOT human approval and never authorizes an irreversible governance action on its own.",
+      "A stale (hash-mismatched) LISA decision is rejected as authority and never treated as a current approval.",
+      "A LISA outcome, checkpoint, or completed phase is NOT a governance closure and never substitutes for a human approval decision."
+    ],
+    "operation_risk": {
+      "discover": "read_only",
+      "inspect": "read_only",
+      "snapshot": "read_only",
+      "subscribe": "read_only",
+      "reconcile": "read_only",
+      "collect_evidence": "read_only"
+    }
+  },
+  "security": {
+    "identity_mode": "signed_workload",
+    "tenant_mode": "single_tenant_instance",
+    "credential_reference_mode": "external_secret_reference",
+    "network_egress": [],
+    "required_scopes": [
+      "lisa:jobs:read",
+      "lisa:phases:read",
+      "lisa:gates:read",
+      "lisa:scheduler:read",
+      "lisa:providers:read",
+      "lisa:plugins:read",
+      "lisa:memory:read",
+      "lisa:telemetry:read"
+    ],
+    "content_access": "metadata_only"
+  },
+  "schemas": {
+    "observation": {
+      "uri": "trustcircle://schemas/lisa/observation/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "7b6ccca968c1ddc3b7e5780382017f9cdc15aa7fdb655b2b329ace9915df7040"
+    },
+    "command": {
+      "uri": "trustcircle://schemas/lisa/command/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "b2fac3dcc7fa8ad9737a2a442e90b45a4aac91e02b87f5dc460e1a1cc58b8dd6"
+    },
+    "result": {
+      "uri": "trustcircle://schemas/lisa/result/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "e1cbf3424d0bbc39da219f56a18f2392dc3d3706292a4f709e206981779c17cb"
+    },
+    "health": {
+      "uri": "trustcircle://schemas/lisa/health/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "67f8dcef2f0143da48cbb1e1fe875292daddaaca1b9f36bd3621472c95b43bab"
+    }
+  },
+  "delivery": {
+    "ordering": "aggregate_sequence",
+    "idempotency": "read_only_only",
+    "supports_operation_lookup": true,
+    "supports_tombstones": true
+  },
+  "limits": {
+    "requests_per_minute": 120,
+    "maximum_concurrency": 4,
+    "maximum_batch_size": 200,
+    "operation_timeout_seconds": 30
+  },
+  "retry": {
+    "retryable_classes": ["rate_limited", "transient", "dependency_unavailable"],
+    "terminal_classes": ["unauthenticated", "unauthorized", "invalid_request", "unsupported_contract"],
+    "maximum_attempts": 5,
+    "initial_backoff_ms": 250,
+    "maximum_backoff_ms": 30000,
+    "jitter": true
+  },
+  "reconciliation": {
+    "supported": true,
+    "scope": "source",
+    "cursor_model": "aggregate_sequence_per_job",
+    "drift_classes": ["missing", "duplicate", "stale", "conflicting", "orphaned"],
+    "safe_during_source_degradation": true
+  },
+  "evidence": {
+    "original_capture": true,
+    "result_capture": true,
+    "content_hash": "sha256",
+    "chain_of_custody": true,
+    "redaction_supported": true
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness_endpoint": "/health/ready",
+    "non_mutating": true,
+    "freshness_seconds": 30,
+    "owner_contact": "governance-platform@trustcircle.ai"
+  },
+  "lifecycle": {
+    "status": "supported",
+    "released_at": "2026-08-03T00:00:00Z",
+    "deprecated_at": null,
+    "retired_at": null,
+    "replacement_adapter_id": null
+  }
+}

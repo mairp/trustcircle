@@ -35,6 +35,7 @@ lib-cov/
 .turbo/
 .cache/
 .parcel-cache/
+.next/
 .eslintcache
 .stylelintcache
 
@@ -100,12 +101,10 @@ evidence/*.local.json
 # and their published specs — the supported consumer surface of the type
 # generator. Fixtures are retained even though `dist/`, `build/`, `*.local`, etc.
 # above are ignored.
-!specs/
-!specs/**
+
 
 # Integration manifests (Speckit / Codex) — governed fixtures, not local scratch.
-!.specify/
-!.specify/**
+
 
 # Test fixtures and golden files anywhere under tests/ — retained so any broad
 # report/output pattern above cannot swallow a committed fixture.

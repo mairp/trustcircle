@@ -1,0 +1,108 @@
+{
+  "manifestVersion": 1,
+  "kind": "journey-result-manifest",
+  "journeyScope": "profile-core-only-activation",
+  "journeyTitle": "Profile — core-only activation (only core runs continuously, NFR-010)",
+  "parentScenario": "US6-named-adapters",
+  "emittedBy": "tests/e2e/scenarios/named-adapters.ts#projectJourneyManifest",
+  "version": {
+    "scenario": "US6-named-adapters",
+    "requirementRefs": [
+      "NFR-010"
+    ],
+    "worldDigest": "sha256:a2cfdf99d53966d922e49552fa5d8cb02962ed32077a43b5bc271056e2c75f2f"
+  },
+  "successCriteria": [
+    {
+      "id": "SC-024",
+      "text": "Absence is never inferred as health, and no connector is ever granted governance authority.",
+      "met": true,
+      "measure": "core-only continuous runtime + core-only readiness witnessed=true"
+    }
+  ],
+  "adapterLines": [],
+  "coreActivation": {
+    "assertionRef": "US6-core-only-activation",
+    "requirementRefs": [
+      "NFR-010"
+    ],
+    "auditRef": {
+      "obligationRef": "VO-c0r30nlyact1v4t3",
+      "safeNextAction": "owner_approved_activation_to_enable_optional_sources"
+    },
+    "evidence": [
+      {
+        "readPath": "component-lifecycle",
+        "detail": "proof-before-active: an unproven core is intentionally_inactive; activation reaches active ONLY when fully proven; a lapsed core reconciles to stale (drift-visible, NFR-010)",
+        "witnessed": [
+          "preflightPassed(all four)=true",
+          "core inspect (unproven)=intentionally_inactive",
+          "core activated: activationState=active|runtimeState=active",
+          "core lapsed reconcile=stale"
+        ]
+      },
+      {
+        "readPath": "component-lifecycle",
+        "detail": "every named connector is optional/on-demand → intentionally_inactive even when fully proven (only core runs continuously)",
+        "witnessed": [
+          "kanban=intentionally_inactive",
+          "workflow-orchestration=intentionally_inactive",
+          "agentctl=intentionally_inactive",
+          "lisa=intentionally_inactive",
+          "wiggum=intentionally_inactive"
+        ]
+      },
+      {
+        "readPath": "readiness-verdict",
+        "detail": "readiness is core-only: core active + every named connector inactive ⇒ ready, with an EXPLICIT unavailable inventory (optional inactivity never drags core down)",
+        "witnessed": [
+          "verdict=ready|coreHealthy=true",
+          "optionalUnavailable=[agentctl-fleet,kanban-board-eng,lisa-deployment,wiggum-bundle,workflow-orch-prod]",
+          "unhealthyCore=[]",
+          "readinessDigest=15a396b08d2f…"
+        ]
+      }
+    ],
+    "lineDigest": "eab956a8fdfd43e6709ad99e2ae664cea6a48fb15b4bf3e8afc1c1d2f70d6b9a"
+  },
+  "gapRegister": [
+    {
+      "subject": "agentctl-fleet",
+      "availabilityClass": "on-demand",
+      "runtimeState": "intentionally_inactive",
+      "ownerAction": "owner_approved_activation_to_enable"
+    },
+    {
+      "subject": "kanban-board-eng",
+      "availabilityClass": "optional",
+      "runtimeState": "intentionally_inactive",
+      "ownerAction": "owner_approved_activation_to_enable"
+    },
+    {
+      "subject": "lisa-deployment",
+      "availabilityClass": "optional",
+      "runtimeState": "intentionally_inactive",
+      "ownerAction": "owner_approved_activation_to_enable"
+    },
+    {
+      "subject": "wiggum-bundle",
+      "availabilityClass": "optional",
+      "runtimeState": "intentionally_inactive",
+      "ownerAction": "owner_approved_activation_to_enable"
+    },
+    {
+      "subject": "workflow-orch-prod",
+      "availabilityClass": "optional",
+      "runtimeState": "intentionally_inactive",
+      "ownerAction": "owner_approved_activation_to_enable"
+    }
+  ],
+  "manifestDigest": "3501d3804407e92e566834eccac30ce7fa0f17f8c6f791ada8a8ced881b8a4a9",
+  "signature": {
+    "algorithm": "sha256",
+    "digest": "3501d3804407e92e566834eccac30ce7fa0f17f8c6f791ada8a8ced881b8a4a9",
+    "boundScenario": "US6-named-adapters",
+    "boundWorldDigest": "sha256:a2cfdf99d53966d922e49552fa5d8cb02962ed32077a43b5bc271056e2c75f2f",
+    "boundJourney": "profile-core-only-activation"
+  }
+}

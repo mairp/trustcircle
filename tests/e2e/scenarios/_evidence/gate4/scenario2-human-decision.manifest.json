@@ -1,0 +1,74 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "Scenario-2",
+  "scenarioTitle": "Make and Govern Human Decisions — the accessible, policy-bound decision queue",
+  "emittedBy": "tests/e2e/scenarios/human-decisions.ts",
+  "version": {
+    "feature": "001-governance-control-plane",
+    "userStory": "US2",
+    "userStoryTitle": "Make and Govern Human Decisions",
+    "priority": "P1"
+  },
+  "resultDigest": "sha256:20803c836c8774823a9d0678d996d9e828ee4447e72fee1f108f20cd5e2c0b59",
+  "allSatisfied": true,
+  "criteria": [
+    {
+      "ref": "FR-010",
+      "statement": "Authorized humans see a complete, prioritized decision queue with the context to decide.",
+      "satisfied": true,
+      "evidence": "queue lists 5 decisions in non-increasing priority order, each with requested action + risk + impact + expiry",
+      "observedVia": "DecisionInboxModel.rows (queue projection) ordered by .priority",
+      "negativeControl": "if any row lost its requestedAction/riskTier the completeness check flips false"
+    },
+    {
+      "ref": "FR-011",
+      "statement": "A decision the human is authorized to act on offers the full attributable action set.",
+      "satisfied": true,
+      "evidence": "authorized row actionable=true; allowedActions=[approve, deny, request_changes, delegate]",
+      "observedVia": "DecisionInboxModel.rows[authorized].allowedActions + .actionable",
+      "negativeControl": "the expired + conflicted rows carry an EMPTY allowedActions set (not actionable)"
+    },
+    {
+      "ref": "FR-012",
+      "statement": "A separation-of-duties conflict blocks the action and is stated in text, never hidden.",
+      "satisfied": true,
+      "evidence": "conflicted row actionable=false; conflicts=[separation-of-duties: requester cannot approve their own access grant]",
+      "observedVia": "DecisionInboxModel.rows[conflicted].conflicts + .actionable",
+      "negativeControl": "the authorized row has zero conflicts and is actionable — the SoD block is scenario-specific"
+    },
+    {
+      "ref": "FR-013",
+      "statement": "Authority may be delegated within a bounded window to a distinct recipient; lapse is an accountability effect.",
+      "satisfied": true,
+      "evidence": "active delegation 019c9669-288c-7e4a-8f5f-4921c249799c in-window (valid 1772046400000→1772071600000, now 1772050000000); expired delegation 019c9669-288e-7c25-bef2-37dd691363ae lapsed",
+      "observedVia": "seed.delegations.active/.expired (status + window) + package.status=\"delegated\"",
+      "negativeControl": "the expired delegation is past its window (status=\"expired\") — an unbounded grant would still be \"active\""
+    },
+    {
+      "ref": "FR-014 / SC-020",
+      "statement": "A decision past its deadline is expired and escalated — never silently closed or actioned.",
+      "satisfied": true,
+      "evidence": "decisionIsExpired(expired,now)=true; row timePosture=expired, escalated=true, actions=0",
+      "observedVia": "domain oracle decisionIsExpired(pkg, now) + DecisionInboxModel.rows[expired]",
+      "negativeControl": "the in-window authorized package is NOT expired (decisionIsExpired=false)"
+    },
+    {
+      "ref": "SC-003",
+      "statement": "Every decision outcome carries an attributable, non-empty reason (code + text).",
+      "satisfied": true,
+      "evidence": "reason code=\"approved_within_authority\", text length=48",
+      "observedVia": "seed.reasons.approve (makeReason enforces non-empty code + text)",
+      "negativeControl": "makeReason rejects an empty/blank reason text — an unattributed outcome cannot be constructed"
+    },
+    {
+      "ref": "FR-015 / SC-004",
+      "statement": "Break-glass can stop an operation but never confers decision authority, and its post-event review stays open until completed.",
+      "satisfied": true,
+      "evidence": "break-glass event 019c9669-2890-785b-a3bf-527b1206d54b reviewComplete=false; consequence states stop will NOT approve/grant authority",
+      "observedVia": "EmergencyInterventionModel.priorEvents[0].reviewComplete + .consequences(will_not)",
+      "negativeControl": "a completed review would set reviewComplete=true + a reviewer — the open-review alert only fires while OPEN"
+    }
+  ],
+  "manifestDigest": "sha256:f05bc19c9da113161b02c72d9a87be95cff9e420c47094cc78519cf06ac02693"
+}

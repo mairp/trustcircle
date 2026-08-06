@@ -1,0 +1,108 @@
+{
+  "kind": "component-activation-validation",
+  "phase": "Phase 10 — Polish and Continuous Improvement (T303 / GAR-010)",
+  "coreFunctions": [
+    "decision",
+    "audit",
+    "evidence",
+    "visibility"
+  ],
+  "optionalComponents": [
+    "discovery-agent",
+    "projector-extra",
+    "controller-adapter"
+  ],
+  "coreBaselineDigest": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+  "status": "passed",
+  "counts": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "stages": [
+    {
+      "id": "core-baseline",
+      "title": "Capture the undisturbed core baseline (decision/audit/evidence/visibility)",
+      "status": "passed",
+      "observed": {
+        "coreBaselineDigest": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreFunctions": [
+          "decision",
+          "audit",
+          "evidence",
+          "visibility"
+        ]
+      },
+      "expected": "verdict 'ready', coreHealthy, exactly 4 core functions active — recorded as the baseline digest",
+      "evidenceDigest": "f1459bddb513bbd7230d42b71415fe6e877abb51d166f3c116f559d1f4eac8a4"
+    },
+    {
+      "id": "proof-before-active",
+      "title": "Activation without proven prerequisites is refused (fail-visible)",
+      "status": "passed",
+      "observed": {
+        "refused": true,
+        "message": "activation to 'active' refused: unmet prerequisites [identity, contract, authority, backlog] — no mutation before proof"
+      },
+      "expected": "activate() THROWS when identity/contract/authority/backlog are not all proven — no mutation before proof",
+      "evidenceDigest": "873095f1394e9848451d1be727fb4896036dff81975494ecd4537ad40e2ec4dd"
+    },
+    {
+      "id": "optional:discovery-agent",
+      "title": "Optional component 'discovery-agent' activates and deactivates without disturbing core",
+      "status": "passed",
+      "observed": {
+        "inspectedRuntimeState": "intentionally_inactive",
+        "activatedActivationState": "active",
+        "activatedPreflightPassed": true,
+        "deactivatedRuntimeState": "intentionally_inactive",
+        "reconciledRuntimeState": "intentionally_inactive",
+        "coreAfterActivate": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreAfterDeactivate": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreBaselineDigest": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreUndisturbed": true
+      },
+      "expected": "inspect ⇒ intentionally_inactive; activate ⇒ active (preflight passed); deactivate ⇒ intentionally_inactive; the 4-core-function readiness digest is BYTE-IDENTICAL to baseline before, during, and after",
+      "evidenceDigest": "8dd0643398d8173be913176b65e58891bef3956dab7f73eb224c91a53dc97dd0"
+    },
+    {
+      "id": "optional:projector-extra",
+      "title": "Optional component 'projector-extra' activates and deactivates without disturbing core",
+      "status": "passed",
+      "observed": {
+        "inspectedRuntimeState": "intentionally_inactive",
+        "activatedActivationState": "active",
+        "activatedPreflightPassed": true,
+        "deactivatedRuntimeState": "intentionally_inactive",
+        "reconciledRuntimeState": "intentionally_inactive",
+        "coreAfterActivate": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreAfterDeactivate": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreBaselineDigest": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreUndisturbed": true
+      },
+      "expected": "inspect ⇒ intentionally_inactive; activate ⇒ active (preflight passed); deactivate ⇒ intentionally_inactive; the 4-core-function readiness digest is BYTE-IDENTICAL to baseline before, during, and after",
+      "evidenceDigest": "1cfec5fe29d62198949783ccdac13b9d3ad63726d92c30f37210adaeb558508f"
+    },
+    {
+      "id": "optional:controller-adapter",
+      "title": "Optional component 'controller-adapter' activates and deactivates without disturbing core",
+      "status": "passed",
+      "observed": {
+        "inspectedRuntimeState": "intentionally_inactive",
+        "activatedActivationState": "active",
+        "activatedPreflightPassed": true,
+        "deactivatedRuntimeState": "intentionally_inactive",
+        "reconciledRuntimeState": "intentionally_inactive",
+        "coreAfterActivate": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreAfterDeactivate": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreBaselineDigest": "be4604f2817b79ad0d377ea0e99e11da63f67d961196c3dc65dbe2011bf94dd8",
+        "coreUndisturbed": true
+      },
+      "expected": "inspect ⇒ intentionally_inactive; activate ⇒ active (preflight passed); deactivate ⇒ intentionally_inactive; the 4-core-function readiness digest is BYTE-IDENTICAL to baseline before, during, and after",
+      "evidenceDigest": "f0b388df124f3c85eff29e70c587cce08866309d7695106df2d6f0aad07841b9"
+    }
+  ],
+  "generatedAt": "2026-08-03T00:00:00.000Z",
+  "bodyDigest": "4058fec25cc487abf94b60032cd494746fa314a3ae73617fc93253cf34f1eae1",
+  "signature": "a953dc165b9eb3cc8d5fb8a20edad6856e4b19dec4ce3885c0eb0d2fecdd56f0"
+}

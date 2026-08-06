@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@trustcircle/domain": "*",
-    "@trustcircle/contracts": "*"
+    "@trustcircle/contracts": "*",
+    "@trustcircle/adapter-sdk": "*",
+    "@trustcircle/authz": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

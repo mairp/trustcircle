@@ -1,0 +1,140 @@
+{
+  "manifest_version": "1.0.0",
+  "adapter_id": "wiggum",
+  "name": "TrustCircleAI Wiggum Verification Observer",
+  "vendor": "TrustCircleAI",
+  "adapter_version": "0.1.0",
+  "contract_range": {
+    "minimum": "1.0.0",
+    "maximum": "1.0.0"
+  },
+  "source_classes": ["wiggum"],
+  "capabilities": [
+    "discover",
+    "inspect",
+    "snapshot",
+    "subscribe",
+    "reconcile",
+    "collect_evidence"
+  ],
+  "authority": {
+    "authoritative_fields": [
+      "wiggum.installation_identity",
+      "wiggum.version",
+      "wiggum.workdir_identity",
+      "wiggum.feature_state",
+      "wiggum.specification_state",
+      "wiggum.verification_plan",
+      "wiggum.critic_verdict",
+      "wiggum.gate_marker",
+      "wiggum.progress_state",
+      "wiggum.lock_state",
+      "wiggum.stop_request_state",
+      "wiggum.run_state",
+      "wiggum.attempt_state",
+      "wiggum.proof_state",
+      "wiggum.evidence_state",
+      "wiggum.archive_state",
+      "wiggum.health_state"
+    ],
+    "forbidden_inferences": [
+      "A Wiggum critic verdict is NOT human approval; it is bound to its nonce/spec hash and preserved as evidence, and never bypasses human governance authority.",
+      "A Wiggum gate marker is NOT human approval; a gate marker never equals a human approval decision and never authorizes an irreversible governance action on its own.",
+      "A stale (hash-mismatched) Wiggum verdict or gate marker is preserved as evidence but flagged stale and rejected as current authority.",
+      "A Wiggum proof, completed run, or archive is NOT a governance closure and never substitutes for a human approval decision."
+    ],
+    "operation_risk": {
+      "discover": "read_only",
+      "inspect": "read_only",
+      "snapshot": "read_only",
+      "subscribe": "read_only",
+      "reconcile": "read_only",
+      "collect_evidence": "read_only"
+    }
+  },
+  "security": {
+    "identity_mode": "signed_workload",
+    "tenant_mode": "single_tenant_instance",
+    "credential_reference_mode": "external_secret_reference",
+    "network_egress": [],
+    "required_scopes": [
+      "wiggum:features:read",
+      "wiggum:specifications:read",
+      "wiggum:verdicts:read",
+      "wiggum:gates:read",
+      "wiggum:evidence:read",
+      "wiggum:health:read"
+    ],
+    "content_access": "metadata_only"
+  },
+  "schemas": {
+    "observation": {
+      "uri": "trustcircle://schemas/wiggum/observation/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "3c4cf3bf9079655a67fbe4cb5aef583665055743ca3a9dbba0b998823feb3103"
+    },
+    "command": {
+      "uri": "trustcircle://schemas/wiggum/command/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "aa9c1a7020d84067ab390685d3a958aacccdc93672534edca16042e4495abd7f"
+    },
+    "result": {
+      "uri": "trustcircle://schemas/wiggum/result/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "a3a214b9a3c58931abbc3e8b1c55eb6085216c028bfccce35abe60cecea2db5a"
+    },
+    "health": {
+      "uri": "trustcircle://schemas/wiggum/health/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "ec696d721550e1c8c4f25d72ff8327c447b35d709da34f3fb90062f796f019e9"
+    }
+  },
+  "delivery": {
+    "ordering": "aggregate_sequence",
+    "idempotency": "read_only_only",
+    "supports_operation_lookup": true,
+    "supports_tombstones": true
+  },
+  "limits": {
+    "requests_per_minute": 120,
+    "maximum_concurrency": 4,
+    "maximum_batch_size": 200,
+    "operation_timeout_seconds": 30
+  },
+  "retry": {
+    "retryable_classes": ["rate_limited", "transient", "dependency_unavailable"],
+    "terminal_classes": ["unauthenticated", "unauthorized", "invalid_request", "unsupported_contract"],
+    "maximum_attempts": 5,
+    "initial_backoff_ms": 250,
+    "maximum_backoff_ms": 30000,
+    "jitter": true
+  },
+  "reconciliation": {
+    "supported": true,
+    "scope": "source",
+    "cursor_model": "aggregate_sequence_per_feature",
+    "drift_classes": ["missing", "duplicate", "stale", "conflicting", "orphaned"],
+    "safe_during_source_degradation": true
+  },
+  "evidence": {
+    "original_capture": true,
+    "result_capture": true,
+    "content_hash": "sha256",
+    "chain_of_custody": true,
+    "redaction_supported": true
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness_endpoint": "/health/ready",
+    "non_mutating": true,
+    "freshness_seconds": 30,
+    "owner_contact": "governance-platform@trustcircle.ai"
+  },
+  "lifecycle": {
+    "status": "supported",
+    "released_at": "2026-08-03T00:00:00Z",
+    "deprecated_at": null,
+    "retired_at": null,
+    "replacement_adapter_id": null
+  }
+}

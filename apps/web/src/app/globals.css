@@ -1,0 +1,6 @@
+/* Authored source for the production stylesheet mirrored at public/console.css. */
+/* Command-center styles are shipped in public/console.css because the application shell links
+   that static, cache-controlled asset. Keep this marker so style ownership remains explicit. */
+.operations-workspace {
+  container-type: inline-size;
+}

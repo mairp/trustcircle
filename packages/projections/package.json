@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@trustcircle/domain": "*",
-    "@trustcircle/contracts": "*"
+    "@trustcircle/contracts": "*",
+    "@trustcircle/application": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

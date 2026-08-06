@@ -18,3 +18,11 @@ export * from './events.ts';
 // responses against the loaded governance-api.openapi.yaml. Runtime half of the OpenAPI decision
 // surface — the generated types are compile-time only.
 export * from './decision-api.ts';
+
+// Runtime INTEGRITY-API contract surface (Phase 5 / User Story 3 / T121 / FR-016..022, GAR-004):
+// validates integrity-case queue/detail, remediation (propose/simulate/execute), and verification
+// requests, headers, ETags, idempotency, errors, and responses against the SAME loaded
+// governance-api.openapi.yaml. A thin specialisation over decision-api's shared validators; adds the
+export * from './operations-api.ts';
+// integrity-specific named validators bound to the four `Integrity`-tagged operations.
+export * from './integrity-api.ts';

@@ -1,0 +1,101 @@
+{
+  "kind": "core-only-validation",
+  "phase": "Phase 10 — Polish and Continuous Improvement (T302 / GAR-010)",
+  "profile": "core-only",
+  "status": "passed",
+  "counts": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "stages": [
+    {
+      "id": "startup",
+      "title": "Core boots and reaches ready",
+      "status": "passed",
+      "observed": {
+        "before": "starting",
+        "after": "ready"
+      },
+      "expected": "lifecycle 'starting' → markReady() → 'ready'",
+      "evidenceDigest": "6338387911b6a5b778a2a3bdf9677cc4c32c4afaf2d058215779bc6f02362650"
+    },
+    {
+      "id": "steady-state-health",
+      "title": "Steady-state operating picture is healthy and ready",
+      "status": "passed",
+      "observed": {
+        "aggregate": "healthy",
+        "ready": true,
+        "facetCount": 12,
+        "degradedCount": 0,
+        "apiVersion": 1
+      },
+      "expected": "all 12 core facets present, fresh, healthy ⇒ aggregate healthy, ready=true, 0 degraded",
+      "evidenceDigest": "a9caad0e6905c5a832d9c555a0b31f1cfb67d0c718a4a4e1f2ddc8110142e749"
+    },
+    {
+      "id": "sla-signals",
+      "title": "SLA/freshness signal is enforced (no green-over-stale)",
+      "status": "passed",
+      "observed": {
+        "agedFacet": "health",
+        "currency": "stale",
+        "ageMs": 90000,
+        "aggregate": "unavailable",
+        "ready": false,
+        "hasSafeNextAction": true
+      },
+      "expected": "a facet older than the 30000ms freshness objective is 'stale', aggregate 'unavailable', ready=false, with a safe next action",
+      "evidenceDigest": "0957c2fc709eb046ea91fbf610ed53f78a042845a0830c40abbe27c72842d4a7"
+    },
+    {
+      "id": "backup-readiness",
+      "title": "Evidence/backup custody has a live, non-inferred readiness signal",
+      "status": "passed",
+      "observed": {
+        "present": true,
+        "core": true,
+        "health": "healthy",
+        "currency": "fresh"
+      },
+      "expected": "the 'bufferedEvidence' facet is present, core, healthy and fresh (custody is observed, never inferred from absence)",
+      "evidenceDigest": "0d02319dd20a91870cb7ee3d788c907ca4e39377468d56981b471b0c2fbac4ff"
+    },
+    {
+      "id": "readiness-core-only",
+      "title": "Core readiness is independent of optional availability",
+      "status": "passed",
+      "observed": {
+        "verdict": "ready",
+        "coreHealthy": true,
+        "coreComponentCount": 3,
+        "optionalUnavailableCount": 1,
+        "unhealthyCoreCount": 0
+      },
+      "expected": "verdict 'ready' & coreHealthy with 3 core components active, while the inactive OPTIONAL component is inventoried (not counted against core)",
+      "evidenceDigest": "4fbacfba7da21c208be7d69913834c1c93a959d1a096b89a3d7847610744b367"
+    },
+    {
+      "id": "safe-shutdown",
+      "title": "Core shuts down safely (drains, runs closers, reaches stopped)",
+      "status": "passed",
+      "observed": {
+        "readyBefore": "ready",
+        "finalLifecycle": "stopped",
+        "drainedCleanly": true,
+        "inFlightAtTimeout": 0,
+        "closerErrors": [],
+        "closerRuns": [
+          "db-pool"
+        ],
+        "isClosing": true
+      },
+      "expected": "lifecycle 'ready' → shutdown() → 'stopped', drainedCleanly=true, resource closer ran, isClosing=true",
+      "evidenceDigest": "f6d6def0e1f68fadaa16a184e68ece7aed7abe3c067519a3437f6edae9ab86e8"
+    }
+  ],
+  "generatedAt": "2026-08-03T00:00:00.000Z",
+  "bodyDigest": "087564c27de3cd108cbe5d0b9e73c4ad69640c699afae6c7b78eea82ecc333ec",
+  "signature": "27e6211696ce0fd06927b466d80adb755db7a4fca6fad4a245d5a5f84c6445ad"
+}

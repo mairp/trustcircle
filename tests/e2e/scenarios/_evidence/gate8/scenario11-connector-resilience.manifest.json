@@ -1,0 +1,219 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "US6-connector-resilience",
+  "scenarioTitle": "Maintain Source and Workflow Health — connector resilience",
+  "emittedBy": "tests/e2e/scenarios/connector-resilience.ts",
+  "version": {
+    "scenario": "US6-connector-resilience",
+    "requirementRefs": [
+      "FR-029",
+      "FR-030"
+    ],
+    "worldDigest": "sha256:a2cfdf99d53966d922e49552fa5d8cb02962ed32077a43b5bc271056e2c75f2f"
+  },
+  "successCriteria": [
+    {
+      "id": "SC-011",
+      "text": "At-least-once delivery reduces to exactly-one effect: a re-delivered event never produces a second governance effect.",
+      "met": true,
+      "measure": "replay accepted=0 (deduplicated=3); onceDigest===twiceDigest=true; rebuild-order-independent=true"
+    }
+  ],
+  "lines": [
+    {
+      "assertionRef": "US6-AS2",
+      "requirementRefs": [
+        "FR-029",
+        "FR-030"
+      ],
+      "auditRef": {
+        "obligationRef": "VO-c0nn3ct0r0utag3retry",
+        "safeNextAction": "await_owner_authorized_replay"
+      },
+      "assertionText": "Given a connector or controller misses health expectations, When degradation is detected, Then ownership, affected scope, last success, failure, retry state, business impact, and safe next action are visible and alertable.",
+      "evidence": [
+        {
+          "readPath": "retry-decision",
+          "detail": "a transient outage retries under the SAME idempotency key with bounded backoff; a terminal class and an exhausted budget both STOP (no retry storm)",
+          "witnessed": [
+            "transient: action=retry|key=op-outage-42|nextAttemptAt=1772600001818|backoffMs=1818",
+            "terminal(unauthorized): action=stop|nextAttemptAt=null (stopped)",
+            "exhausted(5/5): action=stop|reason=attempts exhausted (5/5)"
+          ]
+        },
+        {
+          "readPath": "dead-letter-record",
+          "detail": "a terminal message is PRESERVED (payload + sha256 digest), attributed to an owner, with business impact + a safe next action (authorized replay) — nothing dropped (FR-030)",
+          "witnessed": [
+            "deadLetter: owner=dced11e2-5bae-710e-b526-97e3a9856d9b|failureClass=unsupported_contract|replayState=held|originalDigest=e136809836d2…",
+            "businessImpact=engineering board event not projected",
+            "replay-without-authority-refused=true",
+            "authorized: replayState=authorized|by=principal:dced11e2-5bae-710e-b526-97e3a9856d9b"
+          ]
+        }
+      ],
+      "gapRefs": [],
+      "lineDigest": "5b11dee67be43718a2c6f9be79cea6f3f709362d129ea2057dc781c23521e05c"
+    },
+    {
+      "assertionRef": "US6-AS3",
+      "requirementRefs": [
+        "FR-029",
+        "FR-030"
+      ],
+      "auditRef": {
+        "obligationRef": "VO-d3duprepl4yexact1",
+        "safeNextAction": "await_owner_authorized_replay"
+      },
+      "assertionText": "Given duplicate or out-of-order source updates, When reconciliation runs, Then no duplicate governance action occurs and source history remains reconstructable.",
+      "evidence": [
+        {
+          "readPath": "ingestion-state",
+          "detail": "at-least-once reduces to EXACTLY-ONE effect: a re-delivered batch is a no-op — the ingestion content digest is byte-identical whether the batch arrived once or twice (SC-011)",
+          "witnessed": [
+            "once: accepted=3|digest=e07f81cfd915…",
+            "twice: accepted=0|deduplicated=3|digest=e07f81cfd915…",
+            "exactly-one-effect: onceDigest===twiceDigest → true"
+          ]
+        },
+        {
+          "readPath": "ingestion-state",
+          "detail": "source history is RECONSTRUCTABLE: rebuilding the projection from the preserved append-only raw log in a DIFFERENT arrival order reproduces the same content digest (deterministic view)",
+          "witnessed": [
+            "rawObservationsPreserved(agg-1)=2",
+            "rebuild-order-independent: forwardDigest===rebuiltDigest → true"
+          ]
+        },
+        {
+          "readPath": "recovery-findings",
+          "detail": "duplicate + out-of-order + gap + drift are SURFACED as named findings (never silently applied, never auto-filled)",
+          "witnessed": [
+            "findingKinds=[backlog_gap,backlog_gap,duplicate,mapping_change,source_identity_change]",
+            "duplicate=1|backlog_gap=2|mapping_change=1|source_identity_change=1"
+          ]
+        }
+      ],
+      "gapRefs": [
+        {
+          "kind": "backlog_gap",
+          "subject": "agg-1",
+          "ownerAction": "authorize_backlog_replay",
+          "detail": "2 backlog_gap finding(s) surfaced from the recovered backlog (never auto-filled)"
+        },
+        {
+          "kind": "duplicate",
+          "subject": "agg-1",
+          "ownerAction": "confirm_dedup_no_second_effect",
+          "detail": "1 duplicate finding(s) surfaced from the recovered backlog (never auto-filled)"
+        },
+        {
+          "kind": "mapping_change",
+          "subject": "agg-1",
+          "ownerAction": "review_mapping_migration",
+          "detail": "1 mapping_change finding(s) surfaced from the recovered backlog (never auto-filled)"
+        },
+        {
+          "kind": "source_identity_change",
+          "subject": "agg-1",
+          "ownerAction": "confirm_source_identity",
+          "detail": "1 source_identity_change finding(s) surfaced from the recovered backlog (never auto-filled)"
+        }
+      ],
+      "lineDigest": "b08983023dccf487cfb521c1ade4cb382196883c6d864ae958343f348ef6df2f"
+    },
+    {
+      "assertionRef": "US6-AS4",
+      "requirementRefs": [
+        "FR-029",
+        "FR-030"
+      ],
+      "auditRef": {
+        "obligationRef": "VO-c0nfl1ctpaus3s4fe",
+        "safeNextAction": "await_owner_authorized_replay"
+      },
+      "assertionText": "Given conflicting source states, When authority rules cannot resolve them, Then the conflict remains visible, affected automation pauses safely, and an owned issue is opened for human resolution.",
+      "evidence": [
+        {
+          "readPath": "reconciliation-run",
+          "detail": "drift-visible honesty: a clean run reports resolved=true; a run with conflicting drift enumerates every drift item and reports resolved=FALSE (the conflict stays visible, never elided) (FR-029)",
+          "witnessed": [
+            "cleanRun: driftItems=0|resolved=true|digest=6a9e60a1d3b6…",
+            "driftedRun: driftItems=2|resolved=false",
+            "drift: class=stale|subject=cursor:agg-1|ownerAction=authorize_replay_from_cursor",
+            "drift: class=conflicting|subject=mapping:agg-1|ownerAction=open_owned_conflict_issue"
+          ]
+        },
+        {
+          "readPath": "retry-decision",
+          "detail": "affected automation PAUSES SAFELY rather than looping: an unresolvable (terminal) failure stops instead of retrying, and the dead-letter record is the owned issue opened for human resolution",
+          "witnessed": [
+            "unresolved→stop: terminal action=stop (paused, not retried)",
+            "owned issue: deadLetter held for owner=dced11e2-5bae-710e-b526-97e3a9856d9b, replayState=held until authorized",
+            "contract drift refused (NS-005): supportedMajor=true, driftedMajor=false"
+          ]
+        }
+      ],
+      "gapRefs": [
+        {
+          "kind": "stale",
+          "subject": "cursor:agg-1",
+          "ownerAction": "authorize_replay_from_cursor",
+          "detail": "cursor behind desired high-water"
+        },
+        {
+          "kind": "conflicting",
+          "subject": "mapping:agg-1",
+          "ownerAction": "open_owned_conflict_issue",
+          "detail": "source reports a different mapping version"
+        }
+      ],
+      "lineDigest": "dfeccccef48f62eb4f7f10905a433f86c601112746d23c477894c9297af1c541"
+    }
+  ],
+  "gapRegister": [
+    {
+      "kind": "backlog_gap",
+      "subject": "agg-1",
+      "ownerAction": "authorize_backlog_replay",
+      "detail": "2 backlog_gap finding(s) surfaced from the recovered backlog (never auto-filled)"
+    },
+    {
+      "kind": "conflicting",
+      "subject": "mapping:agg-1",
+      "ownerAction": "open_owned_conflict_issue",
+      "detail": "source reports a different mapping version"
+    },
+    {
+      "kind": "duplicate",
+      "subject": "agg-1",
+      "ownerAction": "confirm_dedup_no_second_effect",
+      "detail": "1 duplicate finding(s) surfaced from the recovered backlog (never auto-filled)"
+    },
+    {
+      "kind": "mapping_change",
+      "subject": "agg-1",
+      "ownerAction": "review_mapping_migration",
+      "detail": "1 mapping_change finding(s) surfaced from the recovered backlog (never auto-filled)"
+    },
+    {
+      "kind": "source_identity_change",
+      "subject": "agg-1",
+      "ownerAction": "confirm_source_identity",
+      "detail": "1 source_identity_change finding(s) surfaced from the recovered backlog (never auto-filled)"
+    },
+    {
+      "kind": "stale",
+      "subject": "cursor:agg-1",
+      "ownerAction": "authorize_replay_from_cursor",
+      "detail": "cursor behind desired high-water"
+    }
+  ],
+  "manifestDigest": "df85719b9a391e29e9ca6e9a6f66cd9c4cc034302048b52a693c7521db555653",
+  "signature": {
+    "algorithm": "sha256",
+    "digest": "df85719b9a391e29e9ca6e9a6f66cd9c4cc034302048b52a693c7521db555653",
+    "boundScenario": "US6-connector-resilience",
+    "boundWorldDigest": "sha256:a2cfdf99d53966d922e49552fa5d8cb02962ed32077a43b5bc271056e2c75f2f"
+  }
+}

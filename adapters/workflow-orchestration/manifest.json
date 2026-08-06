@@ -1,0 +1,125 @@
+{
+  "manifest_version": "1.0.0",
+  "adapter_id": "workflow-orchestration",
+  "name": "Workflow Orchestration Adapter",
+  "vendor": "TrustCircleAI",
+  "adapter_version": "0.1.0",
+  "contract_range": { "minimum": "1.0.0", "maximum": "1.0.0" },
+  "source_classes": ["workflow_orchestration"],
+  "capabilities": [
+    "discover",
+    "inspect",
+    "snapshot",
+    "subscribe",
+    "reconcile",
+    "collect_evidence"
+  ],
+  "authority": {
+    "authoritative_fields": [
+      "run.id",
+      "run.status",
+      "run.started_at",
+      "run.finished_at",
+      "step.id",
+      "step.status",
+      "step.attempts",
+      "runtime.worker_id",
+      "runtime.heartbeat_at",
+      "pmo.program_id",
+      "pmo.milestone",
+      "agent.id",
+      "agent.role",
+      "evidence.artifact_ref"
+    ],
+    "forbidden_inferences": [
+      "the adapter cannot approve, gate, sign off, or authorize a workflow run or step; it reports raw run/step state only",
+      "a run or step reaching a terminal state is NOT a governance approval or closure",
+      "the adapter never grants itself governance authority; it emits raw observations only, never conclusions",
+      "an unknown run/step status opens a mapping gap and never silently retains a prior governance stage",
+      "a cancelled or deleted run is a tombstone, never a governance closure"
+    ],
+    "operation_risk": {
+      "discover": "read_only",
+      "inspect": "read_only",
+      "snapshot": "read_only",
+      "subscribe": "read_only",
+      "reconcile": "read_only",
+      "collect_evidence": "read_only"
+    }
+  },
+  "security": {
+    "identity_mode": "oauth2_client_credentials",
+    "tenant_mode": "tenant_context_per_request",
+    "credential_reference_mode": "external_secret_reference",
+    "network_egress": ["workflow-api.internal", "workflow-events.internal"],
+    "required_scopes": ["workflow:runs:read", "workflow:steps:read", "workflow:events:read"],
+    "content_access": "scoped_content"
+  },
+  "schemas": {
+    "observation": {
+      "uri": "https://schemas.trustcircle.ai/workflow-orchestration/observation/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "bc57123333140f6abaa2d2c65f6db342e9b7d3db07eccdfbbf2258687b8a6272"
+    },
+    "command": {
+      "uri": "https://schemas.trustcircle.ai/workflow-orchestration/command/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "7d32defc3aa1313f4fd5fd116992c411a1e9dccf050449105a8b755041766eea"
+    },
+    "result": {
+      "uri": "https://schemas.trustcircle.ai/workflow-orchestration/result/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "4e6f05c9fbbbb3786a282ee734bf2ace59da7fc032c81152885667de01f604c3"
+    },
+    "health": {
+      "uri": "https://schemas.trustcircle.ai/workflow-orchestration/health/1.0.0.json",
+      "version": "1.0.0",
+      "sha256": "9c845bcda630855f7e10647b8536343f9a34cf40cb37635c03e050c7f4f80d0e"
+    }
+  },
+  "delivery": {
+    "ordering": "aggregate_sequence",
+    "idempotency": "read_only_only",
+    "supports_operation_lookup": true,
+    "supports_tombstones": true
+  },
+  "limits": {
+    "requests_per_minute": 600,
+    "maximum_concurrency": 16,
+    "maximum_batch_size": 200,
+    "operation_timeout_seconds": 30
+  },
+  "retry": {
+    "retryable_classes": ["rate_limited", "transient", "dependency_unavailable"],
+    "terminal_classes": ["unauthenticated", "unauthorized", "invalid_request", "unsupported_contract"],
+    "maximum_attempts": 5,
+    "initial_backoff_ms": 250,
+    "maximum_backoff_ms": 30000,
+    "jitter": true
+  },
+  "reconciliation": {
+    "supported": true,
+    "scope": "source",
+    "cursor_model": "aggregate_sequence_per_run",
+    "drift_classes": ["missing", "duplicate", "stale", "conflicting", "orphaned", "schema_incompatible", "unknown"],
+    "safe_during_source_degradation": true
+  },
+  "evidence": {
+    "original_capture": true,
+    "result_capture": true,
+    "content_hash": "sha256",
+    "chain_of_custody": true,
+    "redaction_supported": true
+  },
+  "health": {
+    "endpoint": "/health",
+    "readiness_endpoint": "/health/ready",
+    "non_mutating": true,
+    "freshness_seconds": 30,
+    "owner_contact": "governance-adapters@trustcircle.ai"
+  },
+  "lifecycle": {
+    "status": "proposed",
+    "released_at": "2026-08-03T00:00:00.000Z"
+  }
+}

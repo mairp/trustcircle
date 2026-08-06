@@ -88,7 +88,7 @@ const IDEMPOTENCY_KEY = 'idem-key-2f8a91';
 const ACTIONS_OP = DOC.operation('post', '/v1/decisions/{decisionId}/actions');
 const CREATE_OP = DOC.operation('post', '/v1/decisions');
 const GET_OP = DOC.operation('get', '/v1/decisions/{decisionId}');
-const DELEG_OP = DOC.operation('post', '/v1/delegations');
+const _DELEG_OP = DOC.operation('post', '/v1/delegations');
 
 function actionHeaders(overrides: Record<string, string> = {}): Record<string, string> {
   return {
@@ -107,7 +107,11 @@ function completeCreateRequest(overrides: Record<string, Json> = {}): Json {
     requested_action: 'promote release 4.2.0 to production tenant fleet',
     action_class: 'production-config-change',
     risk_tier: 'high',
-    scope: { scope_type: 'environment', scope_id: 'prod-eu', allowed_actions: ['promote', 'rollback'] },
+    scope: {
+      scope_type: 'environment',
+      scope_id: 'prod-eu',
+      allowed_actions: ['promote', 'rollback'],
+    },
     business_impact: { summary: 'affects checkout availability for 12 tenants', tenants: 12 },
     risks: [{ risk: 'transient 5xx during rollout' }, { risk: 'schema drift on rollback' }],
     alternatives: [{ option: 'canary to one tenant first' }, { option: 'defer to next window' }],
@@ -166,16 +170,40 @@ const APPROVER = U(31);
 /** A properly separated duty set: distinct requester + approver. */
 function separatedDuties(): DutyAssignment[] {
   return [
-    { principalId: REQUESTER, duty: 'request', roles: ['operator'], relationships: ['requester'], tenantId: TENANT_A },
-    { principalId: APPROVER, duty: 'approval', roles: ['authorized_approver'], relationships: ['approver'], tenantId: TENANT_A },
+    {
+      principalId: REQUESTER,
+      duty: 'request',
+      roles: ['operator'],
+      relationships: ['requester'],
+      tenantId: TENANT_A,
+    },
+    {
+      principalId: APPROVER,
+      duty: 'approval',
+      roles: ['authorized_approver'],
+      relationships: ['approver'],
+      tenantId: TENANT_A,
+    },
   ];
 }
 
 /** A self-approval duty set: the requester also approves (SoD violation). */
 function selfApprovalDuties(): DutyAssignment[] {
   return [
-    { principalId: REQUESTER, duty: 'request', roles: ['operator'], relationships: ['requester'], tenantId: TENANT_A },
-    { principalId: REQUESTER, duty: 'approval', roles: ['authorized_approver'], relationships: ['approver'], tenantId: TENANT_A },
+    {
+      principalId: REQUESTER,
+      duty: 'request',
+      roles: ['operator'],
+      relationships: ['requester'],
+      tenantId: TENANT_A,
+    },
+    {
+      principalId: REQUESTER,
+      duty: 'approval',
+      roles: ['authorized_approver'],
+      relationships: ['approver'],
+      tenantId: TENANT_A,
+    },
   ];
 }
 
@@ -230,8 +258,12 @@ describe('contract surface is loaded from the published OpenAPI document', () =>
   });
 
   it('requires tenant, idempotency, correlation, and If-Match headers on decision actions', () => {
-    const names = requiredHeaders(DOC, ACTIONS_OP).map((h) => h.name).sort();
-    expect(names).toEqual(['If-Match', 'Idempotency-Key', 'X-Correlation-ID', 'X-Tenant-ID'].sort());
+    const names = requiredHeaders(DOC, ACTIONS_OP)
+      .map((h) => h.name)
+      .sort();
+    expect(names).toEqual(
+      ['If-Match', 'Idempotency-Key', 'X-Correlation-ID', 'X-Tenant-ID'].sort(),
+    );
   });
 
   it('declares an ETag on the package, action, and create responses (optimistic concurrency)', () => {
@@ -306,7 +338,10 @@ describe('AC2 — decision actions', () => {
   it.each(['approve', 'deny', 'delegate', 'request_changes', 'escalate', 'expire'])(
     'accepts a well-formed %s action request (verb + reason)',
     (action) => {
-      const body: Record<string, Json> = { action, reason: reason(`decision.${action}`, `${action} per policy review`) };
+      const body: Record<string, Json> = {
+        action,
+        reason: reason(`decision.${action}`, `${action} per policy review`),
+      };
       if (action === 'delegate') {
         body.delegation = {
           recipient_principal_id: U(32),
@@ -328,7 +363,11 @@ describe('AC2 — decision actions', () => {
     expect(sod.permitted).toBe(true);
 
     const envelope: Json = {
-      decision: { ...(completePackageResponse() as Record<string, Json>), status: 'approved', version: 2 },
+      decision: {
+        ...(completePackageResponse() as Record<string, Json>),
+        status: 'approved',
+        version: 2,
+      },
       record: {
         id: U(70),
         actor_principal_id: APPROVER,
@@ -353,8 +392,12 @@ describe('AC2 — decision actions', () => {
     const envelope = {
       decision: completePackageResponse(),
       record: {
-        id: U(70), actor_principal_id: APPROVER, action: 'approve',
-        reason: reason('decision.approve', 'ok'), status: 'approved', decided_at: iso(T0 + HOUR),
+        id: U(70),
+        actor_principal_id: APPROVER,
+        action: 'approve',
+        reason: reason('decision.approve', 'ok'),
+        status: 'approved',
+        decided_at: iso(T0 + HOUR),
         // audit_event_id intentionally omitted
       },
       // top-level audit_event_id intentionally omitted
@@ -371,7 +414,10 @@ describe('AC2 — decision actions', () => {
 
 describe('AC3 — governed rejections', () => {
   it('rejects an action whose reason is empty (contract requires a structured reason)', () => {
-    const errs = validateDecisionAction(DOC, { action: 'approve', reason: { code: '', text: 'x' } });
+    const errs = validateDecisionAction(DOC, {
+      action: 'approve',
+      reason: { code: '', text: 'x' },
+    });
     expect(errs.length).toBeGreaterThan(0);
     expect(errs.some((e) => e.includes('reason'))).toBe(true);
   });
@@ -445,9 +491,15 @@ describe('AC3 — governed rejections', () => {
   // correlation echo is NOT a valid governed rejection.
   it('rejects a Problem that omits the audit_event_id (rejection not recorded)', () => {
     const problem: Json = {
-      type: 'https://x/p', title: 'Denied', status: 403, code: 'NO_AUTHORITY',
-      detail: 'no authority', correlation_id: CORRELATION, audit_event_id: null,
-      retryable: false, safe_next_actions: ['x'],
+      type: 'https://x/p',
+      title: 'Denied',
+      status: 403,
+      code: 'NO_AUTHORITY',
+      detail: 'no authority',
+      correlation_id: CORRELATION,
+      audit_event_id: null,
+      retryable: false,
+      safe_next_actions: ['x'],
     };
     const errs = validateGovernedRejection(DOC, problem, CORRELATION);
     expect(errs.some((e) => e.includes('audit_event_id'))).toBe(true);
@@ -455,9 +507,15 @@ describe('AC3 — governed rejections', () => {
 
   it('rejects a Problem that omits safe next actions (rejection not explained)', () => {
     const problem: Json = {
-      type: 'https://x/p', title: 'Denied', status: 403, code: 'NO_AUTHORITY',
-      detail: 'no authority', correlation_id: CORRELATION, audit_event_id: U(84),
-      retryable: false, safe_next_actions: [],
+      type: 'https://x/p',
+      title: 'Denied',
+      status: 403,
+      code: 'NO_AUTHORITY',
+      detail: 'no authority',
+      correlation_id: CORRELATION,
+      audit_event_id: U(84),
+      retryable: false,
+      safe_next_actions: [],
     };
     const errs = validateGovernedRejection(DOC, problem, CORRELATION);
     expect(errs.some((e) => e.includes('safe next action'))).toBe(true);
@@ -465,9 +523,15 @@ describe('AC3 — governed rejections', () => {
 
   it('rejects a Problem whose correlation id does not echo the request', () => {
     const problem: Json = {
-      type: 'https://x/p', title: 'Denied', status: 403, code: 'NO_AUTHORITY',
-      detail: 'no authority', correlation_id: U(999), audit_event_id: U(84),
-      retryable: false, safe_next_actions: ['x'],
+      type: 'https://x/p',
+      title: 'Denied',
+      status: 403,
+      code: 'NO_AUTHORITY',
+      detail: 'no authority',
+      correlation_id: U(999),
+      audit_event_id: U(84),
+      retryable: false,
+      safe_next_actions: ['x'],
     };
     const errs = validateGovernedRejection(DOC, problem, CORRELATION);
     expect(errs.some((e) => e.includes('correlation_id'))).toBe(true);
@@ -540,19 +604,30 @@ describe('AC5 — delegation requests', () => {
   });
 
   it('accepts a created Delegation response with delegator, tenant, and status', () => {
-    const body = { ...(goodDelegationBody() as Record<string, Json>), id: U(61), tenant_id: TENANT_A, delegator_principal_id: APPROVER, status: 'active' };
+    const body = {
+      ...(goodDelegationBody() as Record<string, Json>),
+      id: U(61),
+      tenant_id: TENANT_A,
+      delegator_principal_id: APPROVER,
+      status: 'active',
+    };
     expect(validateDelegationResponse(DOC, body)).toEqual([]);
   });
 
-  it.each(['recipient_principal_id', 'authority_assignment_id', 'scope', 'actions', 'reason', 'valid_from', 'expires_at'])(
-    'rejects a delegation request missing the required field %s',
-    (field) => {
-      const body = goodDelegationBody() as Record<string, Json>;
-      delete body[field];
-      const errs = validateDelegationRequest(DOC, body);
-      expect(errs.some((e) => e.includes(`missing required property '${field}'`))).toBe(true);
-    },
-  );
+  it.each([
+    'recipient_principal_id',
+    'authority_assignment_id',
+    'scope',
+    'actions',
+    'reason',
+    'valid_from',
+    'expires_at',
+  ])('rejects a delegation request missing the required field %s', (field) => {
+    const body = goodDelegationBody() as Record<string, Json>;
+    delete body[field];
+    const errs = validateDelegationRequest(DOC, body);
+    expect(errs.some((e) => e.includes(`missing required property '${field}'`))).toBe(true);
+  });
 
   it('rejects a delegation with an empty action list (unbounded scope of authority)', () => {
     const errs = validateDelegationRequest(DOC, goodDelegationBody({ actions: [] }));
@@ -560,7 +635,10 @@ describe('AC5 — delegation requests', () => {
   });
 
   it('rejects a delegation with a non-uuid recipient (recipient not a named principal)', () => {
-    const errs = validateDelegationRequest(DOC, goodDelegationBody({ recipient_principal_id: 'not-a-uuid' }));
+    const errs = validateDelegationRequest(
+      DOC,
+      goodDelegationBody({ recipient_principal_id: 'not-a-uuid' }),
+    );
     expect(errs.some((e) => e.includes('not a uuid'))).toBe(true);
   });
 
@@ -575,14 +653,22 @@ describe('AC5 — delegation requests', () => {
     // Two delegations pointing at each other form a cycle.
     const a = activeDelegation({ delegationId: U(62), parentDelegationId: U(63) });
     const b = activeDelegation({ delegationId: U(63), parentDelegationId: U(62) });
-    const byId = new Map<string, Delegation>([[a.delegationId, a], [b.delegationId, b]]);
+    const byId = new Map<string, Delegation>([
+      [a.delegationId, a],
+      [b.delegationId, b],
+    ]);
     const res = resolveDelegation(a, byId, () => activeAssignment(), T0);
     expect(res.granted).toBe(false);
     expect(res.reason).toBe('CYCLE');
     const problem: Json = {
-      type: 'https://trustcircle.ai/problems/delegation-cycle', title: 'Circular delegation',
-      status: 422, code: 'DELEGATION_CYCLE', detail: 'the delegation chain contains a cycle',
-      correlation_id: CORRELATION, audit_event_id: U(86), retryable: false,
+      type: 'https://trustcircle.ai/problems/delegation-cycle',
+      title: 'Circular delegation',
+      status: 422,
+      code: 'DELEGATION_CYCLE',
+      detail: 'the delegation chain contains a cycle',
+      correlation_id: CORRELATION,
+      audit_event_id: U(86),
+      retryable: false,
       safe_next_actions: ['break the cycle', 'delegate directly from a root assignment'],
     };
     expect(validateGovernedRejection(DOC, problem, CORRELATION)).toEqual([]);
@@ -591,7 +677,11 @@ describe('AC5 — delegation requests', () => {
   it('refuses a PRIVILEGE-EXPANDING delegation (scope wider than source) → recorded rejection', () => {
     // The root delegation asks for an action the source assignment does not grant.
     const wide = activeDelegation({
-      scope: { scopeType: 'environment', scopeId: 'prod-eu', allowedActions: ['promote', 'delete-tenant'] },
+      scope: {
+        scopeType: 'environment',
+        scopeId: 'prod-eu',
+        allowedActions: ['promote', 'delete-tenant'],
+      },
     });
     const byId = new Map<string, Delegation>([[wide.delegationId, wide]]);
     const res = resolveDelegation(wide, byId, () => activeAssignment(), T0);
@@ -615,7 +705,10 @@ describe('AC6 — cross-tenant joint package', () => {
   };
 
   it('accepts the joint action when a distinct central reviewer approves (real oracle permits)', () => {
-    const reviewer: CentralReviewer = { principalId: U(37), roles: ['central_governance_reviewer'] };
+    const reviewer: CentralReviewer = {
+      principalId: U(37),
+      roles: ['central_governance_reviewer'],
+    };
     const verdict = evaluateCentralReviewerDistinctness(action, reviewer);
     expect(verdict.permitted).toBe(true);
 
@@ -625,17 +718,23 @@ describe('AC6 — cross-tenant joint package', () => {
   });
 
   it('BLOCKS when the central reviewer is not distinct (coincides with an action role)', () => {
-    const notDistinct: CentralReviewer = { principalId: REQUESTER, roles: ['central_governance_reviewer'] };
+    const notDistinct: CentralReviewer = {
+      principalId: REQUESTER,
+      roles: ['central_governance_reviewer'],
+    };
     const verdict = evaluateCentralReviewerDistinctness(action, notDistinct);
     expect(verdict.permitted).toBe(false);
     expect(verdict.violations.map((v) => v.code)).toContain('CENTRAL_REVIEWER_NOT_DISTINCT');
 
     const problem: Json = {
       type: 'https://trustcircle.ai/problems/reviewer-not-distinct',
-      title: 'Central reviewer is not independent', status: 409,
+      title: 'Central reviewer is not independent',
+      status: 409,
       code: verdict.violations.map((v) => v.code).join(','),
       detail: verdict.violations.map((v) => v.message).join('; '),
-      correlation_id: CORRELATION, audit_event_id: U(87), retryable: false,
+      correlation_id: CORRELATION,
+      audit_event_id: U(87),
+      retryable: false,
       safe_next_actions: ['assign an independent central governance reviewer'],
     };
     expect(validateGovernedRejection(DOC, problem, CORRELATION)).toEqual([]);
@@ -678,12 +777,20 @@ describe('Protocol — headers / ETag / idempotency', () => {
   );
 
   it('rejects an Idempotency-Key that violates the contract length/charset constraints', () => {
-    const errs = validateRequestHeaders(DOC, ACTIONS_OP, actionHeaders({ 'Idempotency-Key': 'short' }));
+    const errs = validateRequestHeaders(
+      DOC,
+      ACTIONS_OP,
+      actionHeaders({ 'Idempotency-Key': 'short' }),
+    );
     expect(errs.some((e) => e.includes('Idempotency-Key'))).toBe(true);
   });
 
   it('rejects a non-uuid X-Tenant-ID header', () => {
-    const errs = validateRequestHeaders(DOC, ACTIONS_OP, actionHeaders({ 'X-Tenant-ID': 'tenant-a' }));
+    const errs = validateRequestHeaders(
+      DOC,
+      ACTIONS_OP,
+      actionHeaders({ 'X-Tenant-ID': 'tenant-a' }),
+    );
     expect(errs.some((e) => e.includes('X-Tenant-ID'))).toBe(true);
   });
 
@@ -696,8 +803,12 @@ describe('Protocol — headers / ETag / idempotency', () => {
 
   it('treats a same-key replay as one durable effect (identical id + version + audit, marked)', () => {
     const original = {
-      idempotencyKey: IDEMPOTENCY_KEY, tenantId: TENANT_A, resourceId: U(20),
-      resourceVersion: 2, auditEventId: U(80), idempotentReplay: false,
+      idempotencyKey: IDEMPOTENCY_KEY,
+      tenantId: TENANT_A,
+      resourceId: U(20),
+      resourceVersion: 2,
+      auditEventId: U(80),
+      idempotentReplay: false,
     };
     const replay = { ...original, idempotentReplay: true };
     expect(validateIdempotentReplay(original, replay)).toEqual([]);
@@ -705,10 +816,20 @@ describe('Protocol — headers / ETag / idempotency', () => {
 
   it('flags a "replay" that actually mutated state (new id/version/audit) as a second effect', () => {
     const original = {
-      idempotencyKey: IDEMPOTENCY_KEY, tenantId: TENANT_A, resourceId: U(20),
-      resourceVersion: 2, auditEventId: U(80), idempotentReplay: false,
+      idempotencyKey: IDEMPOTENCY_KEY,
+      tenantId: TENANT_A,
+      resourceId: U(20),
+      resourceVersion: 2,
+      auditEventId: U(80),
+      idempotentReplay: false,
     };
-    const secondEffect = { ...original, resourceId: U(21), resourceVersion: 3, auditEventId: U(88), idempotentReplay: false };
+    const secondEffect = {
+      ...original,
+      resourceId: U(21),
+      resourceVersion: 3,
+      auditEventId: U(88),
+      idempotentReplay: false,
+    };
     const errs = validateIdempotentReplay(original, secondEffect);
     expect(errs.length).toBeGreaterThanOrEqual(3);
     expect(errs.some((e) => e.includes('resource id'))).toBe(true);

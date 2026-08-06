@@ -1,0 +1,30 @@
+.dashboard-snapshot {
+  margin-block: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--panel);
+}
+
+.dashboard-snapshot > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+}
+
+.dashboard-snapshot > summary > span:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.dashboard-snapshot > summary small,
+.dashboard-snapshot > summary > span:last-child {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.dashboard-snapshot > .section-grid {
+  padding: 0 1rem 1rem;
+}

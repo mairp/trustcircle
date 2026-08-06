@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "../../.tsbuild/apps/web",
     "tsBuildInfoFile": "../../.tsbuild/apps/web/.tsbuildinfo",
     // apps/web owns `.tsx` files (the Phase-77 shell + Phase-78 executive posture). They contain NO
@@ -9,15 +9,23 @@
     // another (ExecutivePosture.tsx imports layout.tsx), tsc requires a `jsx` mode to resolve the
     // `.tsx` extension (TS6142). `preserve` satisfies that with no React dependency and no runtime
     // change: Node's native type-stripping still just strips types, since there is no JSX to emit.
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "plugins": [{ "name": "next" }],
+    "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["next-env.d.ts", ".next/types/**/*.ts", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
       "path": "../../packages/contracts"
     },
     {
       "path": "../../packages/observability"
+    },
+    {
+      "path": "../../packages/domain"
     }
   ]
 }

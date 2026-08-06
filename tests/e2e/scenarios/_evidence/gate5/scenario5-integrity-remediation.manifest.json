@@ -1,0 +1,74 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "Scenario-5",
+  "scenarioTitle": "Contain and Repair Damaged Work Safely — detect, preserve, contain, bound automation, verified closure",
+  "emittedBy": "tests/e2e/scenarios/integrity-remediation.ts",
+  "version": {
+    "feature": "001-governance-control-plane",
+    "userStory": "US3",
+    "userStoryTitle": "Contain and Repair Damaged Work Safely",
+    "priority": "P1"
+  },
+  "resultDigest": "sha256:d87bc0424efb0d61b9f949d7437c543bc98f45be0364d79d192485b95cfc5ac4",
+  "allSatisfied": true,
+  "criteria": [
+    {
+      "ref": "FR-016 / SC-006",
+      "statement": "Damaged governance work is detected and surfaced in a prioritized queue, highest-attention first.",
+      "satisfied": true,
+      "evidence": "queue lists 6 case(s) in non-increasing priority; row[0] needsHumanAttention=true",
+      "observedVia": "IntegrityQueueModel.rows ordered by .priority + .needsHumanAttention",
+      "negativeControl": "the verified-closed case has the lowest priority and needsHumanAttention=false — not surfaced first"
+    },
+    {
+      "ref": "FR-017 / SC-007",
+      "statement": "The original of a damaged item is preserved and independently verifiable as intact.",
+      "satisfied": true,
+      "evidence": "original intact=true; captured digest === verify digest (sha256:preserved-original-abc)",
+      "observedVia": "EvidenceComparisonModel.originalIntact + original.contentDigest vs originalVerifyDigest",
+      "negativeControl": "the EMPTY comparison reports originalIntact=false — an un-fed view cannot masquerade as intact"
+    },
+    {
+      "ref": "FR-018",
+      "statement": "Ownership is a named owner or an explicit gap — never a fabricated owner.",
+      "satisfied": true,
+      "evidence": "escalated row ownershipGap=true, ownerPrincipalId=\"\"",
+      "observedVia": "IntegrityQueueModel.rows[unresolved_escalated].{ownershipGap,ownerPrincipalId}",
+      "negativeControl": "the detected-preserved row has a named owner and ownershipGap=false — the gap is scenario-specific"
+    },
+    {
+      "ref": "FR-019 / SC-007",
+      "statement": "A quarantine contains the damaged effect (blocks downstream use) while keeping the item inspectable.",
+      "satisfied": true,
+      "evidence": "containment=true; blocked=[governed_publish, downstream_consume]",
+      "observedVia": "EvidenceComparisonModel.quarantineContains + .blockedCapabilities + seed.quarantine.status",
+      "negativeControl": "the EMPTY comparison reports quarantineContains=false — no active quarantine, no false containment claim"
+    },
+    {
+      "ref": "FR-020 / FR-021 / SC-008",
+      "statement": "Only a bounded, pre-authorized low-risk plan may execute automatically; a destructive plan must not.",
+      "satisfied": true,
+      "evidence": "auto plan isAutomaticEligible=true; destructive plan eligible=false; execute enabled=true",
+      "observedVia": "domain isAutomaticEligible(plan) + RemediationDetailModel.steps[*].preAuthorizedLowRisk",
+      "negativeControl": "the destructive needs-approval plan is NOT automatic-eligible — execute would be gated for it"
+    },
+    {
+      "ref": "FR-020",
+      "statement": "A successful repair is succeeded-unverified, not closed — closure is a separate verification act.",
+      "satisfied": true,
+      "evidence": "attempt outcome=succeeded_unverified; caseClosed=false; rollbackAvailable=true",
+      "observedVia": "RemediationDetailModel.attempt.outcome + .verification.caseClosed",
+      "negativeControl": "the verified-closed detail carries caseClosed=true only because its verification passed"
+    },
+    {
+      "ref": "FR-022 / SC-009",
+      "statement": "A case is closed only when an independent verification passes all nine closure gates.",
+      "satisfied": true,
+      "evidence": "domain verdict=passed; detail caseClosed=true, gates=9 all passed",
+      "observedVia": "domain verifiedClosureResult({gateResults,verifierIndependent}) + RemediationDetailModel.verification",
+      "negativeControl": "the auto-repaired detail is NOT closed (0 gates verified) — a source-reported \"done\" never closes a case"
+    }
+  ],
+  "manifestDigest": "sha256:8d5e7ad2da34b8153c28ff4849c56451dc17b789cbfe5eaaf939dd0032674e21"
+}

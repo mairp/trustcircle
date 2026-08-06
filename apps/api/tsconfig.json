@@ -24,6 +24,9 @@
     },
     {
       "path": "../../packages/observability"
+    },
+    {
+      "path": "../../packages/persistence"
     }
   ]
 }

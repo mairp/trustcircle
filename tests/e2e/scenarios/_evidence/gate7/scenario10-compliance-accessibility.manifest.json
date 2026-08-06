@@ -1,0 +1,34 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "Scenario-10",
+  "scenarioTitle": "Compliance Surfaces Accessibility — WCAG 2.2 AA presenters and honest empty models",
+  "emittedBy": "tests/e2e/scenarios/standards-applicability.ts",
+  "version": {
+    "feature": "001-governance-control-plane",
+    "userStory": "US5",
+    "userStoryTitle": "Demonstrate Compliance and Audit Readiness",
+    "priority": "P2"
+  },
+  "resultDigest": "sha256:4497ce5df7e266cb7e90d9daa3e9e57f28725222a64a11c6bba064f537bbcdb8",
+  "allSatisfied": true,
+  "criteria": [
+    {
+      "ref": "FR-031..035 / FR-055 / SC-012 (a11y)",
+      "statement": "The compliance coverage presenter is structurally/semantically clean and truthful: every gap is surfaced, the boundary is not mislabelled, and internal readiness is never rendered as external certification.",
+      "satisfied": true,
+      "evidence": "presenters audited=1; findings=0",
+      "observedVia": "auditComplianceAccessibility({tenant, coverage}) over the shipped renderCoverageView (accessibility oracle)",
+      "negativeControl": "were an uncovered obligation row to omit its coverage-gap, or a 'ready' boundary to read as certified, the oracle would return a non-empty findings list (currently 0)"
+    },
+    {
+      "ref": "FR-034 / SC-012 (empty honesty)",
+      "statement": "An un-fed compliance view is honest: its boundary is incomplete (never certified), it states internal readiness is not external certification, and it states no external certification exists.",
+      "satisfied": true,
+      "evidence": "empty-model honesty findings=0",
+      "observedVia": "auditEmptyComplianceModelsAreHonest(tenant) over EMPTY_COVERAGE_VIEW (accessibility oracle)",
+      "negativeControl": "were the empty view to report a certified boundary, omit the not-certified note, or render a certification block, this would report a finding"
+    }
+  ],
+  "manifestDigest": "sha256:78418b69da61af988049a677c5d1205db8d61409aa0228829a351e1b94d35ba8"
+}

@@ -2,6 +2,7 @@
   "package": "ISO/IEC 42006 audit-readiness index (for a certification-body assessment)",
   "certificationClaimed": false,
   "disclaimer": "Readiness index only. No licensed standard text reproduced; clause identifiers only. Certification can only be granted by an accredited body; none is claimed here.",
+  "provenance": "Phase 9 T292 sample fixture regenerated for GATE9; committed and present in the working tree.",
   "readiness": [
     {
       "clause": "competence-of-auditors",

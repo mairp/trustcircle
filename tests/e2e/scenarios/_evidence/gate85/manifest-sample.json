@@ -366,6 +366,19 @@
       "coveredElsewhere": null
     },
     {
+      "frId": "FR-036",
+      "clause": "The platform MUST perform machine-wide source discovery periodically and on demand across authorized source classes without requiring each source to be named in advance.",
+      "disposition": "witnessed",
+      "readPath": "source-catalog",
+      "witness": [
+        "periodic + on-demand: two independent sweeps ran across the SAME authorized boundary and reconciled deterministically (each targetId once): total=8",
+        "machine-wide across authorized classes: distinct scopes observed = {agentctl,kanban,secretstore,unknown,workflows_orchestration} within authorizedScope={agentctl,kanban,unknown,workflows_orchestration}",
+        "no fixed named-product list required: the UNKNOWN-scope source unknown:svc-new was discovered without being named in advance → onboarding=discovered",
+        "re-run picks up drift: sweep 2 (clock=1700000120000) re-observed the boundary and dropped the disappeared source kanban:board-stale while retaining its last-known identity (still in catalog=true)"
+      ],
+      "coveredElsewhere": null
+    },
+    {
       "frId": "FR-037",
       "clause": "Every discovered source MUST have a catalog entry containing stable identity … lifecycle state, and observation time.",
       "disposition": "witnessed",
@@ -462,10 +475,10 @@
       "detail": "out_of_scope"
     }
   ],
-  "manifestDigest": "3e55bee610fed0deab04e74d5650f48d29c1f1e13cff665ed1c20b7a59272e93",
+  "manifestDigest": "4c324a4918c800219a3f90cd786211e55b3f53a8cb2abe884ecba99c8b06f047",
   "signature": {
     "algorithm": "sha256",
-    "digest": "3e55bee610fed0deab04e74d5650f48d29c1f1e13cff665ed1c20b7a59272e93",
+    "digest": "4c324a4918c800219a3f90cd786211e55b3f53a8cb2abe884ecba99c8b06f047",
     "boundBundleId": "36GCYGDJ15PTYP60F91QWRAY2M",
     "boundContentHash": "af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b"
   }

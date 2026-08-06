@@ -106,10 +106,21 @@ x-core-env: &core-env
   RUNTIME_SET: 'core-required'
 
 x-app-build: &app-build
-  context: ..
+  context: ../..
   dockerfile: deploy/compose/Dockerfile
 
-x-restart: &restart on-failure
+x-app-runtime: &app-runtime
+  # A plain `docker compose up` must consume the checked-out source rather than silently
+  # reusing a stale `:local` image from an earlier run.
+  pull_policy: build
+  # Compose's tiny init forwards stop signals and reaps children. The bounded grace period
+  # lets the governed workers checkpoint and release leases before Docker sends SIGKILL.
+  init: true
+  stop_grace_period: '30s'
+
+# Recover the complete control plane after a Docker daemon/host restart. An operator can still
+# intentionally keep a service down with `docker compose stop`, which `unless-stopped` respects.
+x-restart: &restart unless-stopped
 
 services:
   # ===========================================================================
@@ -118,7 +129,7 @@ services:
   # Backs the evidence / ownership / reconciliation prerequisites.
   # ===========================================================================
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     container_name: cp-postgres
     restart: *restart
     networks: [control-plane]
@@ -143,7 +154,7 @@ services:
   # Backs the evidence prerequisite and OPA's signed-bundle custody.
   # ===========================================================================
   object-storage:
-    image: minio/minio:latest
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: cp-object-storage
     restart: *restart
     networks: [control-plane]
@@ -166,7 +177,7 @@ services:
   # Tenant-scoped delivery substrate for governance events and outbox publication.
   # ===========================================================================
   nats:
-    image: nats:2.10-alpine
+    image: nats:2.10-alpine@sha256:b83efabe3e7def1e0a4a31ec6e078999bb17c80363f881df35edc70fcb6bb927
     container_name: cp-nats
     restart: *restart
     networks: [control-plane]
@@ -193,7 +204,7 @@ services:
   # dependsOn object-storage (required) — signed-bundle custody.
   # ===========================================================================
   opa:
-    image: openpolicyagent/opa:latest
+    image: openpolicyagent/opa:latest@sha256:1248dbe708586cb4cb89c58437d5e42496b1b1883ed9aff3bbbdd3ac5d24c4ee
     container_name: cp-opa
     restart: *restart
     networks: [control-plane]
@@ -209,8 +220,14 @@ services:
       object-storage:
         condition: service_healthy
     healthcheck:
-      # OPA has no shell/curl; use its own liveness/readiness diagnostic endpoints.
-      test: ['CMD', 'wget', '-q', '-O-', 'http://localhost:8181/health?bundle=false']
+      # The minimal OPA image has no shell, wget, or curl. Use the OPA binary's
+      # http.send built-in to query the documented Health API from inside the container.
+      test:
+        - 'CMD'
+        - '/opa'
+        - 'eval'
+        - '--fail'
+        - '200 = http.send({"url":"http://localhost:8181/health","method":"get"}).status_code'
       interval: 5s
       timeout: 3s
       retries: 12
@@ -223,7 +240,7 @@ services:
   # health, or decisions from it. Brought up before instrumented services emit.
   # ===========================================================================
   collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:latest@sha256:f2f01157055a9b2aab9df7118e1f1c9abf345e99b23bc7a2bc791db374a7d0f6
     container_name: cp-collector
     restart: *restart
     networks: [control-plane]
@@ -248,6 +265,7 @@ services:
   # fail-visible `/v1/readiness` picture and `/v1/health` liveness.
   # ===========================================================================
   api:
+    <<: *app-runtime
     build:
       <<: *app-build
       target: api
@@ -259,8 +277,14 @@ services:
       <<: *core-env
       SERVICE_NAME: api
       API_PORT: '3000'
+      LOCAL_OPERATOR_PREVIEW: 'true'
+      LOCAL_PREVIEW_TENANT_ID: '00000000-0000-4000-8000-000000000001'
+      LOCAL_PREVIEW_SOURCE_HOST: 'web'
+      # Idempotently materialize checked-in component, adapter, and standards declarations
+      # into the local preview tenant. No source health or active connection is inferred.
+      LOCAL_PREVIEW_RECONCILIATION: 'true'
     ports:
-      - '3000:3000'
+      - '14001:3000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -286,6 +310,7 @@ services:
   # Same five prerequisites as the API → same HARD service_healthy substrate edges.
   # ===========================================================================
   command-worker:
+    <<: *app-runtime
     build:
       <<: *app-build
       target: command-worker
@@ -322,6 +347,7 @@ services:
   # Being "up" grants it NO execution authority.
   # ===========================================================================
   projector:
+    <<: *app-runtime
     build:
       <<: *app-build
       target: projector
@@ -352,6 +378,7 @@ services:
   # sink. Prerequisites authority + ownership. Depends on postgres + nats + opa.
   # ===========================================================================
   discovery-agent:
+    <<: *app-runtime
     build:
       <<: *app-build
       target: discovery-agent
@@ -392,6 +419,7 @@ services:
   # picture even while a core executor is blocked. Brought up LAST.
   # ===========================================================================
   web:
+    <<: *app-runtime
     build:
       <<: *app-build
       target: web
@@ -403,9 +431,16 @@ services:
       <<: *core-env
       SERVICE_NAME: web
       API_BASE_URL: 'http://api:3000'
-      WEB_PORT: '8080'
+      PORT: '8080'
+      HOSTNAME: '0.0.0.0'
+      TRUST_IDENTITY_HEADERS: 'false'
+      # Local compose is a read-only operator preview until an identity gateway is wired.
+      # In this mode the app ignores inbound identity headers and uses a fixed auditor-only
+      # principal, so a caller cannot escalate the preview role.
+      LOCAL_OPERATOR_PREVIEW: 'true'
+      LOCAL_PREVIEW_TENANT_ID: '00000000-0000-4000-8000-000000000001'
     ports:
-      - '8080:8080'
+      - '14000:8080'
     depends_on:
       api:
         condition: service_started

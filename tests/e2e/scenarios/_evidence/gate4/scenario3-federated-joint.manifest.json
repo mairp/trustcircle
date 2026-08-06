@@ -1,0 +1,50 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "Scenario-3",
+  "scenarioTitle": "Federated Cross-Tenant Approval — three gates, independent central review, no evidence leak",
+  "emittedBy": "tests/e2e/scenarios/human-decisions.ts",
+  "version": {
+    "feature": "001-governance-control-plane",
+    "userStory": "US2",
+    "userStoryTitle": "Make and Govern Human Decisions",
+    "priority": "P1"
+  },
+  "resultDigest": "sha256:2d972677ea77824e3c867fcf3a04370491775b20d4a533b6833266db8a4230fa",
+  "allSatisfied": true,
+  "criteria": [
+    {
+      "ref": "FR-043",
+      "statement": "Every affected tenant must supply a current scoped approval before the joint action executes.",
+      "satisfied": true,
+      "evidence": "3 affected tenants; approved+current=1; execution blocked=true",
+      "observedVia": "JointDecisionStatusModel.tenantApprovals[*].{status,current} + .executionBlocked",
+      "negativeControl": "were all tenants approved+current AND gates passed, executionBlocked would flip false"
+    },
+    {
+      "ref": "FR-044",
+      "statement": "Non-waivable central guardrails must all pass; no tenant can waive them.",
+      "satisfied": true,
+      "evidence": "2 central guardrail(s), 2 not passed; all have tenantId===null (non-waivable)",
+      "observedVia": "JointDecisionStatusModel.centralGuardrails[*].passed + domain isCentralGuardrail (tenantId===null)",
+      "negativeControl": "a tenant-scoped requirement (tenantId!=null) would NOT be a central guardrail — waivability is defined by null tenant"
+    },
+    {
+      "ref": "FR-045",
+      "statement": "A distinct central governance reviewer — independent of every tenant approver and the requester — must approve.",
+      "satisfied": true,
+      "evidence": "central reviewer=0757616d-0d1a-7573-b8ef-509d32c891b2, distinct=true, approved=false",
+      "observedVia": "JointDecisionStatusModel.centralReview.{distinct,approved,reviewerPrincipalId}",
+      "negativeControl": "the central reviewer id differs from the requester id — a self-review would collapse distinct→false"
+    },
+    {
+      "ref": "FR-043 / AC6 / SC-005",
+      "statement": "Federated approval discloses no tenant’s evidence to another tenant (least-privilege disclosure).",
+      "satisfied": true,
+      "evidence": "all 3 tenant rows carry evidenceDisclosed=false (status/reviewer/time only)",
+      "observedVia": "JointDecisionStatusModel.tenantApprovals[*].evidenceDisclosed",
+      "negativeControl": "the VM type pins evidenceDisclosed to the literal false — a leak is unrepresentable in the disclosed model"
+    }
+  ],
+  "manifestDigest": "sha256:df48d88b6a17a99090209ce375733b30e24fc92c6c981d7ac98a278a8ba3d8aa"
+}

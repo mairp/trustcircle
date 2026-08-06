@@ -174,7 +174,8 @@ function packageDefects(pkg: DecisionPackage): PackageDefect[] {
   if (!nonEmpty(pkg.requesterPrincipalId)) d.push('MISSING_REQUESTER');
   if (!pkg.sodConstraint || !nonEmpty(pkg.sodConstraint.sodConstraintId))
     d.push('MISSING_SOD_CONSTRAINT');
-  if (typeof pkg.expiresAt !== 'number' || !Number.isFinite(pkg.expiresAt)) d.push('MISSING_EXPIRY');
+  if (typeof pkg.expiresAt !== 'number' || !Number.isFinite(pkg.expiresAt))
+    d.push('MISSING_EXPIRY');
   if (!nonEmpty(pkg.expectedResult)) d.push('MISSING_EXPECTED_RESULT');
   return d;
 }
@@ -531,12 +532,7 @@ describe('DECISION package completeness (AC1): an approver with authority sees a
 });
 
 describe('DECISION transitions (AC2): each permitted outcome fires ONCE with a reason and a retained audit record', () => {
-  const OUTCOMES: DecisionState[] = [
-    'approved',
-    'denied',
-    'changes_requested',
-    'escalated',
-  ];
+  const OUTCOMES: DecisionState[] = ['approved', 'denied', 'changes_requested', 'escalated'];
 
   for (const outcome of OUTCOMES) {
     it(`under_review → ${outcome} is applied once and its audit record is complete & terminal`, () => {
@@ -767,7 +763,13 @@ describe('INVALIDATION / re-review (AC4): a material change after review begins 
     [{ policyVersion: 'policy@2026.08.0' }, 'policyVersion'],
     [{ controlVersion: 'control@2026.08.0' }, 'controlVersion'],
     [
-      { affectedScope: { scopeType: 'environment', scopeId: 'prod-us', allowedActions: ['promote'] } },
+      {
+        affectedScope: {
+          scopeType: 'environment',
+          scopeId: 'prod-us',
+          allowedActions: ['promote'],
+        },
+      },
       'scope',
     ],
     [{ businessImpact: 'now affects 40 tenants' }, 'businessImpact'],
@@ -930,7 +932,7 @@ const NARROWER_SCOPE: AuthorityScope = {
   scopeId: 'prod-eu',
   allowedActions: ['promote'], // strict subset — a valid narrowing
 };
-const WIDER_SCOPE: AuthorityScope = {
+const _WIDER_SCOPE: AuthorityScope = {
   scopeType: 'environment',
   scopeId: 'prod-eu',
   allowedActions: ['promote', 'rollback', 'delete'], // superset — privilege expansion
@@ -1370,9 +1372,9 @@ describe('JOINT multi-tenant package (AC6): blocked until guardrails pass AND ev
         // TENANT_2 approval omitted.
       ],
     });
-    expect(jointBlockers(missingApproval).some((b) => b.startsWith('TENANT_APPROVAL_MISSING'))).toBe(
-      true,
-    );
+    expect(
+      jointBlockers(missingApproval).some((b) => b.startsWith('TENANT_APPROVAL_MISSING')),
+    ).toBe(true);
 
     // (b') a tenant approval exists but is NOT current (expired assignment).
     const staleApproval = satisfiedJointCtx({
@@ -1525,7 +1527,10 @@ describe('EXPIRY state machine: subjects expire exactly at/after their window (e
 describe('TERMINAL-HISTORY: every decision-domain terminal state is a history-preserving sink', () => {
   const machines: Array<[string, StateMachine<string, Record<string, unknown>>]> = [
     ['decision', decisionMachine() as unknown as StateMachine<string, Record<string, unknown>>],
-    ['requirement', requirementMachine() as unknown as StateMachine<string, Record<string, unknown>>],
+    [
+      'requirement',
+      requirementMachine() as unknown as StateMachine<string, Record<string, unknown>>,
+    ],
     ['delegation', delegationMachine() as unknown as StateMachine<string, Record<string, unknown>>],
     ['joint', jointMachine() as unknown as StateMachine<string, Record<string, unknown>>],
     ['expiry', expiryMachine() as unknown as StateMachine<string, Record<string, unknown>>],

@@ -3,6 +3,7 @@
   "certificationClaimed": false,
   "disclaimer": "No licensed standard text is reproduced; obligations are paraphrased in our own words and referenced by clause identifier only. No certification is claimed.",
   "edition": "ISO/IEC 42001 (referenced by clause identifier; confirm against the assessment edition)",
+  "provenance": "Phase 9 T292 sample fixture regenerated for GATE9; committed and present in the working tree.",
   "controls": [
     {
       "clause": "5.1",

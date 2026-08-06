@@ -8,9 +8,21 @@
   },
   "dependencies": {
     "@trustcircle/contracts": "*",
-    "@trustcircle/observability": "*"
+    "@trustcircle/domain": "*",
+    "@trustcircle/observability": "*",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "scripts": {
+    "build": "next build && node ../../scripts/prepare-next-standalone.mjs",
+    "dev": "next dev -H 0.0.0.0 -p 8080",
+    "preview": "npm run build && TRUST_IDENTITY_HEADERS=true HOSTNAME=127.0.0.1 PORT=4173 npm start",
+    "start": "node .next/standalone/apps/web/server.js",
     "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4"
   }
 }

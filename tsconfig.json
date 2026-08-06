@@ -3,16 +3,34 @@
   "files": [],
   "references": [
     {
+      "path": "./adapters/agentctl"
+    },
+    {
+      "path": "./adapters/kanban"
+    },
+    {
+      "path": "./adapters/lisa"
+    },
+    {
       "path": "./adapters/wiggum"
     },
     {
+      "path": "./adapters/workflow-orchestration"
+    },
+    {
       "path": "./apps/api"
+    },
+    {
+      "path": "./apps/command-worker"
     },
     {
       "path": "./apps/discovery-agent"
     },
     {
       "path": "./apps/projector"
+    },
+    {
+      "path": "./apps/web"
     },
     {
       "path": "./packages/adapter-sdk"

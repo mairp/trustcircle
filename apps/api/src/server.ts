@@ -286,6 +286,9 @@ export interface AppContext {
     readonly path: string;
     readonly url: string;
     header(name: string): string | undefined;
+    /** The value of a `:param` path segment captured during routing (Hono-compatible `c.req.param`).
+     *  Returns `undefined` when the route declares no such parameter. Values are URL-decoded. */
+    param(name: string): string | undefined;
     /** Parse the request body as JSON (for POST/PUT/PATCH handlers). Rejects if the body is
      *  absent or not valid JSON — the handler is expected to translate that to a 400. Reads the
      *  underlying Fetch `Request` body exactly once. */
@@ -348,6 +351,43 @@ function parseVersion(path: string): { version: number | null; rest: string } {
   if (!m) return { version: null, rest: path };
   const tail = m[2] ?? '';
   return { version: Number(m[1]), rest: tail === '' ? '/' : tail };
+}
+
+/**
+ * Match a registered route pattern (which may contain `:param` segments) against a concrete request
+ * path. Returns the captured params (URL-decoded) when every segment matches — a literal segment
+ * must be equal, a `:param` segment captures any single non-empty segment — or `null` when the
+ * pattern does not match. Segment counts must be equal (no implicit wildcard), so `/decisions/:id`
+ * matches `/v1/decisions/abc` but NOT `/v1/decisions/abc/actions`. A pattern with no `:param`
+ * segments is matched by fast string equality upstream; this is only consulted for parameterized
+ * patterns, keeping the common exact-match path allocation-free.
+ */
+function matchPattern(pattern: string, path: string): Record<string, string> | null {
+  const pSegs = pattern.split('/');
+  const uSegs = path.split('/');
+  if (pSegs.length !== uSegs.length) return null;
+  const params: Record<string, string> = {};
+  for (let i = 0; i < pSegs.length; i += 1) {
+    const ps = pSegs[i] ?? '';
+    const us = uSegs[i] ?? '';
+    if (ps.startsWith(':')) {
+      if (us.length === 0) return null;
+      const name = ps.slice(1);
+      try {
+        params[name] = decodeURIComponent(us);
+      } catch {
+        params[name] = us;
+      }
+    } else if (ps !== us) {
+      return null;
+    }
+  }
+  return params;
+}
+
+/** True iff a registered route pattern declares any `:param` segment. */
+function isParameterized(pattern: string): boolean {
+  return pattern.includes('/:');
 }
 
 /**
@@ -464,11 +504,28 @@ async function dispatch(
     return jsonResponse(body, 404, { [CONTEXT_HEADERS.correlation]: correlationId });
   }
 
-  // 3. Route match.
-  const route = routes.find((r) => r.path === path && r.method === method);
+  // 3. Route match. Exact-path routes are matched first by fast string equality; a parameterized
+  //    pattern (`:param` segments) is consulted only when no literal route matched, capturing the
+  //    path parameters for the handler. A path that matches some route only at another method is a
+  //    visible 405; an unknown path is a 404.
+  let route = routes.find((r) => r.path === path && r.method === method);
+  let pathParams: Record<string, string> = {};
   if (!route) {
-    // Path exists at another method?
-    const methodMismatch = routes.some((r) => r.path === path);
+    for (const r of routes) {
+      if (r.method !== method || !isParameterized(r.path)) continue;
+      const captured = matchPattern(r.path, path);
+      if (captured !== null) {
+        route = r;
+        pathParams = captured;
+        break;
+      }
+    }
+  }
+  if (!route) {
+    // Path exists at another method (exact or parameterized)?
+    const methodMismatch = routes.some(
+      (r) => r.path === path || (isParameterized(r.path) && matchPattern(r.path, path) !== null),
+    );
     const status = methodMismatch ? 405 : 404;
     const body = {
       error: methodMismatch ? 'METHOD_NOT_ALLOWED' : 'NOT_FOUND',
@@ -488,6 +545,7 @@ async function dispatch(
       path,
       url: request.url,
       header: (name: string) => request.headers.get(name) ?? undefined,
+      param: (name: string) => pathParams[name],
       json: () => request.json(),
     };
     const c: AppContext = {

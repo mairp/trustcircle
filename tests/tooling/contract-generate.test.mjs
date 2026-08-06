@@ -31,7 +31,7 @@ const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', '
 /** Run the generator CLI; returns {status, stdout, stderr}. Never throws on exit code. */
 function runCli(args) {
   try {
-    const stdout = execFileSync('node', [SCRIPT, ...args], {
+    const stdout = execFileSync('node', ['--experimental-strip-types', SCRIPT, ...args], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

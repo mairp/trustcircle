@@ -39,7 +39,7 @@
       "status": "present",
       "vo": "VO-6acaf6470d0810df4c93",
       "exists": true,
-      "digest": "83b05eb51d2940a838ec5890ffcc55fc17ede88f9c269565a151c6243d00e5d0"
+      "digest": "10442f5d40e2cc6da2b48517c533de7476f5fd47674e9a657e3313734ea83625"
     },
     {
       "path": "apps/projector/src/inbox-consumer.ts",
@@ -59,8 +59,8 @@
       "path": "apps/web/src/features/controllers/OperationActions.tsx",
       "status": "planned",
       "vo": "VO-76455e2a60fbc99a2097",
-      "exists": false,
-      "digest": null
+      "exists": true,
+      "digest": "5c1019ab2bf0b0b9655c91d579ed8be7e152362a358a4a9ae4496a6d95e65d30"
     },
     {
       "path": "db/migrations/0001_tenancy_authority.sql",
@@ -241,8 +241,8 @@
       "path": "packages/evidence/src/original-preservation.ts",
       "status": "planned",
       "vo": "VO-40b09e5441216007c9e5",
-      "exists": false,
-      "digest": null
+      "exists": true,
+      "digest": "a816a1ee5d138460e956a35787b4ef92fa4568c7fc22ee428287c721aa7b28dc"
     },
     {
       "path": "packages/evidence/src/retention.ts",
@@ -277,7 +277,7 @@
       "status": "present",
       "vo": "VO-a11y-config",
       "exists": true,
-      "digest": "80319e29a34c14067586fe1dd9949288c59a4765ff0ff96c743f62a63c343485"
+      "digest": "bdf62c15d196277b848c769d3f421505bb2cacb8b63b0b25698f072228ff8324"
     },
     {
       "path": "scripts/ci/evidence-manifest.mjs",
@@ -312,7 +312,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "8dc98b67f716840260f3d13a24b1b0a17ade7c013582be7faa6b7ee824eca977"
+      "digest": "1f22b4442365d8ae46d98d11fae5b4f761d072dfc0dba4359d1f4b17b366f2b5"
     },
     {
       "path": "tests/integration/core-only-profile.test.ts",
@@ -325,8 +325,8 @@
       "path": "tests/integration/simulation-binding.test.ts",
       "status": "planned",
       "vo": "VO-a5205654a25746949236",
-      "exists": false,
-      "digest": null
+      "exists": true,
+      "digest": "53bfe511a5b907f480bb08015d3716670a989764889b0e83a1f64703de027fef"
     },
     {
       "path": "tests/performance/config.ts",
@@ -354,7 +354,7 @@
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
       "exists": true,
-      "digest": "bf9208abc1512e23ca4526f40fd38a63ba412dc498b90caa9dc3b1c8d8dfded9"
+      "digest": "ee64dd9170b62aa5d1abfa72bc950673099ab96b0931294667e09a6e213bd1a1"
     }
   ],
   "evidence": [
@@ -487,5 +487,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "50cfba3f6ae4f849b654e77bfc401c5653ac19b70bd2546dcd7d139a9e378e73"
+  "inventoryDigest": "0f1d1322533836367374f2214c5dff4b42e412956f91af9ff2186c287474c7e5"
 }

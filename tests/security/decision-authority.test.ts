@@ -337,7 +337,10 @@ describe('AS2 — permitted transition once + audit (VO-699effc1c52abb2cf3b0)', 
       },
     ];
     const result = pdp.decide({
-      query: { policy: 'separation_of_duties', input: { assignments: selfApprove, constraint: constraint() } },
+      query: {
+        policy: 'separation_of_duties',
+        input: { assignments: selfApprove, constraint: constraint() },
+      },
       actorPrincipalId: 'approver',
       correlationId: 'corr-approve-2',
       pinnedRevision: REV_CURRENT,
@@ -359,8 +362,20 @@ describe('AS3 — governed rejections (VO-b7d38611f9d8413fea66)', () => {
   describe('self-approval', () => {
     it('REJECTS — one principal holding request+approval → SELF_APPROVAL, explained', () => {
       const assignments: DutyAssignment[] = [
-        { principalId: 'p', duty: 'request', roles: ['governance_officer'], relationships: ['requester'], tenantId: 'tenant-a' },
-        { principalId: 'p', duty: 'approval', roles: ['authorized_approver'], relationships: ['approver'], tenantId: 'tenant-a' },
+        {
+          principalId: 'p',
+          duty: 'request',
+          roles: ['governance_officer'],
+          relationships: ['requester'],
+          tenantId: 'tenant-a',
+        },
+        {
+          principalId: 'p',
+          duty: 'approval',
+          roles: ['authorized_approver'],
+          relationships: ['approver'],
+          tenantId: 'tenant-a',
+        },
       ];
       const evalr = evaluateSeparationOfDuties(assignments, constraint());
       expect(evalr.permitted).toBe(false);
@@ -381,8 +396,20 @@ describe('AS3 — governed rejections (VO-b7d38611f9d8413fea66)', () => {
     it('REJECTS — a role the constraint forbids for the action class → INCOMPATIBLE_ROLE', () => {
       const c = constraint({ incompatibleRoles: ['operator'] });
       const assignments: DutyAssignment[] = [
-        { principalId: 'requester', duty: 'request', roles: ['governance_officer'], relationships: ['requester'], tenantId: 'tenant-a' },
-        { principalId: 'approver', duty: 'approval', roles: ['authorized_approver', 'operator'], relationships: ['approver'], tenantId: 'tenant-a' },
+        {
+          principalId: 'requester',
+          duty: 'request',
+          roles: ['governance_officer'],
+          relationships: ['requester'],
+          tenantId: 'tenant-a',
+        },
+        {
+          principalId: 'approver',
+          duty: 'approval',
+          roles: ['authorized_approver', 'operator'],
+          relationships: ['approver'],
+          tenantId: 'tenant-a',
+        },
       ];
       const evalr = evaluateSeparationOfDuties(assignments, c);
       expect(evalr.permitted).toBe(false);
@@ -398,8 +425,20 @@ describe('AS3 — governed rejections (VO-b7d38611f9d8413fea66)', () => {
   describe('admin-only authority', () => {
     it('REJECTS — a decision duty backed only by platform_admin → PLATFORM_ADMIN_NO_AUTHORITY', () => {
       const assignments: DutyAssignment[] = [
-        { principalId: 'requester', duty: 'request', roles: ['governance_officer'], relationships: ['requester'], tenantId: 'tenant-a' },
-        { principalId: 'admin', duty: 'approval', roles: ['platform_admin'], relationships: ['approver'], tenantId: 'tenant-a' },
+        {
+          principalId: 'requester',
+          duty: 'request',
+          roles: ['governance_officer'],
+          relationships: ['requester'],
+          tenantId: 'tenant-a',
+        },
+        {
+          principalId: 'admin',
+          duty: 'approval',
+          roles: ['platform_admin'],
+          relationships: ['approver'],
+          tenantId: 'tenant-a',
+        },
       ];
       const evalr = evaluateSeparationOfDuties(assignments, constraint());
       expect(evalr.permitted).toBe(false);
@@ -484,9 +523,20 @@ describe('AS3 — governed rejections (VO-b7d38611f9d8413fea66)', () => {
   // ---- UNAVAILABLE / INDETERMINATE POLICY --------------------------------------------------
   describe('unavailable policy', () => {
     it('REJECTS — an unsigned bundle cannot be loaded → PdpUnavailableError(unsigned)', () => {
-      const unsigned: SignedPolicyBundle = { revision: REV_CURRENT, roots: ['separation_of_duties'], signature: '' };
+      const unsigned: SignedPolicyBundle = {
+        revision: REV_CURRENT,
+        roots: ['separation_of_duties'],
+        signature: '',
+      };
       // At the adapter construction boundary AND at the raw verify boundary — both fail closed.
-      expect(() => new SignedOpaBundleAdapter({ bundle: unsigned, bundleVerificationKey: BUNDLE_KEY, evidenceSigningKey: EVIDENCE_KEY })).toThrow(PdpUnavailableError);
+      expect(
+        () =>
+          new SignedOpaBundleAdapter({
+            bundle: unsigned,
+            bundleVerificationKey: BUNDLE_KEY,
+            evidenceSigningKey: EVIDENCE_KEY,
+          }),
+      ).toThrow(PdpUnavailableError);
       let thrown: unknown;
       try {
         verifyBundle(unsigned, BUNDLE_KEY);
@@ -497,10 +547,17 @@ describe('AS3 — governed rejections (VO-b7d38611f9d8413fea66)', () => {
       expect((thrown as PdpUnavailableError).reason).toBe('unsigned');
     });
     it('REJECTS — a bundle signed with the wrong key cannot be loaded → bad-signature', () => {
-      const tampered = signBundle({ revision: REV_CURRENT, roots: ['separation_of_duties'] }, 'attacker-key');
+      const tampered = signBundle(
+        { revision: REV_CURRENT, roots: ['separation_of_duties'] },
+        'attacker-key',
+      );
       let thrown: unknown;
       try {
-        new SignedOpaBundleAdapter({ bundle: tampered, bundleVerificationKey: BUNDLE_KEY, evidenceSigningKey: EVIDENCE_KEY });
+        new SignedOpaBundleAdapter({
+          bundle: tampered,
+          bundleVerificationKey: BUNDLE_KEY,
+          evidenceSigningKey: EVIDENCE_KEY,
+        });
       } catch (e) {
         thrown = e;
       }
@@ -509,7 +566,10 @@ describe('AS3 — governed rejections (VO-b7d38611f9d8413fea66)', () => {
     });
     it('REJECTS — a bundle claiming an unknown policy root → unknown-root', () => {
       const badRoot = signBundle(
-        { revision: REV_CURRENT, roots: ['not_a_real_policy' as unknown as 'separation_of_duties'] },
+        {
+          revision: REV_CURRENT,
+          roots: ['not_a_real_policy' as unknown as 'separation_of_duties'],
+        },
         BUNDLE_KEY,
       );
       let thrown: unknown;
@@ -522,9 +582,16 @@ describe('AS3 — governed rejections (VO-b7d38611f9d8413fea66)', () => {
       expect((thrown as PdpUnavailableError).reason).toBe('unknown-root');
     });
     it('POSITIVE CONTROL — a correctly signed bundle loads and decides', () => {
-      const pdp = createSignedOpaPdp({ revision: REV_CURRENT, bundleSigningKey: BUNDLE_KEY, evidenceSigningKey: EVIDENCE_KEY });
+      const pdp = createSignedOpaPdp({
+        revision: REV_CURRENT,
+        bundleSigningKey: BUNDLE_KEY,
+        evidenceSigningKey: EVIDENCE_KEY,
+      });
       const res = pdp.decide({
-        query: { policy: 'separation_of_duties', input: { assignments: separatedAssignments(), constraint: constraint() } },
+        query: {
+          policy: 'separation_of_duties',
+          input: { assignments: separatedAssignments(), constraint: constraint() },
+        },
         actorPrincipalId: 'approver',
         correlationId: 'corr-ok',
         pinnedRevision: REV_CURRENT,
@@ -551,7 +618,10 @@ describe('AS4 — stale version → re-review (VO-e317929c35e08a96a3ba)', () => 
 
   function decideAt(pinnedRevision: string): DecisionRequest {
     return {
-      query: { policy: 'separation_of_duties', input: { assignments: separatedAssignments(), constraint: constraint() } },
+      query: {
+        policy: 'separation_of_duties',
+        input: { assignments: separatedAssignments(), constraint: constraint() },
+      },
       actorPrincipalId: 'approver',
       correlationId: 'corr-stale',
       pinnedRevision,
@@ -569,7 +639,10 @@ describe('AS4 — stale version → re-review (VO-e317929c35e08a96a3ba)', () => 
     expect(thrown).toBeInstanceOf(PdpUnavailableError);
     expect((thrown as PdpUnavailableError).reason).toBe('revision-mismatch');
     // Explained: the rejection names both the pinned (stale) and served (current) revisions.
-    expect((thrown as PdpUnavailableError).detail).toMatchObject({ pinned: REV_STALE, served: REV_CURRENT });
+    expect((thrown as PdpUnavailableError).detail).toMatchObject({
+      pinned: REV_STALE,
+      served: REV_CURRENT,
+    });
   });
 
   it('POSITIVE CONTROL — pinning the CURRENT (re-reviewed) revision decides successfully', () => {
@@ -585,8 +658,16 @@ describe('AS4 — stale version → re-review (VO-e317929c35e08a96a3ba)', () => 
 // ===========================================================================
 
 describe('AS5 — delegation is bounded, no cycle / privilege expansion (VO-01bd627ae03c596f2eae)', () => {
-  const ADMIN_SCOPE: AuthorityScope = { scopeType: 'organization', scopeId: 'org-1', allowedActions: ['approve'] };
-  const WIDER_SCOPE: AuthorityScope = { scopeType: 'organization', scopeId: 'org-1', allowedActions: ['approve', 'delete-everything'] };
+  const ADMIN_SCOPE: AuthorityScope = {
+    scopeType: 'organization',
+    scopeId: 'org-1',
+    allowedActions: ['approve'],
+  };
+  const WIDER_SCOPE: AuthorityScope = {
+    scopeType: 'organization',
+    scopeId: 'org-1',
+    allowedActions: ['approve', 'delete-everything'],
+  };
 
   it('POSITIVE — a named, in-window, reasoned delegation from a valid source GRANTS', () => {
     const del = activeDelegation();
@@ -608,8 +689,16 @@ describe('AS5 — delegation is bounded, no cycle / privilege expansion (VO-01bd
 
   it('REJECTS — a cyclic delegation chain → CYCLE', () => {
     const a: Delegation = activeDelegation({ delegationId: 'A', parentDelegationId: 'B' });
-    const b: Delegation = activeDelegation({ delegationId: 'B', parentDelegationId: 'A', delegatorPrincipalId: 'x', recipientPrincipalId: 'y' });
-    const byId = new Map<string, Delegation>([['A', a], ['B', b]]);
+    const b: Delegation = activeDelegation({
+      delegationId: 'B',
+      parentDelegationId: 'A',
+      delegatorPrincipalId: 'x',
+      recipientPrincipalId: 'y',
+    });
+    const byId = new Map<string, Delegation>([
+      ['A', a],
+      ['B', b],
+    ]);
     const res = resolveDelegation(a, byId, () => activeAssignment(), NOW);
     expect(res.granted).toBe(false);
     expect(res.reason).toBe('CYCLE');
@@ -657,19 +746,28 @@ describe('AS6 — cross-tenant joint approval (VO-43075588f88b28ecf27e)', () => 
   };
 
   it('POSITIVE — a distinct central_governance_reviewer with no action role PERMITS', () => {
-    const reviewer: CentralReviewer = { principalId: 'central-rev', roles: ['central_governance_reviewer'] };
+    const reviewer: CentralReviewer = {
+      principalId: 'central-rev',
+      roles: ['central_governance_reviewer'],
+    };
     expect(evaluateCentralReviewerDistinctness(action, reviewer).permitted).toBe(true);
   });
 
   it('REJECTS — a reviewer who is also a tenant approver is NOT DISTINCT → CENTRAL_REVIEWER_NOT_DISTINCT', () => {
-    const reviewer: CentralReviewer = { principalId: 'tenant-a-approver', roles: ['central_governance_reviewer'] };
+    const reviewer: CentralReviewer = {
+      principalId: 'tenant-a-approver',
+      roles: ['central_governance_reviewer'],
+    };
     const evalr = evaluateCentralReviewerDistinctness(action, reviewer);
     expect(evalr.permitted).toBe(false);
     expect(evalr.violations.map((v) => v.code)).toContain('CENTRAL_REVIEWER_NOT_DISTINCT');
   });
 
   it('REJECTS — a distinct reviewer who ALSO holds an incompatible action role → CENTRAL_REVIEWER_INCOMPATIBLE_ROLE', () => {
-    const reviewer: CentralReviewer = { principalId: 'central-rev', roles: ['central_governance_reviewer', 'authorized_approver'] };
+    const reviewer: CentralReviewer = {
+      principalId: 'central-rev',
+      roles: ['central_governance_reviewer', 'authorized_approver'],
+    };
     const evalr = evaluateCentralReviewerDistinctness(action, reviewer);
     expect(evalr.permitted).toBe(false);
     expect(evalr.violations.map((v) => v.code)).toContain('CENTRAL_REVIEWER_INCOMPATIBLE_ROLE');
@@ -702,12 +800,23 @@ describe('AS6 — cross-tenant joint approval (VO-43075588f88b28ecf27e)', () => 
 // ===========================================================================
 
 describe('cross-cutting — evaluateActionAuthority fails closed on missing/expired authority', () => {
-  function auth(principalId: string, roles: readonly RoleAssignment['role'][], expiresAt: number): EffectiveAuthority {
+  function auth(
+    principalId: string,
+    roles: readonly RoleAssignment['role'][],
+    expiresAt: number,
+  ): EffectiveAuthority {
     return resolveEffectiveAuthority(
       {
         principalId,
         tenantId: 'tenant-a',
-        assignments: roles.map((role, i) => activeAssignment({ roleAssignmentId: `ra-${principalId}-${i}`, principalId, role, expiresAt })),
+        assignments: roles.map((role, i) =>
+          activeAssignment({
+            roleAssignmentId: `ra-${principalId}-${i}`,
+            principalId,
+            role,
+            expiresAt,
+          }),
+        ),
         delegations: [],
         breakGlassGrants: [],
         allDelegationsById: new Map(),

@@ -8,11 +8,13 @@
   },
   "dependencies": {
     "@trustcircle/application": "*",
-    "@trustcircle/domain": "*",
     "@trustcircle/authz": "*",
-    "@trustcircle/policy": "*",
     "@trustcircle/contracts": "*",
-    "@trustcircle/observability": "*"
+    "@trustcircle/domain": "*",
+    "@trustcircle/observability": "*",
+    "@trustcircle/persistence": "*",
+    "@trustcircle/policy": "*",
+    "pg": "8.22.0"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -1,0 +1,146 @@
+{
+  "manifestVersion": 1,
+  "kind": "scenario-result-manifest",
+  "scenario": "Scenario-7",
+  "scenarioTitle": "Operate Governance Controllers Safely — discover, gate, uncertainty≠success, one effect, bounded continuity, protect newer state",
+  "emittedBy": "tests/e2e/scenarios/controller-operations.ts",
+  "version": {
+    "feature": "001-governance-control-plane",
+    "userStory": "US4",
+    "userStoryTitle": "Operate Governance Controllers Safely",
+    "priority": "P2"
+  },
+  "resultDigest": "sha256:43675767feab2fd78ef93b352a0590738bffb3c9ee754a534df618304be36bb7",
+  "allSatisfied": true,
+  "criteria": [
+    {
+      "ref": "FR-023 / SC-010",
+      "statement": "Every governed controller is discovered and surfaced in the operator registry.",
+      "satisfied": true,
+      "evidence": "registry lists 6 controller(s) for 6 seeded",
+      "observedVia": "ControllerRegistryModel.rows (projected through the real ControllerProjector)",
+      "negativeControl": "the EMPTY registry states \"No governance controllers\" — an un-fed registry can never claim coverage"
+    },
+    {
+      "ref": "FR-024 (drift never masked)",
+      "statement": "Desired ≠ observed state is surfaced as drift on the row, never masked by a health verdict.",
+      "satisfied": true,
+      "evidence": "drifted row present=true; drift flag=true",
+      "observedVia": "ControllerRegistryRowVM.drift (desired vs observed via canonicalJson)",
+      "negativeControl": "a non-drifted healthy row reports drift=false (false) — the flag is per-row truth, not global"
+    },
+    {
+      "ref": "FR-024 (exact permitted actions)",
+      "statement": "Each operation exposes exactly the projector-permitted next actions; a confirmed success permits only read-only evidence.",
+      "satisfied": true,
+      "evidence": "all 4 operation(s) expose the exact projector permitted-action set",
+      "observedVia": "OperationDetailModel.nextPermittedActions == projector row.nextPermittedActions",
+      "negativeControl": "a succeeded operation that offered execute/pause would fail this — terminal states never widen"
+    },
+    {
+      "ref": "FR-025 / GAR-005",
+      "statement": "A state-changing action is enabled only when the state permits it AND simulation + approval are both satisfied.",
+      "satisfied": true,
+      "evidence": "execute on a terminal op enabled=false (permittedByState=false)",
+      "observedVia": "OperationActionsModel.actions + actionIsEnabled(state, simulation, approval, terminal)",
+      "negativeControl": "were the gate to ignore terminal/permitted-by-state, execute would leak enabled on a succeeded op"
+    },
+    {
+      "ref": "FR-028 (uncertainty ≠ success)",
+      "statement": "A timed-out/severed dispatch is not confirmed and surfaces awaiting-reconciliation — an acknowledgement is never a success.",
+      "satisfied": true,
+      "evidence": "state=reconciling, latestOutcomeUncertain=true, effectConfirmed=false, awaitingReconciliation=true",
+      "observedVia": "OperationDetailModel(uncertain_outcome).{latestOutcomeUncertain,effectConfirmed,awaitingReconciliation,state}",
+      "negativeControl": "the verified_success op IS confirmed (effectConfirmed=true, awaitingReconciliation=false) — confirmation is scenario-truth, not a default"
+    },
+    {
+      "ref": "FR-028 (observation-first)",
+      "statement": "The only confirmed operation is one whose effect a reconciliation established from a direct remote observation.",
+      "satisfied": true,
+      "evidence": "confirmed: usedRemoteObservation=true, establishedState=true, observedEffectCount=1",
+      "observedVia": "OperationDetailModel(verified_success).reconciliation.{usedRemoteObservation,establishedState,observedEffectCount}",
+      "negativeControl": "the uncertain op's reconciliation established nothing (establishedState=false) — no observation, no success"
+    },
+    {
+      "ref": "FR-028 (still uncertain)",
+      "statement": "While uncertain, the reconciliation region reports no established state and zero observed effects.",
+      "satisfied": true,
+      "evidence": "uncertain reconciliation: establishedState=false, observedEffectCount=0",
+      "observedVia": "OperationDetailModel(uncertain_outcome).reconciliation.{establishedState,observedEffectCount,usedRemoteObservation}",
+      "negativeControl": "were the reconciliation to claim establishedState=true with no observation, this would fail — state is never inferred"
+    },
+    {
+      "ref": "SC-011 (one effect)",
+      "statement": "Neither the uncertain nor the confirmed operation reports a duplicate effect — one dispatch is exactly one effect, and any duplicate would be surfaced.",
+      "satisfied": true,
+      "evidence": "confirmed observedEffectCount=1; duplicateEffect uncertain=false/confirmed=false",
+      "observedVia": "OperationDetailModel.reconciliation.{duplicateEffect,observedEffectCount}",
+      "negativeControl": "the OperationDetail presenter renders a duplicate-effect warning when duplicateEffect=true — a duplicate can never be hidden"
+    },
+    {
+      "ref": "FR-047 (in-progress only)",
+      "statement": "A continuity lease is eligible only for an operation approved AND started before the failure — never new authority.",
+      "satisfied": true,
+      "evidence": "eligible(started)=true; eligible(unstarted)=false (operation_not_started_before_failure)",
+      "observedVia": "evaluateContinuityEligibility({operation, approved, startedBeforeFailure})",
+      "negativeControl": "an unstarted operation is refused — a lease for it would grant power the operator never held"
+    },
+    {
+      "ref": "NFR-012 (bounded ≤ 15 min)",
+      "statement": "A requested continuity duration is clamped to the 15-minute ceiling; a within-ceiling request is honored exactly.",
+      "satisfied": true,
+      "evidence": "requested 60min → span=15min (ceiling 15); requested 7min → span=7min",
+      "observedVia": "grantContinuityLease(...).lease.expiresAt − grantedAt vs CONTINUITY_LEASE_CEILING_MS",
+      "negativeControl": "a 60-minute request cannot buy 60 minutes — the ceiling is a hard clamp, not a suggestion"
+    },
+    {
+      "ref": "FR-046 (lease surfaced)",
+      "statement": "The continuity operation surfaces an active lease with a positive, bounded remaining window and a reconcile-on-return duty.",
+      "satisfied": true,
+      "evidence": "lease active=true, remainingMs=420000, mustReconcileOnReturn=true",
+      "observedVia": "OperationDetailModel(continuity).continuityLease.{active,remainingMs,mustReconcileOnReturn}",
+      "negativeControl": "a non-continuity operation carries NO lease at all (continuityLease=null) — a lease is never fabricated"
+    },
+    {
+      "ref": "FR-050 (reconcile on return)",
+      "statement": "Any buffered continuity effect forces a reconcile-before-mutation obligation on return.",
+      "satisfied": true,
+      "evidence": "buffered=2 → mustReconcile=true; buffered=0 → mustReconcile=false",
+      "observedVia": "continuityReturnObligation({bufferedEffectCount})",
+      "negativeControl": "with zero buffered effects there is no obligation — the duty is a function of real buffered work, not blanket"
+    },
+    {
+      "ref": "NS-011 (protect newer state)",
+      "statement": "A rollback whose observed revision drifted to a newer legitimate state is refused as a conflict — newer state protected, escalate.",
+      "satisfied": true,
+      "evidence": "conflict: result=conflict, protectedNewerState=true, mustEscalate=true",
+      "observedVia": "decideControllerRollback({observedRevision: NEWER_SOURCE_REVISION})",
+      "negativeControl": "a clean context (revisions equal) rolls back and clears (result=rolled_back, operationCleared=true) — the refusal is driven by the drift"
+    },
+    {
+      "ref": "FR-028 (verified restore only)",
+      "statement": "Only a restoration verified by a direct remote read clears an operation; an unverified restore stays degraded.",
+      "satisfied": true,
+      "evidence": "verified: cleared=true, residual=0; unverified: cleared=false, degraded=true",
+      "observedVia": "decideControllerRollback({restorationVerified})",
+      "negativeControl": "an unverified restoration never clears the operation — restoration is observation-first, like every confirmation"
+    },
+    {
+      "ref": "NS-011 (UI surfaces refusal)",
+      "statement": "The operation detail surfaces the rollback refusal as protecting newer state, never as a plain success.",
+      "satisfied": true,
+      "evidence": "rollback.result=rollback_refused_newer_state; effectConfirmed=false",
+      "observedVia": "OperationDetailModel(rollback_conflict).rollback.{result,reason}",
+      "negativeControl": "a non-rollback operation reports rollback.result='none' (verified_success → none) — the refusal banner is scenario-specific"
+    },
+    {
+      "ref": "NS-011 (fail closed)",
+      "statement": "A rollback with no preserved preimage is unavailable; an unauthorized rollback fails closed and escalates — never a silent success.",
+      "satisfied": true,
+      "evidence": "noPreimage: result=unavailable (no_preserved_preimage_to_restore); unauthorized: result=failed, escalate=true",
+      "observedVia": "decideControllerRollback({preimageEvidenceId:null}) + ({policyAuthorizesRollback:false})",
+      "negativeControl": "the clean context succeeds — the unavailable/failed verdicts are driven by the missing preimage / missing authorization, not a blanket refusal"
+    }
+  ],
+  "manifestDigest": "sha256:5117aa43d54048ef503768db8568e319f01792f73191a9c9cdb8cff911796f24"
+}

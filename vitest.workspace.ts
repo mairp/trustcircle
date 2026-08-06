@@ -101,7 +101,15 @@ const projects = [
     test: {
       ...common,
       name: 'migration',
-      include: ['tests/migration/**/*.test.ts', 'db/migrations/**/*.test.ts'],
+      // `tests/migration/**` (singular) is the historical suite dir; `tests/migrations/**` (plural)
+      // holds the Phase 9 release-gate additive-compatibility + expand/migrate/verify/contract proof
+      // (T278). Both are included — a SUPERSET addition that leaves the historical globs and the
+      // project-name contract (VO-ec575c4ce42b548bfb4d) untouched.
+      include: [
+        'tests/migration/**/*.test.ts',
+        'tests/migrations/**/*.test.ts',
+        'db/migrations/**/*.test.ts',
+      ],
       exclude: ['**/node_modules/**', '.tsbuild/**'],
       testTimeout: 60_000,
       hookTimeout: 120_000,
@@ -125,6 +133,21 @@ const projects = [
       ...common,
       name: 'recovery',
       include: ['tests/recovery/**/*.test.ts'],
+      exclude: ['**/node_modules/**', '.tsbuild/**'],
+      testTimeout: 120_000,
+    },
+  }),
+
+  // Performance tests: scoped-export throughput, access filtering, chain of custody, signed
+  // manifests, gap reports, and time objectives (wired by test:performance:vitest / T188). This
+  // is a SUPERSET addition — the six required project names above are untouched, and the raw-node
+  // `test:performance` script (tests/performance/config.ts) stays intact — so the project-name
+  // compatibility contract (VO-ec575c4ce42b548bfb4d) is preserved.
+  defineProject({
+    test: {
+      ...common,
+      name: 'performance',
+      include: ['tests/performance/**/*.test.ts'],
       exclude: ['**/node_modules/**', '.tsbuild/**'],
       testTimeout: 120_000,
     },
