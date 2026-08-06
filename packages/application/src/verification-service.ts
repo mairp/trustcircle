@@ -24,7 +24,13 @@
 // facts are resolved elsewhere and threaded in. A failing gate leaves the subject UN-closed and is
 // the honest, durable reason closure did not occur.
 
-import { type Uuid, type EpochMillis, type TenantId, makeReason, type Reason } from '@trustcircle/domain';
+import {
+  type Uuid,
+  type EpochMillis,
+  type TenantId,
+  makeReason,
+  type Reason,
+} from '@trustcircle/domain';
 import {
   makeVerificationRecord,
   verificationRecordDigest,
@@ -121,7 +127,10 @@ export function verifyClosure(cmd: VerifyCommand): VerifyOutcome {
   const failingGates = CLOSURE_GATES.filter((gate) => !cmd.facts[GATE_OF_FACT[gate]]);
   const reason: Reason =
     result === 'passed'
-      ? makeReason('verified_closure', 'all nine Verified Closure Gate conditions passed with an independent verifier')
+      ? makeReason(
+          'verified_closure',
+          'all nine Verified Closure Gate conditions passed with an independent verifier',
+        )
       : makeReason(
           'closure_gate_unmet',
           `verified closure withheld: ${failingGates.length} gate(s) unmet [${failingGates.join(', ') || 'independence'}]`,
@@ -137,7 +146,9 @@ export function verifyClosure(cmd: VerifyCommand): VerifyOutcome {
     verifierPrincipalId: cmd.verifierPrincipalId,
     independenceCheckId: cmd.independenceCheckId,
     verifierIndependent: cmd.facts.verifierIndependent,
-    ...(cmd.ruleControlVersions !== undefined ? { ruleControlVersions: cmd.ruleControlVersions } : {}),
+    ...(cmd.ruleControlVersions !== undefined
+      ? { ruleControlVersions: cmd.ruleControlVersions }
+      : {}),
     evidenceManifestId: cmd.evidenceManifestId,
     ...(cmd.expectedState !== undefined ? { expectedState: cmd.expectedState } : {}),
     ...(cmd.observedState !== undefined ? { observedState: cmd.observedState } : {}),

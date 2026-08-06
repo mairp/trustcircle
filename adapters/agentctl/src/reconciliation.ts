@@ -87,10 +87,7 @@ export type OperationLookupPort = (
 // ---------------------------------------------------------------------------
 
 export type ReconciliationResolution =
-  | 'confirmed_dispatched'
-  | 'confirmed_not_dispatched'
-  | 'still_uncertain'
-  | 'not_required';
+  'confirmed_dispatched' | 'confirmed_not_dispatched' | 'still_uncertain' | 'not_required';
 
 export interface AgentctlReconciliation {
   readonly operationId: string;

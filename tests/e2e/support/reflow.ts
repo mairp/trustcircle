@@ -1,21 +1,26 @@
 // TrustCircleAI — 400% reflow helper (task T005 / GAR-010; WCAG 1.4.10 Reflow).
 //
-// Applies a 400% zoom to the document and asserts that content reflows into the
-// 320-CSS-px column WITHOUT introducing two-dimensional (horizontal) scrolling. The
-// geometry constants come from the root playwright.config.ts (single source of truth —
+// Emulates a 400% browser zoom by reducing the layout viewport to the equivalent
+// 320-CSS-px column and asserts that no two-dimensional (horizontal) scrolling appears.
+// The geometry constants come from the root playwright.config.ts (single source of truth —
 // compatibility contract VO-ec575c4ce42b548bfb4d).
 
 import { expect, type Page } from '@playwright/test';
 
 import { REFLOW_400 } from '../../../playwright.config.ts';
 
-/** Apply the 400% zoom the reflow project relies on. */
+/**
+ * Emulate the CSS layout viewport produced by 400% browser zoom.
+ *
+ * CSS `zoom` does not update media queries, so it leaves desktop breakpoints active and is
+ * not equivalent to browser zoom. The reduced viewport exercises the same 320 CSS-pixel
+ * reflow boundary while allowing responsive navigation and grids to react normally.
+ */
 export async function applyReflowZoom(page: Page): Promise<void> {
-  await page.evaluate((factor) => {
-    // `zoom` reflows layout the way browser zoom does; documentElement so it is global.
-    (document.documentElement.style as CSSStyleDeclaration & { zoom: string }).zoom =
-      String(factor);
-  }, REFLOW_400.zoomFactor);
+  await page.setViewportSize({
+    width: REFLOW_400.effectiveCssWidth,
+    height: REFLOW_400.viewport.height / REFLOW_400.zoomFactor,
+  });
 }
 
 /**

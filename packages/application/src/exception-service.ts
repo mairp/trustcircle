@@ -51,12 +51,19 @@ export interface ExceptionOutcome {
 }
 
 function reasonOk(r: Reason | undefined | null): boolean {
-  return !!r && typeof r.code === 'string' && r.code.trim().length > 0 && typeof r.text === 'string' && r.text.trim().length >= 3;
+  return (
+    !!r &&
+    typeof r.code === 'string' &&
+    r.code.trim().length > 0 &&
+    typeof r.text === 'string' &&
+    r.text.trim().length >= 3
+  );
 }
 
 /** Grant an expiring exception. Refuses a missing reason, a missing risk authority, or a non-expiring window. */
 export function grantException(cmd: GrantExceptionCommand): ExceptionOutcome {
-  if (!reasonOk(cmd.reason)) return { accepted: false, exception: null, rejectionCode: 'MISSING_REASON' };
+  if (!reasonOk(cmd.reason))
+    return { accepted: false, exception: null, rejectionCode: 'MISSING_REASON' };
   if (typeof cmd.riskAuthorityId !== 'string' || cmd.riskAuthorityId.length === 0) {
     return { accepted: false, exception: null, rejectionCode: 'MISSING_RISK_AUTHORITY' };
   }
@@ -88,7 +95,8 @@ export function closeException(
   e: ComplianceException,
   closureVerifiedBy: Uuid | null,
 ): ExceptionOutcome {
-  if (e.status !== 'active') return { accepted: false, exception: e, rejectionCode: 'ALREADY_TERMINAL' };
+  if (e.status !== 'active')
+    return { accepted: false, exception: e, rejectionCode: 'ALREADY_TERMINAL' };
   if (typeof closureVerifiedBy !== 'string' || closureVerifiedBy.length === 0) {
     return { accepted: false, exception: e, rejectionCode: 'CLOSURE_NOT_VERIFIED' };
   }
@@ -101,6 +109,7 @@ export function closeException(
 
 /** Mark a lapsed exception expired (system housekeeping). Idempotent on non-active exceptions. */
 export function expireException(e: ComplianceException, now: EpochMillis): ComplianceException {
-  if (e.status === 'active' && now >= e.expiresAt) return Object.freeze({ ...e, status: 'expired' });
+  if (e.status === 'active' && now >= e.expiresAt)
+    return Object.freeze({ ...e, status: 'expired' });
   return e;
 }

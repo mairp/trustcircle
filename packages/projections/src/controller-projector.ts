@@ -128,7 +128,9 @@ const HEALTH_WEIGHT: Readonly<Record<HealthState, number>> = {
 };
 
 function dependencyDegradedOf(deps: readonly Readonly<Record<string, unknown>>[]): boolean {
-  return deps.some((d) => d['healthy'] === false || d['health'] === 'unavailable' || d['health'] === 'degraded');
+  return deps.some(
+    (d) => d['healthy'] === false || d['health'] === 'unavailable' || d['health'] === 'degraded',
+  );
 }
 
 /** Priority a controller row sorts by (higher = more urgent). Health + drift + dependency posture. */
@@ -268,11 +270,13 @@ export class ControllerProjector {
     reqUuid(input.controllerVersionId, 'input.controllerVersionId');
     reqUuid(input.ownerPrincipalId, 'input.ownerPrincipalId');
     reqUuid(input.adapterVersionId, 'input.adapterVersionId');
-    if (!HEALTH_STATES.includes(input.health)) throw new TypeError(`input.health invalid: ${input.health}`);
+    if (!HEALTH_STATES.includes(input.health))
+      throw new TypeError(`input.health invalid: ${input.health}`);
     if (typeof input.sourceRevision !== 'string' || input.sourceRevision.length === 0) {
       throw new TypeError('input.sourceRevision must be a non-empty string');
     }
-    if (input.activeOperationId !== null) reqUuid(input.activeOperationId, 'input.activeOperationId');
+    if (input.activeOperationId !== null)
+      reqUuid(input.activeOperationId, 'input.activeOperationId');
     reqEpoch(input.lastObservationAt, 'input.lastObservationAt');
     reqEpoch(input.updatedAt, 'input.updatedAt');
     this.#controllers.set(instanceId, input);
@@ -288,17 +292,26 @@ export class ControllerProjector {
     if (!OPERATION_KINDS.includes(input.operationKind)) {
       throw new TypeError(`input.operationKind invalid: ${input.operationKind}`);
     }
-    if (!OPERATION_STATES.includes(input.state)) throw new TypeError(`input.state invalid: ${input.state}`);
-    if (input.latestAttemptOutcome !== null && !ATTEMPT_OUTCOMES.includes(input.latestAttemptOutcome)) {
+    if (!OPERATION_STATES.includes(input.state))
+      throw new TypeError(`input.state invalid: ${input.state}`);
+    if (
+      input.latestAttemptOutcome !== null &&
+      !ATTEMPT_OUTCOMES.includes(input.latestAttemptOutcome)
+    ) {
       throw new TypeError(`input.latestAttemptOutcome invalid: ${input.latestAttemptOutcome}`);
     }
     if (!Number.isInteger(input.totalSteps) || input.totalSteps < 0) {
       throw new RangeError('input.totalSteps must be a non-negative integer');
     }
-    if (!Number.isInteger(input.completedSteps) || input.completedSteps < 0 || input.completedSteps > input.totalSteps) {
+    if (
+      !Number.isInteger(input.completedSteps) ||
+      input.completedSteps < 0 ||
+      input.completedSteps > input.totalSteps
+    ) {
       throw new RangeError('input.completedSteps must be in [0, totalSteps]');
     }
-    if (input.continuityLeaseExpiresAt !== null) reqEpoch(input.continuityLeaseExpiresAt, 'input.continuityLeaseExpiresAt');
+    if (input.continuityLeaseExpiresAt !== null)
+      reqEpoch(input.continuityLeaseExpiresAt, 'input.continuityLeaseExpiresAt');
     reqEpoch(input.requestedAt, 'input.requestedAt');
     reqEpoch(input.updatedAt, 'input.updatedAt');
     this.#operations.set(operationId, input);
@@ -394,14 +407,22 @@ export class ControllerProjector {
   controllers(at: EpochMillis): readonly ControllerRegistryRow[] {
     return [...this.#controllers.values()]
       .map((c) => this.toControllerRow(c, at))
-      .sort((a, b) => (b.priority !== a.priority ? b.priority - a.priority : a.instanceId.localeCompare(b.instanceId)));
+      .sort((a, b) =>
+        b.priority !== a.priority
+          ? b.priority - a.priority
+          : a.instanceId.localeCompare(b.instanceId),
+      );
   }
 
   /** The full operation queue at `at`, ordered by descending priority then operationId (stable). */
   operations(at: EpochMillis): readonly OperationRow[] {
     return [...this.#operations.values()]
       .map((o) => this.toOperationRow(o, at))
-      .sort((a, b) => (b.priority !== a.priority ? b.priority - a.priority : a.operationId.localeCompare(b.operationId)));
+      .sort((a, b) =>
+        b.priority !== a.priority
+          ? b.priority - a.priority
+          : a.operationId.localeCompare(b.operationId),
+      );
   }
 
   /** Only controllers needing operator attention (unhealthy / drifted / dependency degraded). */

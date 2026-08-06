@@ -175,3 +175,15 @@ export * from './readiness-service.ts';
 export * from './operations-authority.ts';
 export * from './attention-queue.ts';
 export * from './operational-case-service.ts';
+export * from './review-snapshot-service.ts';
+
+export * from './governed-register-service.ts';
+export * from './governed-view-service.ts';
+
+export * from './evidence-assurance-service.ts';
+export * from './continuous-monitoring-service.ts';
+export * from './connector-certification-service.ts';
+export * from './change-impact-service.ts';
+export * from './ai-governance-service.ts';
+export * from './improvement-feedback-service.ts';
+export * from './entity-resolution-service.ts';

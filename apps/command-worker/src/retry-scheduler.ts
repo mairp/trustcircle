@@ -118,7 +118,8 @@ export interface RetryDecision {
 
 export function scheduleRetry(input: RetryScheduleInput): RetryDecision {
   if (!Number.isFinite(input.now)) throw new RangeError('now must be a finite epoch-ms instant');
-  if (!Number.isInteger(input.attempt) || input.attempt < 1) throw new RangeError('attempt must be a positive integer');
+  if (!Number.isInteger(input.attempt) || input.attempt < 1)
+    throw new RangeError('attempt must be a positive integer');
   if (!Number.isInteger(input.maxAttempts) || input.maxAttempts < 1) {
     throw new RangeError('maxAttempts must be a positive integer');
   }
@@ -158,7 +159,12 @@ export function scheduleRetry(input: RetryScheduleInput): RetryDecision {
   const usedServerHint = hint !== undefined && Number.isFinite(hint) && hint >= 0;
   const backoffMs = usedServerHint
     ? Math.min(hint as number, input.maxBackoffMs)
-    : computeBackoffWithJitter(input.attempt, input.initialBackoffMs, input.maxBackoffMs, input.jitterSeed);
+    : computeBackoffWithJitter(
+        input.attempt,
+        input.initialBackoffMs,
+        input.maxBackoffMs,
+        input.jitterSeed,
+      );
 
   const nextAttemptAt = input.now + backoffMs;
 

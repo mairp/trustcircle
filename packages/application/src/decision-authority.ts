@@ -126,7 +126,8 @@ export function resolveDecisionAuthority(
   if (actorAuthority.breakGlassOnly || actorAuthority.roles.length === 0) {
     return {
       permitted: false,
-      denyReason: actorAuthority.roles.length === 0 ? 'NO_GRANTING_ASSIGNMENT' : 'ADMIN_ONLY_NO_AUTHORITY',
+      denyReason:
+        actorAuthority.roles.length === 0 ? 'NO_GRANTING_ASSIGNMENT' : 'ADMIN_ONLY_NO_AUTHORITY',
       evaluation: null,
       actorAuthority,
       authorityAssignmentId: null,

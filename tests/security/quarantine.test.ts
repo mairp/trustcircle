@@ -158,7 +158,10 @@ describe('FR-019 — overdue review is surfaced, containment history is retained
     expect(overdue.map((q) => q.id)).toContain(uuidFromSlug('quarantine'));
 
     // A review resets the due clock forward (containment is re-examined, not dropped).
-    const reviewed = svc.review({ quarantineId: uuidFromSlug('quarantine'), at: (NOW + ONE_DAY) as EpochMillis });
+    const reviewed = svc.review({
+      quarantineId: uuidFromSlug('quarantine'),
+      at: (NOW + ONE_DAY) as EpochMillis,
+    });
     expect(reviewed.accepted).toBe(true);
     expect(reviewed.quarantine!.status).toBe('under_review');
     expect(svc.dueForReview((NOW + ONE_DAY) as EpochMillis).length).toBe(0);

@@ -48,7 +48,10 @@ const DISPATCH = {
 
 describe('adapter dispatch — an acknowledgement is NOT a confirmation (FR-027/FR-028)', () => {
   it('a plain 2xx ack is dispatched_unconfirmed and MUST reconcile — never confirmed', async () => {
-    const adapter = new StubControllerAdapter({ applyEffectOnDispatch: false, reportEffectObservedOnDispatch: false });
+    const adapter = new StubControllerAdapter({
+      applyEffectOnDispatch: false,
+      reportEffectObservedOnDispatch: false,
+    });
     const res = await clientOver(adapter).dispatch(DISPATCH);
     expect(res.outcome).toBe('dispatched_unconfirmed');
     expect(res.remoteEffectObserved).toBe(false);
@@ -56,7 +59,10 @@ describe('adapter dispatch — an acknowledgement is NOT a confirmation (FR-027/
   });
 
   it('a DIRECT remote-effect observation is the ONLY path to confirmed', async () => {
-    const adapter = new StubControllerAdapter({ reportEffectObservedOnDispatch: true, applyEffectOnDispatch: true });
+    const adapter = new StubControllerAdapter({
+      reportEffectObservedOnDispatch: true,
+      applyEffectOnDispatch: true,
+    });
     const res = await clientOver(adapter).dispatch(DISPATCH);
     expect(res.outcome).toBe('confirmed');
     expect(res.remoteEffectObserved).toBe(true);
@@ -78,7 +84,10 @@ describe('adapter dispatch — an acknowledgement is NOT a confirmation (FR-027/
   });
 
   it('a drifted version echo is a hard failed — a drifted adapter never confirms (NS-005)', async () => {
-    const adapter = new StubControllerAdapter({ driftEcho: true, reportEffectObservedOnDispatch: true });
+    const adapter = new StubControllerAdapter({
+      driftEcho: true,
+      reportEffectObservedOnDispatch: true,
+    });
     const res = await clientOver(adapter).dispatch(DISPATCH);
     expect(res.outcome).toBe('failed');
     expect(res.remoteEffectObserved).toBe(false);
@@ -87,13 +96,18 @@ describe('adapter dispatch — an acknowledgement is NOT a confirmation (FR-027/
 
   it('dispatch refuses an idempotency key shorter than 8 chars (FR-026 one identity)', async () => {
     const adapter = new StubControllerAdapter();
-    await expect(clientOver(adapter).dispatch({ ...DISPATCH, idempotencyKey: 'short' })).rejects.toThrow(/idempotency/i);
+    await expect(
+      clientOver(adapter).dispatch({ ...DISPATCH, idempotencyKey: 'short' }),
+    ).rejects.toThrow(/idempotency/i);
   });
 });
 
 describe('adapter observe — reconciliation reads authoritative state (FR-028/SC-011)', () => {
   it('after an unconfirmed dispatch whose effect DID land, observe sees exactly one effect', async () => {
-    const adapter = new StubControllerAdapter({ applyEffectOnDispatch: true, observedRevision: 'rev-1000' });
+    const adapter = new StubControllerAdapter({
+      applyEffectOnDispatch: true,
+      observedRevision: 'rev-1000',
+    });
     const client = clientOver(adapter);
     await client.dispatch(DISPATCH);
     const obs = await client.observe(DISPATCH.operationId, DISPATCH.idempotencyKey);
@@ -103,7 +117,10 @@ describe('adapter observe — reconciliation reads authoritative state (FR-028/S
   });
 
   it('observe reporting >1 effect for one identity is a duplicate divergence (SC-011)', async () => {
-    const adapter = new StubControllerAdapter({ applyEffectOnDispatch: true, duplicateEffect: true });
+    const adapter = new StubControllerAdapter({
+      applyEffectOnDispatch: true,
+      duplicateEffect: true,
+    });
     const client = clientOver(adapter);
     await client.dispatch(DISPATCH);
     const obs = await client.observe(DISPATCH.operationId, DISPATCH.idempotencyKey);

@@ -22,16 +22,9 @@
 
 import { describe, it, expect } from 'vitest';
 
-import {
-  decideControllerRollback,
-  type ControllerRollbackContext,
-} from '@trustcircle/application';
+import { decideControllerRollback, type ControllerRollbackContext } from '@trustcircle/application';
 
-import {
-  SOURCE_REVISION,
-  NEWER_SOURCE_REVISION,
-  uuidFromSlug,
-} from '../fixtures/controllers.ts';
+import { SOURCE_REVISION, NEWER_SOURCE_REVISION, uuidFromSlug } from '../fixtures/controllers.ts';
 
 const OP_ID = uuidFromSlug('operation-rollback_conflict');
 const PREIMAGE_ID = uuidFromSlug('preimage-evidence');
@@ -91,7 +84,9 @@ describe('rollback fails closed when it cannot safely restore', () => {
   });
 
   it('NO compensation path (an irreversible step) → unavailable', () => {
-    const decision = decideControllerRollback(ctx({ compensationAvailable: false, compensationSucceeded: false }));
+    const decision = decideControllerRollback(
+      ctx({ compensationAvailable: false, compensationSucceeded: false }),
+    );
     expect(decision.result).toBe('unavailable');
     expect(decision.mustEscalate).toBe(true);
   });
@@ -99,7 +94,12 @@ describe('rollback fails closed when it cannot safely restore', () => {
   it('a PARTIAL compensation (some steps compensated, others not) stays degraded, escalates', () => {
     // compensationSucceeded true but not every step compensated → partial with residual differences.
     const decision = decideControllerRollback(
-      ctx({ compensatedSteps: 1, totalSteps: 3, compensationSucceeded: true, restorationVerified: false }),
+      ctx({
+        compensatedSteps: 1,
+        totalSteps: 3,
+        compensationSucceeded: true,
+        restorationVerified: false,
+      }),
     );
     expect(decision.result).toBe('partial');
     expect(decision.residualDifferences).toBeGreaterThan(0);
@@ -108,7 +108,9 @@ describe('rollback fails closed when it cannot safely restore', () => {
   });
 
   it('an UNAUTHORIZED rollback fails closed as failed + escalate (a rollback is a governed act)', () => {
-    const decision = decideControllerRollback(ctx({ policyAuthorizesRollback: false, totalSteps: 3, compensatedSteps: 1 }));
+    const decision = decideControllerRollback(
+      ctx({ policyAuthorizesRollback: false, totalSteps: 3, compensatedSteps: 1 }),
+    );
     expect(decision.result).toBe('failed');
     expect(decision.operationCleared).toBe(false);
     expect(decision.mustEscalate).toBe(true);

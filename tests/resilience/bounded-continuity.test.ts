@@ -123,7 +123,10 @@ describe('continuity lease — bounded to 15 minutes, nonrenewable (NFR-012)', (
 
 describe('continuity lease activity + step gate (FR-048 / SC-021)', () => {
   it('an unexpired lease is active; a lease is NOT active past its expiry (must pause)', () => {
-    const lease = seedContinuityLease('active', { grantedAt: (NOW - 3 * ONE_MINUTE) as EpochMillis, durationMs: 10 * ONE_MINUTE });
+    const lease = seedContinuityLease('active', {
+      grantedAt: (NOW - 3 * ONE_MINUTE) as EpochMillis,
+      durationMs: 10 * ONE_MINUTE,
+    });
     expect(continuityLeaseActive(lease, NOW)).toBe(true);
     // Well past expiry → inactive → controller must pause.
     expect(continuityLeaseActive(lease, (NOW + 30 * ONE_MINUTE) as EpochMillis)).toBe(false);
@@ -172,7 +175,10 @@ describe('continuity lease activity + step gate (FR-048 / SC-021)', () => {
   });
 
   it('a step under an EXPIRED lease is refused (past the bounded window)', () => {
-    const lease = seedContinuityLease('gate-expired', { grantedAt: (NOW - 30 * ONE_MINUTE) as EpochMillis, durationMs: 10 * ONE_MINUTE });
+    const lease = seedContinuityLease('gate-expired', {
+      grantedAt: (NOW - 30 * ONE_MINUTE) as EpochMillis,
+      durationMs: 10 * ONE_MINUTE,
+    });
     const verdict = mayExecuteContinuityStep({
       lease,
       operationKind: 'execute',

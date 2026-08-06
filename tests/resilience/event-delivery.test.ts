@@ -36,11 +36,18 @@ import {
 
 import { isMajorSupported } from '@trustcircle/adapter-sdk';
 
-import { toDeadLetter, authorizeReplay } from '../../apps/command-worker/src/dead-letter-handler.ts';
+import {
+  toDeadLetter,
+  authorizeReplay,
+} from '../../apps/command-worker/src/dead-letter-handler.ts';
 
 import { NAMED_MANIFESTS, NOW } from '../fixtures/integrations.ts';
 
-function evt(aggregateRef: string, sequence: number, extra: Partial<SourceObservation> = {}): SourceObservation {
+function evt(
+  aggregateRef: string,
+  sequence: number,
+  extra: Partial<SourceObservation> = {},
+): SourceObservation {
   return {
     dedupKey: `k-${aggregateRef}-${sequence}`,
     aggregateRef,
@@ -110,7 +117,14 @@ describe('event delivery · missing sequences + replay are detected, never auto-
   const prior = { sourceRef: 'src-A', mappingVersion: 'map-v1', highWater: { 'agg-1': 100 } };
 
   function bev(sequence: number, extra: Partial<BatchEvent> = {}): BatchEvent {
-    return { dedupKey: `k-${sequence}`, aggregateRef: 'agg-1', sequence, sourceRef: 'src-A', mappingVersion: 'map-v1', ...extra };
+    return {
+      dedupKey: `k-${sequence}`,
+      aggregateRef: 'agg-1',
+      sequence,
+      sourceRef: 'src-A',
+      mappingVersion: 'map-v1',
+      ...extra,
+    };
   }
 
   it('a missing sequence between high-water and the batch is a backlog gap', () => {
@@ -165,7 +179,9 @@ describe('event delivery · terminal events become dead letters (nothing dropped
       dedupKey: 'k-terminal',
       failureClass: 'unsupported_contract',
       originalPayload: { seq: 7, status: 'unknown-future-status' },
-      attempts: [{ attempt: 1, failureClass: 'unsupported_contract', error: 'schema major drift', at: NOW }],
+      attempts: [
+        { attempt: 1, failureClass: 'unsupported_contract', error: 'schema major drift', at: NOW },
+      ],
       terminalError: 'contract major unsupported',
       businessImpact: 'workflow event not projected',
       createdAt: NOW,

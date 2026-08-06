@@ -159,7 +159,10 @@ export function observeHealth(input: HealthObserverInput): HealthObservation {
   const evidenceRefs = Object.freeze([...(input.evidenceRefs ?? [])]);
 
   // ── Absence path: telemetry missing OR past the freshness horizon. ──────────
-  if (telemetry === undefined || isObservationStale(telemetry.reportedAt, input.now, input.freshnessHorizonMs)) {
+  if (
+    telemetry === undefined ||
+    isObservationStale(telemetry.reportedAt, input.now, input.freshnessHorizonMs)
+  ) {
     const reportedAt = telemetry?.reportedAt ?? null;
     const base = {
       connectorId: input.connectorId,

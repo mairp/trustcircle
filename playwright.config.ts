@@ -337,14 +337,24 @@ export default defineConfig({
     {
       name: 'setup',
       testMatch: /.*\.setup\.ts/,
+      use: {
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
     },
 
     // (2) axe-core scans — WCAG 2.2 AA automated accessibility scanning.
     {
       name: 'accessibility',
-      testMatch: /.*\.a11y\.spec\.ts/,
+      testDir: './tests',
+      testMatch: [
+        /e2e\/.*\.a11y\.spec\.ts/,
+        /accessibility\/governed-platform-continuation\.spec\.ts/,
+      ],
       dependencies: ['setup'],
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
+      },
     },
 
     // (3) keyboard journeys — keyboard-only tab/focus/activation flows.
@@ -356,6 +366,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         // No pointer: journeys must be completable with the keyboard alone.
         hasTouch: false,
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
       },
     },
 
@@ -369,6 +380,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: REFLOW_400.viewport,
         deviceScaleFactor: 1,
+        ...(INSTALLED_CHROMIUM ? { launchOptions: { executablePath: INSTALLED_CHROMIUM } } : {}),
       },
     },
 
@@ -435,7 +447,7 @@ export default defineConfig({
       testMatch: /.*\.spec\.ts/,
       // The browserless full-suite release gate (T276) runs under its own no-browser project above;
       // exclude it here so this browser-driven WCAG project never tries to launch Chromium for it.
-      testIgnore: /full-suite\.spec\.ts/,
+      testIgnore: [/full-suite\.spec\.ts/, /governed-platform-continuation\.spec\.ts/],
       use: {
         ...devices['Desktop Chrome'],
         // Pin the 400%-reflow layout viewport so the reflow assertions collapse to the
@@ -504,6 +516,7 @@ export default defineConfig({
       testMatch: [
         /e2e\/operator-console.*\.spec\.ts/,
         /e2e\/operations-command-center\.spec\.ts/,
+        /e2e\/governed-platform-continuation\.spec\.ts/,
         /accessibility\/operator-console\.spec\.ts/,
       ],
       use: {

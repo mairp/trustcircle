@@ -336,7 +336,10 @@ test.describe('acceptance runners — every criterion discharged, non-vacuously'
       const c = result.criteria.find((x) => x.ref === ref);
       expect(c, `criterion ${ref} present`).toBeDefined();
       expect(c!.satisfied, `criterion ${ref} satisfied`).toBe(true);
-      expect(c!.negativeControl.length, `criterion ${ref} has a non-vacuity control`).toBeGreaterThan(0);
+      expect(
+        c!.negativeControl.length,
+        `criterion ${ref} has a non-vacuity control`,
+      ).toBeGreaterThan(0);
     }
     expect(result.digest).toMatch(/^sha256:[0-9a-f]{64}$/);
   });

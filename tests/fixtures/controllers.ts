@@ -54,9 +54,7 @@ import {
   type AttemptOutcome,
 } from '@trustcircle/domain';
 
-import type {
-  AdapterManifest,
-} from '@trustcircle/application';
+import type { AdapterManifest } from '@trustcircle/application';
 
 import {
   ControllerProjector,
@@ -137,15 +135,87 @@ export const DRIFTED_TUPLE: BoundVersions = Object.freeze({
 // ── Controller version + capabilities ─────────────────────────────────────────────────────────────
 
 export const CAPABILITIES: readonly ControllerCapability[] = Object.freeze([
-  { name: 'discover', operationKind: 'discover', riskClass: 'low', destructive: false, requiresApproval: false, requiresSimulation: false, reversible: true },
-  { name: 'inspect', operationKind: 'inspect', riskClass: 'low', destructive: false, requiresApproval: false, requiresSimulation: false, reversible: true },
-  { name: 'simulate', operationKind: 'simulate', riskClass: 'low', destructive: false, requiresApproval: false, requiresSimulation: false, reversible: true },
-  { name: 'execute', operationKind: 'execute', riskClass: 'high', destructive: true, requiresApproval: true, requiresSimulation: true, reversible: true },
-  { name: 'pause', operationKind: 'pause', riskClass: 'medium', destructive: false, requiresApproval: false, requiresSimulation: false, reversible: true },
-  { name: 'resume', operationKind: 'resume', riskClass: 'medium', destructive: false, requiresApproval: false, requiresSimulation: false, reversible: true },
-  { name: 'reconcile', operationKind: 'reconcile', riskClass: 'medium', destructive: false, requiresApproval: false, requiresSimulation: false, reversible: true },
-  { name: 'rollback', operationKind: 'rollback', riskClass: 'high', destructive: true, requiresApproval: true, requiresSimulation: true, reversible: true },
-  { name: 'collect_evidence', operationKind: 'collect_evidence', riskClass: 'low', destructive: false, requiresApproval: false, requiresSimulation: false, reversible: true },
+  {
+    name: 'discover',
+    operationKind: 'discover',
+    riskClass: 'low',
+    destructive: false,
+    requiresApproval: false,
+    requiresSimulation: false,
+    reversible: true,
+  },
+  {
+    name: 'inspect',
+    operationKind: 'inspect',
+    riskClass: 'low',
+    destructive: false,
+    requiresApproval: false,
+    requiresSimulation: false,
+    reversible: true,
+  },
+  {
+    name: 'simulate',
+    operationKind: 'simulate',
+    riskClass: 'low',
+    destructive: false,
+    requiresApproval: false,
+    requiresSimulation: false,
+    reversible: true,
+  },
+  {
+    name: 'execute',
+    operationKind: 'execute',
+    riskClass: 'high',
+    destructive: true,
+    requiresApproval: true,
+    requiresSimulation: true,
+    reversible: true,
+  },
+  {
+    name: 'pause',
+    operationKind: 'pause',
+    riskClass: 'medium',
+    destructive: false,
+    requiresApproval: false,
+    requiresSimulation: false,
+    reversible: true,
+  },
+  {
+    name: 'resume',
+    operationKind: 'resume',
+    riskClass: 'medium',
+    destructive: false,
+    requiresApproval: false,
+    requiresSimulation: false,
+    reversible: true,
+  },
+  {
+    name: 'reconcile',
+    operationKind: 'reconcile',
+    riskClass: 'medium',
+    destructive: false,
+    requiresApproval: false,
+    requiresSimulation: false,
+    reversible: true,
+  },
+  {
+    name: 'rollback',
+    operationKind: 'rollback',
+    riskClass: 'high',
+    destructive: true,
+    requiresApproval: true,
+    requiresSimulation: true,
+    reversible: true,
+  },
+  {
+    name: 'collect_evidence',
+    operationKind: 'collect_evidence',
+    riskClass: 'low',
+    destructive: false,
+    requiresApproval: false,
+    requiresSimulation: false,
+    reversible: true,
+  },
 ]);
 
 export function seedControllerVersion(): ControllerVersion {
@@ -186,7 +256,17 @@ export function seedAdapterManifest(overrides: Partial<AdapterManifest> = {}): A
     name: 'Firewall Adapter',
     protocolMin: 1,
     protocolMax: 1,
-    advertisedCapabilities: ['discover', 'inspect', 'simulate', 'execute', 'pause', 'resume', 'reconcile', 'rollback', 'collect_evidence'],
+    advertisedCapabilities: [
+      'discover',
+      'inspect',
+      'simulate',
+      'execute',
+      'pause',
+      'resume',
+      'reconcile',
+      'rollback',
+      'collect_evidence',
+    ],
     contentDigest: MANIFEST_CONTENT_DIGEST,
     signature: `sig:${MANIFEST_CONTENT_DIGEST}`,
     conformanceEvidenceId: uuidFromSlug('conformance-evidence-1'),
@@ -231,7 +311,9 @@ function instance(
     health: overrides.health ?? 'healthy',
     sourceRevision: overrides.sourceRevision ?? SOURCE_REVISION,
     dependencies: overrides.dependencies ?? [{ name: 'policy-store', healthy: true }],
-    ...(overrides.activeOperationId !== undefined ? { activeOperationId: overrides.activeOperationId } : {}),
+    ...(overrides.activeOperationId !== undefined
+      ? { activeOperationId: overrides.activeOperationId }
+      : {}),
     lastObservationAt: (NOW - 2 * ONE_MINUTE) as EpochMillis,
     state: 'observed',
     version: 1,
@@ -241,7 +323,10 @@ function instance(
 
 // ── Simulation (version-pinned, current) ──────────────────────────────────────────────────────────
 
-export function seedSimulation(slug: string, opts: { producedAt?: EpochMillis; expiresAt?: EpochMillis; bound?: BoundVersions } = {}): Simulation {
+export function seedSimulation(
+  slug: string,
+  opts: { producedAt?: EpochMillis; expiresAt?: EpochMillis; bound?: BoundVersions } = {},
+): Simulation {
   const producedAt = opts.producedAt ?? ((NOW - 5 * ONE_MINUTE) as EpochMillis);
   return makeSimulation({
     id: uuidFromSlug(`simulation-${slug}`),
@@ -289,8 +374,12 @@ function operation(
     desiredVersions: AUTHORIZED_TUPLE,
     observedVersions: overrides.observedVersions ?? AUTHORIZED_TUPLE,
     ...(overrides.simulationId !== undefined ? { simulationId: overrides.simulationId } : {}),
-    ...(overrides.approvalDecisionId !== undefined ? { approvalDecisionId: overrides.approvalDecisionId } : {}),
-    ...(overrides.continuityLeaseId !== undefined ? { continuityLeaseId: overrides.continuityLeaseId } : {}),
+    ...(overrides.approvalDecisionId !== undefined
+      ? { approvalDecisionId: overrides.approvalDecisionId }
+      : {}),
+    ...(overrides.continuityLeaseId !== undefined
+      ? { continuityLeaseId: overrides.continuityLeaseId }
+      : {}),
     steps: [{ id: 'step-1', apply: 'ruleset' }],
     bounds: { max_rules: 10 },
     evidencePlan: { capture: ['plan', 'attempt', 'observation'] },
@@ -303,7 +392,11 @@ function operation(
 
 // ── Attempts (outcomes per scenario) ──────────────────────────────────────────────────────────────
 
-function attempt(slug: string, outcome: AttemptOutcome, opts: { remoteEffectObserved?: boolean; acknowledged?: boolean; attemptNumber?: number } = {}): OperationAttempt {
+function attempt(
+  slug: string,
+  outcome: AttemptOutcome,
+  opts: { remoteEffectObserved?: boolean; acknowledged?: boolean; attemptNumber?: number } = {},
+): OperationAttempt {
   return makeOperationAttempt({
     id: uuidFromSlug(`attempt-${slug}-${opts.attemptNumber ?? 1}`),
     tenantId: TENANT,
@@ -312,8 +405,9 @@ function attempt(slug: string, outcome: AttemptOutcome, opts: { remoteEffectObse
     attemptNumber: opts.attemptNumber ?? 1,
     dispatchIdempotencyKey: `idem-${slug}-0001`,
     boundAdapterVersionId: ADAPTER_VERSION_ID,
-    acknowledged: opts.acknowledged ?? (outcome === 'confirmed' || outcome === 'dispatched_unconfirmed'),
-    remoteEffectObserved: opts.remoteEffectObserved ?? (outcome === 'confirmed'),
+    acknowledged:
+      opts.acknowledged ?? (outcome === 'confirmed' || outcome === 'dispatched_unconfirmed'),
+    remoteEffectObserved: opts.remoteEffectObserved ?? outcome === 'confirmed',
     response: { echoed: true },
     checkpoint: { preimage: 'captured' },
     bufferedForContinuity: false,
@@ -325,7 +419,14 @@ function attempt(slug: string, outcome: AttemptOutcome, opts: { remoteEffectObse
 
 // ── Continuity lease (bounded, ≤15min, in-progress-only) ──────────────────────────────────────────
 
-export function seedContinuityLease(slug: string, opts: { grantedAt?: EpochMillis; durationMs?: number; state?: import('@trustcircle/domain').ControllerContinuityLeaseState } = {}): ControllerContinuityLease {
+export function seedContinuityLease(
+  slug: string,
+  opts: {
+    grantedAt?: EpochMillis;
+    durationMs?: number;
+    state?: import('@trustcircle/domain').ControllerContinuityLeaseState;
+  } = {},
+): ControllerContinuityLease {
   const grantedAt = opts.grantedAt ?? ((NOW - 3 * ONE_MINUTE) as EpochMillis);
   const durationMs = opts.durationMs ?? 10 * ONE_MINUTE;
   return makeControllerContinuityLease({
@@ -399,21 +500,30 @@ export function seedControllers(): readonly ControllerScenarioSpec[] {
   const uncertainOutcome: ControllerScenarioSpec = {
     scenario: 'uncertain_outcome',
     title: 'Operation whose dispatch timed out — uncertain, awaiting reconciliation, NOT succeeded',
-    observedVia: 'operation_attempt.outcome=timed_out via attemptIsUncertain()=true; no confirming observation',
-    instance: instance('uncertain_outcome', { activeOperationId: uuidFromSlug('operation-uncertain_outcome') }),
+    observedVia:
+      'operation_attempt.outcome=timed_out via attemptIsUncertain()=true; no confirming observation',
+    instance: instance('uncertain_outcome', {
+      activeOperationId: uuidFromSlug('operation-uncertain_outcome'),
+    }),
     operation: operation('uncertain_outcome', {
       state: 'reconciling',
       simulationId: uuidFromSlug('simulation-uncertain_outcome'),
       approvalDecisionId: APPROVAL_DECISION_ID,
     }),
-    attempts: [attempt('uncertain_outcome', 'timed_out', { acknowledged: false, remoteEffectObserved: false })],
+    attempts: [
+      attempt('uncertain_outcome', 'timed_out', {
+        acknowledged: false,
+        remoteEffectObserved: false,
+      }),
+    ],
     simulation: seedSimulation('uncertain_outcome'),
     lease: null,
   };
 
   const continuity: ControllerScenarioSpec = {
     scenario: 'continuity',
-    title: 'Approved+started operation running under a bounded (≤15min) continuity lease after health loss',
+    title:
+      'Approved+started operation running under a bounded (≤15min) continuity lease after health loss',
     observedVia: 'continuity_lease.expiresAt (≤ grantedAt+15min) + operation.state=continuity',
     instance: instance('continuity', {
       health: 'unavailable',
@@ -432,8 +542,10 @@ export function seedControllers(): readonly ControllerScenarioSpec[] {
 
   const rollbackConflict: ControllerScenarioSpec = {
     scenario: 'rollback_conflict',
-    title: 'Rollback refused because newer legitimate state landed on the source (protect newer state)',
-    observedVia: 'operation.observedVersions.sourceRevision != producedRevision → decideControllerRollback()=conflict',
+    title:
+      'Rollback refused because newer legitimate state landed on the source (protect newer state)',
+    observedVia:
+      'operation.observedVersions.sourceRevision != producedRevision → decideControllerRollback()=conflict',
     instance: instance('rollback_conflict', {
       sourceRevision: NEWER_SOURCE_REVISION,
       observedState: { ruleset: 'baseline-v2', deny_all: false },
@@ -453,7 +565,8 @@ export function seedControllers(): readonly ControllerScenarioSpec[] {
   const verifiedSuccess: ControllerScenarioSpec = {
     scenario: 'verified_success',
     title: 'Operation confirmed by DIRECT remote observation + reconciliation — the only success',
-    observedVia: 'operation_attempt.outcome=confirmed with remoteEffectObserved=true; reconciliation established',
+    observedVia:
+      'operation_attempt.outcome=confirmed with remoteEffectObserved=true; reconciliation established',
     instance: instance('verified_success'),
     operation: operation('verified_success', {
       state: 'succeeded',
@@ -471,7 +584,9 @@ export function seedControllers(): readonly ControllerScenarioSpec[] {
 // ── Projector inputs (byte-identical read-model fold inputs) ──────────────────────────────────────
 
 /** Build the ControllerProjector registry input for a seeded scenario's instance. */
-export function controllerProjectionInputFor(spec: ControllerScenarioSpec): ControllerRegistryInput {
+export function controllerProjectionInputFor(
+  spec: ControllerScenarioSpec,
+): ControllerRegistryInput {
   const i = spec.instance;
   return {
     instanceId: i.id,
@@ -494,7 +609,9 @@ export function controllerProjectionInputFor(spec: ControllerScenarioSpec): Cont
 }
 
 /** Build the ControllerProjector operation input for a seeded scenario's operation (null if none). */
-export function operationProjectionInputFor(spec: ControllerScenarioSpec): OperationProjectionInput | null {
+export function operationProjectionInputFor(
+  spec: ControllerScenarioSpec,
+): OperationProjectionInput | null {
   const op = spec.operation;
   if (op === null) return null;
   const latest = spec.attempts.length > 0 ? spec.attempts[spec.attempts.length - 1]! : null;
@@ -507,7 +624,8 @@ export function operationProjectionInputFor(spec: ControllerScenarioSpec): Opera
     state: op.state,
     ownerPrincipalId: op.ownerPrincipalId,
     requestedByPrincipalId: op.requestedByPrincipalId,
-    authorizedRevisionDrift: op.desiredVersions.sourceRevision !== op.observedVersions.sourceRevision,
+    authorizedRevisionDrift:
+      op.desiredVersions.sourceRevision !== op.observedVersions.sourceRevision,
     simulationId: op.simulationId ?? null,
     approvalDecisionId: op.approvalDecisionId ?? null,
     continuityLeaseId: op.continuityLeaseId ?? null,
@@ -517,7 +635,9 @@ export function operationProjectionInputFor(spec: ControllerScenarioSpec): Opera
     attemptCount: spec.attempts.length,
     latestAttemptOutcome: latest?.outcome ?? null,
     reconciliationEstablished,
-    reconciliationRunId: reconciliationEstablished ? uuidFromSlug(`reconciliation-${spec.scenario}`) : null,
+    reconciliationRunId: reconciliationEstablished
+      ? uuidFromSlug(`reconciliation-${spec.scenario}`)
+      : null,
     rollbackResult: spec.scenario === 'rollback_conflict' ? 'conflict' : null,
     evidenceBundleId: uuidFromSlug(`evidence-${spec.scenario}`),
     failureDetail: null,
@@ -553,7 +673,10 @@ export function projectControllers(at: EpochMillis = NOW): {
 }
 
 /** Map one projected controller row into the registry-presenter row VM (verbatim — no re-derivation). */
-export function controllerRowVMOf(row: ControllerRegistryRow, operationRows: readonly OperationRow[]): ControllerRegistryRowVM {
+export function controllerRowVMOf(
+  row: ControllerRegistryRow,
+  operationRows: readonly OperationRow[],
+): ControllerRegistryRowVM {
   const active = operationRows.find((o) => o.controllerInstanceId === row.instanceId) ?? null;
   const nextPermittedActions = active !== null ? active.nextPermittedActions.map(String) : [];
   const searchIndex = [
@@ -640,7 +763,10 @@ function attemptVMsOf(spec: ControllerScenarioSpec): readonly OperationAttemptVM
 }
 
 /** Build a full OperationDetail model for a scenario, using the projected operation row's verdicts. */
-export function seedOperationDetailModel(scenario: ControllerScenarioName, at: EpochMillis = NOW): OperationDetailModel {
+export function seedOperationDetailModel(
+  scenario: ControllerScenarioName,
+  at: EpochMillis = NOW,
+): OperationDetailModel {
   const spec = seedControllers().find((s) => s.scenario === scenario)!;
   if (spec.operation === null) {
     throw new TypeError(`scenario ${scenario} has no operation to detail`);
@@ -648,7 +774,8 @@ export function seedOperationDetailModel(scenario: ControllerScenarioName, at: E
   const { operationRows, snapshotDigest } = projectControllers(at);
   const row = operationRows.find((o) => o.operationId === spec.operation!.id)!;
   const op = spec.operation;
-  const effectConfirmed = row.state === 'succeeded' && !row.latestOutcomeUncertain && !row.awaitingReconciliation;
+  const effectConfirmed =
+    row.state === 'succeeded' && !row.latestOutcomeUncertain && !row.awaitingReconciliation;
   const duplicateEffect = false;
   const tupleStr = (t: BoundVersions): string =>
     `ctrl=${t.controllerVersionId} adapter=${t.adapterVersionId} policy=${t.policyVersionId} src=${t.sourceRevision}`;
@@ -686,12 +813,21 @@ export function seedOperationDetailModel(scenario: ControllerScenarioName, at: E
       row.reconciliationRunId !== null || row.latestOutcomeUncertain
         ? {
             runId: row.reconciliationRunId !== null ? String(row.reconciliationRunId) : '',
-            result: row.state === 'succeeded' ? 'reconciled_effect_present' : row.awaitingReconciliation ? 'still_uncertain' : 'none',
+            result:
+              row.state === 'succeeded'
+                ? 'reconciled_effect_present'
+                : row.awaitingReconciliation
+                  ? 'still_uncertain'
+                  : 'none',
             usedRemoteObservation: row.state === 'succeeded',
             observedEffectCount: row.state === 'succeeded' ? 1 : 0,
             duplicateEffect,
             establishedState: row.state === 'succeeded',
-            reason: row.awaitingReconciliation ? 'remote_unobservable' : row.state === 'succeeded' ? 'effect_present' : 'no_reconciliation',
+            reason: row.awaitingReconciliation
+              ? 'remote_unobservable'
+              : row.state === 'succeeded'
+                ? 'effect_present'
+                : 'no_reconciliation',
           }
         : null,
     continuityLease:
@@ -706,7 +842,11 @@ export function seedOperationDetailModel(scenario: ControllerScenarioName, at: E
         : null,
     rollback:
       scenario === 'rollback_conflict'
-        ? { result: 'rollback_refused_newer_state', reason: 'the remote holds a different, newer legitimate state; rollback refused to protect it (NS-011)' }
+        ? {
+            result: 'rollback_refused_newer_state',
+            reason:
+              'the remote holds a different, newer legitimate state; rollback refused to protect it (NS-011)',
+          }
         : { result: 'none', reason: '' },
     evidenceBundleId: row.evidenceBundleId !== null ? String(row.evidenceBundleId) : '',
     failed: row.failed,
@@ -719,7 +859,10 @@ export function seedOperationDetailModel(scenario: ControllerScenarioName, at: E
 }
 
 /** Build the action-controls model for a scenario, gating each kind exactly by the projector row. */
-export function seedOperationActionsModel(scenario: ControllerScenarioName, at: EpochMillis = NOW): OperationActionsModel {
+export function seedOperationActionsModel(
+  scenario: ControllerScenarioName,
+  at: EpochMillis = NOW,
+): OperationActionsModel {
   const spec = seedControllers().find((s) => s.scenario === scenario)!;
   if (spec.operation === null) {
     throw new TypeError(`scenario ${scenario} has no operation`);
@@ -730,20 +873,43 @@ export function seedOperationActionsModel(scenario: ControllerScenarioName, at: 
   const simulationSatisfied = spec.simulation !== null;
   const approvalSatisfied = row.approvalDecisionId !== null;
 
-  const stateChangingKinds = new Set(['execute', 'pause', 'resume', 'reconcile', 'rollback', 'emergency_stop']);
+  const stateChangingKinds = new Set([
+    'execute',
+    'pause',
+    'resume',
+    'reconcile',
+    'rollback',
+    'emergency_stop',
+  ]);
   const destructiveKinds = new Set(['execute', 'rollback', 'emergency_stop']);
-  const allKinds = ['inspect', 'simulate', 'execute', 'pause', 'resume', 'reconcile', 'rollback', 'collect_evidence', 'emergency_stop'];
+  const allKinds = [
+    'inspect',
+    'simulate',
+    'execute',
+    'pause',
+    'resume',
+    'reconcile',
+    'rollback',
+    'collect_evidence',
+    'emergency_stop',
+  ];
 
   const actions: readonly OperationActionVM[] = allKinds.map((kind) => {
     const stateChanging = stateChangingKinds.has(kind);
     const permittedByState = permitted.has(kind);
-    const enabled = !row.terminal && permittedByState && (!stateChanging || (simulationSatisfied && approvalSatisfied));
+    const enabled =
+      !row.terminal &&
+      permittedByState &&
+      (!stateChanging || (simulationSatisfied && approvalSatisfied));
     let disabledReason = '';
     if (!enabled) {
       if (row.terminal) disabledReason = 'the operation is terminal; no action may be requested';
-      else if (!permittedByState) disabledReason = `not permitted from the current state (${kind} is not in the allowed next actions)`;
-      else if (stateChanging && !simulationSatisfied) disabledReason = 'a state-changing action requires a still-binding simulation (FR-025)';
-      else if (stateChanging && !approvalSatisfied) disabledReason = 'a state-changing action requires an approval decision (GAR-005)';
+      else if (!permittedByState)
+        disabledReason = `not permitted from the current state (${kind} is not in the allowed next actions)`;
+      else if (stateChanging && !simulationSatisfied)
+        disabledReason = 'a state-changing action requires a still-binding simulation (FR-025)';
+      else if (stateChanging && !approvalSatisfied)
+        disabledReason = 'a state-changing action requires an approval decision (GAR-005)';
     }
     return {
       kind,

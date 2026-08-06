@@ -38,7 +38,14 @@ import { type PolicyQuery, type DecisionRequest, type EpochMillis } from './pdp.
 
 // Re-export the canonical authz vocabularies so a PDP caller constructs decision inputs against a
 // single import surface (the policy package) rather than reaching into @trustcircle/authz directly.
-export type { DutyAssignment, SoDConstraint, CrossTenantAction, CentralReviewer, Duty, Relationship };
+export type {
+  DutyAssignment,
+  SoDConstraint,
+  CrossTenantAction,
+  CentralReviewer,
+  Duty,
+  Relationship,
+};
 
 /** Fail-closed error: a decision fact could not be normalized into a valid PDP query. */
 export class DecisionInputError extends Error {
@@ -97,7 +104,10 @@ function toDutyAssignments(actors: readonly DecisionActor[]): readonly DutyAssig
   return Object.freeze(assignments);
 }
 
-function assertActiveConstraint(constraint: SoDConstraint, context: DecisionInputKind): SoDConstraint {
+function assertActiveConstraint(
+  constraint: SoDConstraint,
+  context: DecisionInputKind,
+): SoDConstraint {
   if (constraint.status !== 'active') {
     throw new DecisionInputError('separation-of-duties constraint is not active', {
       context,
@@ -174,7 +184,10 @@ export interface JointReviewQueryInput {
  * clause). Fail-closed on an empty reviewer principal.
  */
 export function buildJointReviewQuery(input: JointReviewQueryInput): PolicyQuery {
-  if (typeof input.reviewer.principalId !== 'string' || input.reviewer.principalId.trim().length === 0) {
+  if (
+    typeof input.reviewer.principalId !== 'string' ||
+    input.reviewer.principalId.trim().length === 0
+  ) {
     throw new DecisionInputError('joint review requires a central reviewer principal', {});
   }
   return {
@@ -294,7 +307,10 @@ export interface DecisionRequestEnvelope {
  * missing actor or an empty pinned revision (a decision must be attributable and revision-bound).
  */
 export function buildDecisionRequest(envelope: DecisionRequestEnvelope): DecisionRequest {
-  if (typeof envelope.actorPrincipalId !== 'string' || envelope.actorPrincipalId.trim().length === 0) {
+  if (
+    typeof envelope.actorPrincipalId !== 'string' ||
+    envelope.actorPrincipalId.trim().length === 0
+  ) {
     throw new DecisionInputError('a decision request requires an accountable actor', {});
   }
   if (typeof envelope.pinnedRevision !== 'string' || envelope.pinnedRevision.trim().length === 0) {

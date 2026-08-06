@@ -156,7 +156,10 @@ export interface IngestResult {
  * order — first by aggregateRef, then by sequence, then by dedupKey — so the fold is order-independent
  * of the input batch's arrival order (aggregate ordering preserved by sequence, not by arrival).
  */
-export function ingest(state: IngestionState, observations: readonly SourceObservation[]): IngestResult {
+export function ingest(
+  state: IngestionState,
+  observations: readonly SourceObservation[],
+): IngestResult {
   const seen = new Set(state.seenDedupKeys);
   const rawLog: RawObservation[] = [...state.rawLog];
   const aggregates: Record<string, MergedAggregate> = { ...state.aggregates };
@@ -238,12 +241,18 @@ export function ingest(state: IngestionState, observations: readonly SourceObser
 // ===========================================================================
 
 /** The merged view of one aggregate (undefined if never observed). */
-export function mergedAggregate(state: IngestionState, aggregateRef: string): MergedAggregate | undefined {
+export function mergedAggregate(
+  state: IngestionState,
+  aggregateRef: string,
+): MergedAggregate | undefined {
   return state.aggregates[aggregateRef];
 }
 
 /** The raw-observation log for one aggregate, in accepted order (source record preserved). */
-export function rawObservationsFor(state: IngestionState, aggregateRef: string): readonly RawObservation[] {
+export function rawObservationsFor(
+  state: IngestionState,
+  aggregateRef: string,
+): readonly RawObservation[] {
   return Object.freeze(state.rawLog.filter((r) => r.aggregateRef === aggregateRef));
 }
 
@@ -255,9 +264,7 @@ export function ingestionDigest(state: IngestionState): string {
   const aggParts = Object.keys(state.aggregates)
     .sort()
     .map((k) => canonicalJson(state.aggregates[k]));
-  const rawParts = [...state.rawLog]
-    .map((r) => canonicalJson(r))
-    .sort();
+  const rawParts = [...state.rawLog].map((r) => canonicalJson(r)).sort();
   return sha256(
     canonicalJson({
       seen: [...state.seenDedupKeys].sort(),

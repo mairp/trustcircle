@@ -105,10 +105,12 @@ export function runControllerOperationsScenario(inputs: ControllerInputs): Scena
   criteria.push({
     ref: 'FR-023 / SC-010',
     statement: 'Every governed controller is discovered and surfaced in the operator registry.',
-    satisfied: registry.rows.length === inputs.seed.length && registry.query.total === registry.rows.length,
+    satisfied:
+      registry.rows.length === inputs.seed.length && registry.query.total === registry.rows.length,
     evidence: `registry lists ${registry.rows.length} controller(s) for ${inputs.seed.length} seeded`,
     observedVia: 'ControllerRegistryModel.rows (projected through the real ControllerProjector)',
-    negativeControl: 'the EMPTY registry states "No governance controllers" — an un-fed registry can never claim coverage',
+    negativeControl:
+      'the EMPTY registry states "No governance controllers" — an un-fed registry can never claim coverage',
   });
 
   // FR-024 — DRIFT IS NEVER MASKED: the drifted controller carries drift=true even under health.
@@ -116,7 +118,8 @@ export function runControllerOperationsScenario(inputs: ControllerInputs): Scena
   const healthyDrift = registry.rows.find((r) => !r.drift && r.health === 'healthy');
   criteria.push({
     ref: 'FR-024 (drift never masked)',
-    statement: 'Desired ≠ observed state is surfaced as drift on the row, never masked by a health verdict.',
+    statement:
+      'Desired ≠ observed state is surfaced as drift on the row, never masked by a health verdict.',
     satisfied: driftedRow !== undefined && driftedRow.drift === true,
     evidence: `drifted row present=${driftedRow !== undefined}; drift flag=${driftedRow?.drift}`,
     observedVia: 'ControllerRegistryRowVM.drift (desired vs observed via canonicalJson)',
@@ -128,16 +131,19 @@ export function runControllerOperationsScenario(inputs: ControllerInputs): Scena
   const permittedExact = detailRows.every((s) => {
     const d = seedOperationDetailModel(s.scenario, inputs.at);
     // permitted actions equal the projector's set; a terminal succeeded op permits only read-only kinds.
-    if (d.terminal && d.state === 'succeeded') return d.nextPermittedActions.every((k) => k === 'collect_evidence');
+    if (d.terminal && d.state === 'succeeded')
+      return d.nextPermittedActions.every((k) => k === 'collect_evidence');
     return d.nextPermittedActions.length > 0;
   });
   criteria.push({
     ref: 'FR-024 (exact permitted actions)',
-    statement: 'Each operation exposes exactly the projector-permitted next actions; a confirmed success permits only read-only evidence.',
+    statement:
+      'Each operation exposes exactly the projector-permitted next actions; a confirmed success permits only read-only evidence.',
     satisfied: permittedExact,
     evidence: `all ${detailRows.length} operation(s) expose the exact projector permitted-action set`,
     observedVia: 'OperationDetailModel.nextPermittedActions == projector row.nextPermittedActions',
-    negativeControl: 'a succeeded operation that offered execute/pause would fail this — terminal states never widen',
+    negativeControl:
+      'a succeeded operation that offered execute/pause would fail this — terminal states never widen',
   });
 
   // FR-025 / GAR-005 — a state-changing action is enabled ONLY with a binding simulation AND approval.
@@ -145,12 +151,16 @@ export function runControllerOperationsScenario(inputs: ControllerInputs): Scena
   const executeAction = actionsModel.actions.find((a) => a.kind === 'execute');
   criteria.push({
     ref: 'FR-025 / GAR-005',
-    statement: 'A state-changing action is enabled only when the state permits it AND simulation + approval are both satisfied.',
+    statement:
+      'A state-changing action is enabled only when the state permits it AND simulation + approval are both satisfied.',
     // On a terminal succeeded op, execute is not permitted → disabled. The gate itself is what we assert.
-    satisfied: executeAction !== undefined && actionIsEnabledForScenario(actionsModel, 'execute') === false,
+    satisfied:
+      executeAction !== undefined && actionIsEnabledForScenario(actionsModel, 'execute') === false,
     evidence: `execute on a terminal op enabled=${executeAction ? actionIsEnabledForScenario(actionsModel, 'execute') : 'n/a'} (permittedByState=${executeAction?.permittedByState})`,
-    observedVia: 'OperationActionsModel.actions + actionIsEnabled(state, simulation, approval, terminal)',
-    negativeControl: 'were the gate to ignore terminal/permitted-by-state, execute would leak enabled on a succeeded op',
+    observedVia:
+      'OperationActionsModel.actions + actionIsEnabled(state, simulation, approval, terminal)',
+    negativeControl:
+      'were the gate to ignore terminal/permitted-by-state, execute would leak enabled on a succeeded op',
   });
 
   // Fold in the three named sub-scenarios (T180–T182), so their criteria are part of Scenario 7.
@@ -169,7 +179,9 @@ export function runControllerOperationsScenario(inputs: ControllerInputs): Scena
 // SCENARIO 8 — ACCESSIBILITY + HONESTY of the three controller presenters (WCAG 2.2 AA + control safety).
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 
-export async function runControllerAccessibilityScenario(inputs: ControllerInputs): Promise<ScenarioResult> {
+export async function runControllerAccessibilityScenario(
+  inputs: ControllerInputs,
+): Promise<ScenarioResult> {
   const oracle = await import(ACCESSIBILITY_ORACLE);
   const reports: readonly AccessibilityReport[] = oracle.auditControllerAccessibility({
     tenant: inputs.tenant,
@@ -183,20 +195,24 @@ export async function runControllerAccessibilityScenario(inputs: ControllerInput
   const allFindings = reports.flatMap((r: AccessibilityReport) => r.findings);
   criteria.push({
     ref: 'SC-010 / SC-011 (a11y)',
-    statement: 'The three controller presenters carry zero structural/semantic accessibility or control-safety violations.',
+    statement:
+      'The three controller presenters carry zero structural/semantic accessibility or control-safety violations.',
     satisfied: reports.every((r: AccessibilityReport) => r.ok),
     evidence: `presenters audited=${reports.length}; findings=${allFindings.length}`,
-    observedVia: 'auditControllerAccessibility(...) over the shipped ControllerRegistry/OperationDetail/OperationActions renderers',
+    observedVia:
+      'auditControllerAccessibility(...) over the shipped ControllerRegistry/OperationDetail/OperationActions renderers',
     negativeControl: `findings would be non-empty if drift were color-only, an uncertain op read confirmed, or a destructive action ungated (currently ${allFindings.length})`,
   });
 
   criteria.push({
     ref: 'FR-024 / FR-028 (empty honesty)',
-    statement: 'An un-fed presenter is honest: empty registry states no controllers, empty detail is NOT confirmed, empty actions enable nothing.',
+    statement:
+      'An un-fed presenter is honest: empty registry states no controllers, empty detail is NOT confirmed, empty actions enable nothing.',
     satisfied: emptyFindings.length === 0,
     evidence: `empty-model honesty findings=${emptyFindings.length}`,
     observedVia: 'auditEmptyModelsAreHonest(tenant) over EMPTY_* models',
-    negativeControl: 'were an empty detail to claim effect-confirmed, or empty actions to enable a button, this would report a finding',
+    negativeControl:
+      'were an empty detail to claim effect-confirmed, or empty actions to enable a button, this would report a finding',
   });
 
   return finish('Scenario-8-controller-accessibility', criteria);

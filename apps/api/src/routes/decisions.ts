@@ -160,13 +160,7 @@ export interface DecisionActionCommandInput {
   readonly correlationId: string;
   readonly idempotencyKey?: string;
   readonly action:
-    | 'approve'
-    | 'deny'
-    | 'delegate'
-    | 'request_changes'
-    | 'escalate'
-    | 'expire'
-    | 'cancel';
+    'approve' | 'deny' | 'delegate' | 'request_changes' | 'escalate' | 'expire' | 'cancel';
   readonly reason: { readonly code: string; readonly text: string };
   /** The package version the actor bound to (decoded from `If-Match`); optimistic-concurrency guard. */
   readonly expectedVersion: number;
@@ -385,9 +379,17 @@ function validateReason(raw: unknown): GovernanceApiReason {
   const code = rec['code'];
   const text = rec['text'];
   if (typeof code !== 'string' || !REASON_CODE_RE.test(code)) {
-    throw new BodyError('invalid_reason', 'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.', 422);
+    throw new BodyError(
+      'invalid_reason',
+      'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.',
+      422,
+    );
   }
-  if (typeof text !== 'string' || text.trim().length < REASON_TEXT_MIN || text.length > REASON_TEXT_MAX) {
+  if (
+    typeof text !== 'string' ||
+    text.trim().length < REASON_TEXT_MIN ||
+    text.length > REASON_TEXT_MAX
+  ) {
     throw new BodyError(
       'invalid_reason',
       `reason.text must be ${REASON_TEXT_MIN}..${REASON_TEXT_MAX} non-blank characters.`,
@@ -405,7 +407,10 @@ function asObject(raw: unknown, field: string): Record<string, unknown> {
 }
 
 function asObjectArray(raw: unknown, field: string): Record<string, unknown>[] {
-  if (!Array.isArray(raw) || raw.some((x) => typeof x !== 'object' || x === null || Array.isArray(x))) {
+  if (
+    !Array.isArray(raw) ||
+    raw.some((x) => typeof x !== 'object' || x === null || Array.isArray(x))
+  ) {
     throw new BodyError('invalid_field', `${field} must be an array of objects.`);
   }
   return raw as Record<string, unknown>[];
@@ -480,7 +485,10 @@ function parseCreateRequest(raw: unknown): GovernanceApiCreateDecisionRequest {
         : typeof em === 'string' && isUuid(em)
           ? { ...out, evidence_manifest_id: em }
           : (() => {
-              throw new BodyError('invalid_evidence_manifest', 'evidence_manifest_id must be a uuid or null.');
+              throw new BodyError(
+                'invalid_evidence_manifest',
+                'evidence_manifest_id must be a uuid or null.',
+              );
             })();
   const sim = body['simulation_id'];
   const withSim =
@@ -511,7 +519,13 @@ function listDecisionQueue(deps: DecisionRouteDeps): RouteHandler {
   return (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const url = new URL(c.req.url, 'http://internal');
 
@@ -519,11 +533,23 @@ function listDecisionQueue(deps: DecisionRouteDeps): RouteHandler {
     let limit = DEFAULT_LIMIT;
     if (rawLimit !== null && rawLimit !== '') {
       if (!/^\d+$/.test(rawLimit)) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', 'limit must be a non-negative integer.');
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          'limit must be a non-negative integer.',
+        );
       }
       const n = Number(rawLimit);
       if (!Number.isInteger(n) || n < MIN_LIMIT || n > MAX_LIMIT) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`);
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`,
+        );
       }
       limit = n;
     }
@@ -562,7 +588,13 @@ function createDecisionRequest(deps: DecisionRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     let raw: unknown;
@@ -577,7 +609,13 @@ function createDecisionRequest(deps: DecisionRouteDeps): RouteHandler {
       request = parseCreateRequest(raw);
     } catch (e) {
       if (e instanceof BodyError) {
-        return problem(c, e.httpStatus, e.code, e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request', e.message);
+        return problem(
+          c,
+          e.httpStatus,
+          e.code,
+          e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request',
+          e.message,
+        );
       }
       throw e;
     }
@@ -617,16 +655,34 @@ function getDecisionRequest(deps: DecisionRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const decisionId = decisionIdOf(c);
     if (decisionId === undefined) {
-      return problem(c, 400, 'invalid_decision_id', 'Bad Request', 'The decision id path segment must be a uuid.');
+      return problem(
+        c,
+        400,
+        'invalid_decision_id',
+        'Bad Request',
+        'The decision id path segment must be a uuid.',
+      );
     }
 
     const pkg = await deps.readPackage(tenantId, decisionId);
     if (pkg === undefined) {
-      return problem(c, 404, 'decision_not_found', 'Not Found', 'No such decision in this tenant scope.');
+      return problem(
+        c,
+        404,
+        'decision_not_found',
+        'Not Found',
+        'No such decision in this tenant scope.',
+      );
     }
 
     c.setHeader('etag', packageEtag(pkg));
@@ -640,11 +696,23 @@ function actOnDecision(deps: DecisionRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const decisionId = decisionIdOf(c);
     if (decisionId === undefined) {
-      return problem(c, 400, 'invalid_decision_id', 'Bad Request', 'The decision id path segment must be a uuid.');
+      return problem(
+        c,
+        400,
+        'invalid_decision_id',
+        'Bad Request',
+        'The decision id path segment must be a uuid.',
+      );
     }
 
     // If-Match is REQUIRED on a state-changing action — the actor must bind to a package version.
@@ -667,7 +735,13 @@ function actOnDecision(deps: DecisionRouteDeps): RouteHandler {
       return problem(c, 400, 'invalid_body', 'Bad Request', 'The request body is not valid JSON.');
     }
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-      return problem(c, 400, 'invalid_body', 'Bad Request', 'The request body must be a JSON object.');
+      return problem(
+        c,
+        400,
+        'invalid_body',
+        'Bad Request',
+        'The request body must be a JSON object.',
+      );
     }
     const body = raw as Record<string, unknown>;
     for (const k of Object.keys(body)) {
@@ -705,7 +779,13 @@ function actOnDecision(deps: DecisionRouteDeps): RouteHandler {
       evidenceManifestId !== null &&
       !(typeof evidenceManifestId === 'string' && isUuid(evidenceManifestId))
     ) {
-      return problem(c, 400, 'invalid_evidence_manifest', 'Bad Request', 'evidence_manifest_id must be a uuid or null.');
+      return problem(
+        c,
+        400,
+        'invalid_evidence_manifest',
+        'Bad Request',
+        'evidence_manifest_id must be a uuid or null.',
+      );
     }
 
     const correlationId = c.ctx?.correlationId ?? '';

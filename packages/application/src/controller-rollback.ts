@@ -61,7 +61,9 @@ export interface ControllerRollbackDecision {
  * not a free undo); an unauthorized rollback fails closed as `failed` + escalate. Otherwise delegates
  * to the domain oracle, which orders the checks fail-closed and newer-state-protective.
  */
-export function decideControllerRollback(ctx: ControllerRollbackContext): ControllerRollbackDecision {
+export function decideControllerRollback(
+  ctx: ControllerRollbackContext,
+): ControllerRollbackDecision {
   if (!ctx.policyAuthorizesRollback) {
     const residual = Math.max(0, ctx.totalSteps - ctx.compensatedSteps);
     return {
@@ -92,7 +94,10 @@ export function decideControllerRollback(ctx: ControllerRollbackContext): Contro
     rolled_back: 'verified_full_restore_operation_cleared',
     partial: 'partial_compensation_residual_retained_escalated',
     conflict: 'newer_legitimate_state_protected_escalated',
-    unavailable: ctx.preimageEvidenceId === null ? 'no_preserved_preimage_to_restore' : 'no_compensation_path_available',
+    unavailable:
+      ctx.preimageEvidenceId === null
+        ? 'no_preserved_preimage_to_restore'
+        : 'no_compensation_path_available',
     failed: 'compensation_execution_failed_escalated',
   };
 

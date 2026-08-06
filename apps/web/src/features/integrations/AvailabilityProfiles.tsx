@@ -45,12 +45,7 @@ export type ProfileAvailabilityClass = 'core' | 'optional' | 'on-demand';
 
 /** The live runtime state of a component (distinct from its design lifecycle). */
 export type ProfileRuntimeState =
-  | 'inactive'
-  | 'activating'
-  | 'available'
-  | 'degraded'
-  | 'unavailable'
-  | 'paused';
+  'inactive' | 'activating' | 'available' | 'degraded' | 'unavailable' | 'paused';
 
 /** A feature that is currently unavailable because a component backing it is not available. */
 export interface UnavailableFeatureVM {

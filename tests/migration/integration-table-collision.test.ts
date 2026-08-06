@@ -34,9 +34,7 @@ describe('controller and connector reconciliation migration ownership', () => {
     expect(integrations).toMatch(
       /ALTER TABLE connector_reconciliation_run ENABLE ROW LEVEL SECURITY/i,
     );
-    expect(integrations).toMatch(
-      /CREATE POLICY tenant_isolation ON connector_reconciliation_run/i,
-    );
+    expect(integrations).toMatch(/CREATE POLICY tenant_isolation ON connector_reconciliation_run/i);
   });
 
   it('detects the original incompatible-name regression', () => {

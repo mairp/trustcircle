@@ -169,7 +169,10 @@ function canonicalHash(value: unknown): string {
 }
 
 const UNCERTAIN_ATTEMPT_OUTCOMES = new Set(['dispatched_unconfirmed', 'uncertain', 'timed_out']);
-const ESTABLISHED_RECONCILIATION_RESULTS = new Set(['reconciled_effect_present', 'reconciled_no_effect']);
+const ESTABLISHED_RECONCILIATION_RESULTS = new Set([
+  'reconciled_effect_present',
+  'reconciled_no_effect',
+]);
 
 // ---------------------------------------------------------------------------
 // The collector.
@@ -217,7 +220,10 @@ export class OperationEvidenceCollector {
     }
     // FR-027 — a `confirmed` outcome is a CONFIRMATION, which requires a direct observation.
     if (attempt.outcome === 'confirmed' && attempt.remoteEffectObserved !== true) {
-      throw new OperationEvidenceError('confirmation-without-observation', `attempt ${attempt.attemptId}`);
+      throw new OperationEvidenceError(
+        'confirmation-without-observation',
+        `attempt ${attempt.attemptId}`,
+      );
     }
     this.#attempts.push(Object.freeze({ ...attempt }));
     return this;
@@ -225,15 +231,24 @@ export class OperationEvidenceCollector {
 
   recordBufferedContinuityEffect(effect: BufferedContinuityEffectEvidence): this {
     if (typeof effect.leaseId !== 'string' || effect.leaseId.trim().length === 0) {
-      throw new OperationEvidenceError('empty-entry', 'buffered continuity effect requires a leaseId');
+      throw new OperationEvidenceError(
+        'empty-entry',
+        'buffered continuity effect requires a leaseId',
+      );
     }
     this.#buffered.push(Object.freeze({ ...effect }));
     return this;
   }
 
   recordRemoteObservation(observation: RemoteObservationEvidence): this {
-    if (typeof observation.observationId !== 'string' || observation.observationId.trim().length === 0) {
-      throw new OperationEvidenceError('empty-entry', 'remote observation requires an observationId');
+    if (
+      typeof observation.observationId !== 'string' ||
+      observation.observationId.trim().length === 0
+    ) {
+      throw new OperationEvidenceError(
+        'empty-entry',
+        'remote observation requires an observationId',
+      );
     }
     this.#observations.push(Object.freeze({ ...observation }));
     this.#observationIds.add(observation.observationId);
@@ -242,7 +257,10 @@ export class OperationEvidenceCollector {
 
   recordRollback(rollback: RollbackEvidence): this {
     // NS-011 — a cleared (`rolled_back`) restore must cite the preserved preimage it restored to.
-    if (rollback.result === 'rolled_back' && (rollback.preimageEvidenceId === null || rollback.preimageEvidenceId === undefined)) {
+    if (
+      rollback.result === 'rolled_back' &&
+      (rollback.preimageEvidenceId === null || rollback.preimageEvidenceId === undefined)
+    ) {
       throw new OperationEvidenceError('rolled-back-without-preimage');
     }
     this.#rollbacks.push(Object.freeze({ ...rollback }));
@@ -261,16 +279,24 @@ export class OperationEvidenceCollector {
       }
       for (const oid of run.citedObservationIds) {
         if (!this.#observationIds.has(oid)) {
-          throw new OperationEvidenceError('effect-present-without-observation', `run ${run.runId} cites unknown observation ${oid}`);
+          throw new OperationEvidenceError(
+            'effect-present-without-observation',
+            `run ${run.runId} cites unknown observation ${oid}`,
+          );
         }
       }
     }
-    this.#reconciliations.push(Object.freeze({ ...run, citedObservationIds: Object.freeze([...run.citedObservationIds]) }));
+    this.#reconciliations.push(
+      Object.freeze({ ...run, citedObservationIds: Object.freeze([...run.citedObservationIds]) }),
+    );
     return this;
   }
 
   recordVerification(verification: VerificationEvidence): this {
-    if (typeof verification.verificationId !== 'string' || verification.verificationId.trim().length === 0) {
+    if (
+      typeof verification.verificationId !== 'string' ||
+      verification.verificationId.trim().length === 0
+    ) {
       throw new OperationEvidenceError('empty-entry', 'verification requires a verificationId');
     }
     this.#verifications.push(Object.freeze({ ...verification }));
@@ -279,7 +305,9 @@ export class OperationEvidenceCollector {
 
   /** Emit the immutable, content-addressed bundle. Idempotent — repeated calls yield an equal digest. */
   seal(): OperationEvidenceBundle {
-    const hasUncertainOutcome = this.#attempts.some((a) => UNCERTAIN_ATTEMPT_OUTCOMES.has(a.outcome));
+    const hasUncertainOutcome = this.#attempts.some((a) =>
+      UNCERTAIN_ATTEMPT_OUTCOMES.has(a.outcome),
+    );
     const reconciledToEstablishedState = this.#reconciliations.some((r) =>
       ESTABLISHED_RECONCILIATION_RESULTS.has(r.result),
     );

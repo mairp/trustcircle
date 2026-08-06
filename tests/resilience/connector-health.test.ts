@@ -37,7 +37,10 @@ import {
 
 import { LastKnownStateProjector } from '@trustcircle/projections';
 
-import { observeHealth, isObservationStale } from '../../apps/command-worker/src/health-observer.ts';
+import {
+  observeHealth,
+  isObservationStale,
+} from '../../apps/command-worker/src/health-observer.ts';
 
 import {
   NOW,
@@ -225,10 +228,14 @@ describe('connector health · alert recovery is ordered and terminal', () => {
     expect(recovered.state).toBe('recovered');
     expect(recovered.recoveredAt).toBe(NOW + 2 * ONE_HOUR);
     // Recovery is terminal — a second recovery is refused.
-    expect(() => recoverAlert(recovered, (NOW + 3 * ONE_HOUR) as typeof NOW)).toThrow(/already recovered/i);
+    expect(() => recoverAlert(recovered, (NOW + 3 * ONE_HOUR) as typeof NOW)).toThrow(
+      /already recovered/i,
+    );
   });
 
   it('recovery predating first observation is refused (recovery-ordered)', () => {
-    expect(() => recoverAlert(alert, (NOW - ONE_MINUTE) as typeof NOW)).toThrow(/recovery-ordered|>=/i);
+    expect(() => recoverAlert(alert, (NOW - ONE_MINUTE) as typeof NOW)).toThrow(
+      /recovery-ordered|>=/i,
+    );
   });
 });

@@ -25,12 +25,7 @@
 // Determinism: every instant and id is injected by the caller (the record carries `decidedAt`,
 // `id`, `auditEventId`); this module reads no wall clock and mints no ids.
 
-import {
-  type Database,
-  type SourceContract,
-  digest,
-  canonicalJson,
-} from './database.ts';
+import { type Database, type SourceContract, digest, canonicalJson } from './database.ts';
 import {
   commitUnitOfWork,
   readCanonicalState,
@@ -172,10 +167,7 @@ export function decisionRecordDigest(r: DecisionRecordInput): string {
  * refs bind the policy-decision evidence (id + signature) plus any extra refs, so the audit trail
  * carries a reconstructable policy basis. The gate in `commitUnitOfWork` refuses an incomplete one.
  */
-function buildAudit(
-  cmd: CommitDecisionOutcomeCommand,
-  targetStateDigest: string,
-): AuditEventInput {
+function buildAudit(cmd: CommitDecisionOutcomeCommand, targetStateDigest: string): AuditEventInput {
   const evidenceRefs = [
     `policy-evidence:${cmd.policyEvidence.evidenceId}`,
     `policy-signature:${cmd.policyEvidence.signature}`,

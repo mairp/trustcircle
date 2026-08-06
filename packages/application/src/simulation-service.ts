@@ -110,10 +110,14 @@ export function checkSimulationBinding(
   const invalidated = sourceDriftInvalidates(simulation, observed, now);
 
   const driftedMembers: string[] = [];
-  if (simulation.bound.controllerVersionId !== observed.controllerVersionId) driftedMembers.push('controllerVersionId');
-  if (simulation.bound.adapterVersionId !== observed.adapterVersionId) driftedMembers.push('adapterVersionId');
-  if (simulation.bound.policyVersionId !== observed.policyVersionId) driftedMembers.push('policyVersionId');
-  if (simulation.bound.sourceRevision !== observed.sourceRevision) driftedMembers.push('sourceRevision');
+  if (simulation.bound.controllerVersionId !== observed.controllerVersionId)
+    driftedMembers.push('controllerVersionId');
+  if (simulation.bound.adapterVersionId !== observed.adapterVersionId)
+    driftedMembers.push('adapterVersionId');
+  if (simulation.bound.policyVersionId !== observed.policyVersionId)
+    driftedMembers.push('policyVersionId');
+  if (simulation.bound.sourceRevision !== observed.sourceRevision)
+    driftedMembers.push('sourceRevision');
 
   let reason: string;
   if (!invalidated) reason = 'simulation_binds';

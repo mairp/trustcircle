@@ -192,7 +192,8 @@ export function reconcileTimeout(input: TimeoutReconciliationInput): TimeoutReco
     rationale = 'Fresh observation shows the effect applied; uncertainty resolved to confirmed.';
   } else if (input.observedEffectApplied === false) {
     reconciledOutcome = 'rejected';
-    rationale = 'Fresh observation shows the effect did not apply; uncertainty resolved to rejected.';
+    rationale =
+      'Fresh observation shows the effect did not apply; uncertainty resolved to rejected.';
   } else {
     reconciledOutcome = 'uncertain';
     rationale =

@@ -298,7 +298,10 @@ export interface CoreActivationObservation {
   readonly coreActivatedState: string;
   readonly coreActivatedRuntime: string;
   readonly coreLapsedReconcileState: string;
-  readonly optionalInspectStates: readonly { readonly adapterId: string; readonly runtimeState: string }[];
+  readonly optionalInspectStates: readonly {
+    readonly adapterId: string;
+    readonly runtimeState: string;
+  }[];
   readonly readinessVerdict: string;
   readonly coreHealthy: boolean;
   readonly optionalUnavailable: readonly string[];
@@ -319,8 +322,14 @@ function runCoreOnlyActivation(): CoreActivationObservation {
     prerequisites: ALL_PROVEN,
     at: NOW as number,
   };
-  const coreInputUnproven = { ...coreInputProven, prerequisites: { ...ALL_PROVEN, authorityVerified: false } };
-  const coreInputLapsed = { ...coreInputProven, prerequisites: { ...ALL_PROVEN, backlogReconciled: false } };
+  const coreInputUnproven = {
+    ...coreInputProven,
+    prerequisites: { ...ALL_PROVEN, authorityVerified: false },
+  };
+  const coreInputLapsed = {
+    ...coreInputProven,
+    prerequisites: { ...ALL_PROVEN, backlogReconciled: false },
+  };
 
   // Core: proof-before-active. Unproven inspect is intentionally_inactive; activation reaches active
   // only when fully proven; a lapsed core reconciles to stale (drift-visible).
@@ -350,7 +359,8 @@ function runCoreOnlyActivation(): CoreActivationObservation {
       { componentKey: coreKey, availabilityClass: 'core', runtimeState: 'active' },
       ...CONNECTOR_SPECS.map((spec) => ({
         componentKey: spec.slug,
-        availabilityClass: spec.availabilityClass === 'core' ? ('core' as const) : spec.availabilityClass,
+        availabilityClass:
+          spec.availabilityClass === 'core' ? ('core' as const) : spec.availabilityClass,
         runtimeState: 'intentionally_inactive' as const,
       })),
     ],
@@ -483,7 +493,9 @@ function successCriteria(o: NamedAdaptersObservations): NamedAdaptersManifest['s
   ];
 }
 
-export function emitNamedAdaptersManifest(injected?: NamedAdaptersObservations): NamedAdaptersManifest {
+export function emitNamedAdaptersManifest(
+  injected?: NamedAdaptersObservations,
+): NamedAdaptersManifest {
   const o = injected ?? runNamedAdapters();
   const safeNextAction = 'owner_approved_activation_to_enable_optional_sources';
 
@@ -559,7 +571,8 @@ export function verifyNamedAdaptersManifest(manifest: NamedAdaptersManifest): Ve
     reasons.push(`scenario ${manifest.version.scenario} != pinned ${PINNED.scenario}`);
   if (manifest.version.worldDigest !== PINNED.worldDigest)
     reasons.push('world digest differs from pinned input');
-  if (manifest.signature.boundScenario !== PINNED.scenario) reasons.push('signature scenario not pinned');
+  if (manifest.signature.boundScenario !== PINNED.scenario)
+    reasons.push('signature scenario not pinned');
   if (manifest.signature.boundWorldDigest !== PINNED.worldDigest)
     reasons.push('signature world digest not pinned');
 
@@ -575,11 +588,13 @@ export function verifyNamedAdaptersManifest(manifest: NamedAdaptersManifest): Ve
   // (c) Per-line digests — adapters + the core activation line.
   for (const line of manifest.adapterLines) {
     const { lineDigest, ...rest } = line;
-    if (sha256(canonicalize(rest)) !== lineDigest) reasons.push(`adapter line ${line.runnerRef} digest mismatch`);
+    if (sha256(canonicalize(rest)) !== lineDigest)
+      reasons.push(`adapter line ${line.runnerRef} digest mismatch`);
   }
   {
     const { lineDigest, ...rest } = manifest.coreActivation;
-    if (sha256(canonicalize(rest)) !== lineDigest) reasons.push('core activation line digest mismatch');
+    if (sha256(canonicalize(rest)) !== lineDigest)
+      reasons.push('core activation line digest mismatch');
   }
 
   // (d) Coverage — all five named adapters present, none grants governance authority, each with
@@ -591,8 +606,10 @@ export function verifyNamedAdaptersManifest(manifest: NamedAdaptersManifest): Ve
       continue;
     }
     const line = manifest.adapterLines.find((l) => l.runnerRef === id)!;
-    if (line.grantsGovernanceAuthority) reasons.push(`adapter ${id} GRANTS governance authority (invariant breach)`);
-    if (line.assertionRef !== US6_AS1.assertionRef) reasons.push(`adapter ${id} wrong assertionRef`);
+    if (line.grantsGovernanceAuthority)
+      reasons.push(`adapter ${id} GRANTS governance authority (invariant breach)`);
+    if (line.assertionRef !== US6_AS1.assertionRef)
+      reasons.push(`adapter ${id} wrong assertionRef`);
     if (!line.requirementRefs.includes('FR-008')) reasons.push(`adapter ${id} missing FR-008`);
     if (line.evidence.length === 0) reasons.push(`adapter ${id} has no evidence witness`);
     const emptyWitness = line.evidence.some(
@@ -600,7 +617,8 @@ export function verifyNamedAdaptersManifest(manifest: NamedAdaptersManifest): Ve
     );
     if (emptyWitness) reasons.push(`adapter ${id} has an empty/missing evidence witness`);
     const badPath = line.evidence.some(
-      (e) => !['adapter-sdk-verdict', 'component-lifecycle', 'readiness-verdict'].includes(e.readPath),
+      (e) =>
+        !['adapter-sdk-verdict', 'component-lifecycle', 'readiness-verdict'].includes(e.readPath),
     );
     if (badPath) reasons.push(`adapter ${id} has a non-durable evidence read path`);
     // Non-vacuous: the undeclared-capability refusal must be witnessed true.
@@ -622,16 +640,18 @@ export function verifyNamedAdaptersManifest(manifest: NamedAdaptersManifest): Ve
   const coreActive = core.evidence.some((e) =>
     e.witnessed.some((w) => /core activated:.*activationState=active\|runtimeState=active/.test(w)),
   );
-  if (!coreActive) reasons.push('core activation does not witness core reaching active once proven');
+  if (!coreActive)
+    reasons.push('core activation does not witness core reaching active once proven');
   const readyCoreOnly = core.evidence.some((e) =>
     e.witnessed.some((w) => /verdict=ready\|coreHealthy=true/.test(w)),
   );
   if (!readyCoreOnly) reasons.push('core activation does not witness core-only ready verdict');
   // Every named connector must be witnessed intentionally_inactive.
-  const inactiveWitness = core.evidence.find((e) =>
-    e.detail.includes('optional/on-demand'),
-  );
-  if (!inactiveWitness || !inactiveWitness.witnessed.every((w) => /=intentionally_inactive$/.test(w))) {
+  const inactiveWitness = core.evidence.find((e) => e.detail.includes('optional/on-demand'));
+  if (
+    !inactiveWitness ||
+    !inactiveWitness.witnessed.every((w) => /=intentionally_inactive$/.test(w))
+  ) {
     reasons.push('core activation does not witness every named connector intentionally_inactive');
   }
 
@@ -648,8 +668,10 @@ export function verifyNamedAdaptersManifest(manifest: NamedAdaptersManifest): Ve
 
   // (g) Success criteria — present + met.
   const scIds = new Set(manifest.successCriteria.map((s) => s.id));
-  for (const sc of SUCCESS_CRITERIA) if (!scIds.has(sc.id)) reasons.push(`missing success criterion ${sc.id}`);
-  for (const s of manifest.successCriteria) if (!s.met) reasons.push(`success criterion ${s.id} not met: ${s.measure}`);
+  for (const sc of SUCCESS_CRITERIA)
+    if (!scIds.has(sc.id)) reasons.push(`missing success criterion ${sc.id}`);
+  for (const s of manifest.successCriteria)
+    if (!s.met) reasons.push(`success criterion ${s.id} not met: ${s.measure}`);
 
   return { ok: reasons.length === 0, reasons };
 }
@@ -675,9 +697,7 @@ export function verifyNamedAdaptersManifest(manifest: NamedAdaptersManifest): Ve
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 
 export type JourneyScope =
-  | 'scenario-9-kanban-projection'
-  | 'scenario-10-workflow-agentctl'
-  | 'profile-core-only-activation';
+  'scenario-9-kanban-projection' | 'scenario-10-workflow-agentctl' | 'profile-core-only-activation';
 
 export interface JourneySpec {
   readonly scope: JourneyScope;
@@ -894,12 +914,16 @@ export function verifyJourneyManifest(manifest: JourneyManifest): VerifyResult {
     if (sha256(canonicalize(rest)) !== lineDigest)
       reasons.push(`journey adapter line ${line.runnerRef} digest mismatch`);
     if (line.grantsGovernanceAuthority)
-      reasons.push(`journey adapter ${line.runnerRef} GRANTS governance authority (invariant breach)`);
-    if (line.evidence.length === 0) reasons.push(`journey adapter ${line.runnerRef} has no evidence`);
+      reasons.push(
+        `journey adapter ${line.runnerRef} GRANTS governance authority (invariant breach)`,
+      );
+    if (line.evidence.length === 0)
+      reasons.push(`journey adapter ${line.runnerRef} has no evidence`);
   }
   if (manifest.coreActivation) {
     const { lineDigest, ...rest } = manifest.coreActivation;
-    if (sha256(canonicalize(rest)) !== lineDigest) reasons.push('journey core line digest mismatch');
+    if (sha256(canonicalize(rest)) !== lineDigest)
+      reasons.push('journey core line digest mismatch');
     if (!manifest.coreActivation.requirementRefs.includes('NFR-010'))
       reasons.push('journey core line missing NFR-010');
   }
@@ -915,7 +939,9 @@ export function verifyJourneyManifest(manifest: JourneyManifest): VerifyResult {
     if (other.scope === spec.scope) continue;
     const otherDigest = projectJourneyManifest(other).manifestDigest;
     if (otherDigest === manifest.manifestDigest)
-      reasons.push(`journey ${spec.scope} shares a digest with ${other.scope} (not distinct evidence)`);
+      reasons.push(
+        `journey ${spec.scope} shares a digest with ${other.scope} (not distinct evidence)`,
+      );
   }
 
   // (f) Success criteria present + met.

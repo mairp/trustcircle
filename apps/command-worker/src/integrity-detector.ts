@@ -285,7 +285,8 @@ export class IntegrityDetector {
     this.#controlVersion = opts.controlVersion;
     this.#owner = opts.owner ?? DEFAULT_OWNER;
     const b = opts.batchSize ?? DEFAULT_BATCH_SIZE;
-    if (!Number.isInteger(b) || b <= 0) throw new RangeError('batchSize must be a positive integer');
+    if (!Number.isInteger(b) || b <= 0)
+      throw new RangeError('batchSize must be a positive integer');
     this.#batchSize = b;
   }
 

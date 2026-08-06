@@ -88,7 +88,10 @@ test.describe('T281 · longest-applicable retention wins', () => {
   });
 
   test('NEGATIVE: an UNAPPROVED longer policy does not extend retention', () => {
-    const r = resolveRetention(item, [policy('p30', 30), policy('pDraft', 1000, { approved: false })]);
+    const r = resolveRetention(item, [
+      policy('p30', 30),
+      policy('pDraft', 1000, { approved: false }),
+    ]);
     expect(r.retainUntil).toBe(CREATED + 30 * DAY);
     expect(r.appliedPolicyIds).not.toContain('pDraft');
   });
@@ -108,7 +111,9 @@ test.describe('T281 · missing-policy gap is explicit', () => {
   });
 
   test('NEGATIVE: a class-matching policy is applied (proves the gap check is non-vacuous)', () => {
-    const r = resolveRetention(item, [policy('match', 30, { appliesToClassifications: ['restricted'] })]);
+    const r = resolveRetention(item, [
+      policy('match', 30, { appliesToClassifications: ['restricted'] }),
+    ]);
     expect(r.retainUntil).toBe(CREATED + 30 * DAY);
   });
 });

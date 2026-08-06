@@ -19,10 +19,7 @@ import {
   continuityReturnObligation,
 } from '@trustcircle/application';
 
-import {
-  seedControllers,
-  seedOperationDetailModel,
-} from './_controller-inputs.ts';
+import { seedControllers, seedOperationDetailModel } from './_controller-inputs.ts';
 import type { ControllerInputs } from './_controller-inputs.ts';
 
 import {
@@ -95,7 +92,8 @@ export function runBoundedContinuityScenario(inputs: ControllerInputs): Scenario
   });
   criteria.push({
     ref: 'FR-047 (in-progress only)',
-    statement: 'A continuity lease is eligible only for an operation approved AND started before the failure — never new authority.',
+    statement:
+      'A continuity lease is eligible only for an operation approved AND started before the failure — never new authority.',
     satisfied:
       eligible.eligible === true &&
       eligible.reason === 'approved_and_in_progress' &&
@@ -103,7 +101,8 @@ export function runBoundedContinuityScenario(inputs: ControllerInputs): Scenario
       unstarted.reason === 'operation_not_started_before_failure',
     evidence: `eligible(started)=${eligible.eligible}; eligible(unstarted)=${unstarted.eligible} (${unstarted.reason})`,
     observedVia: 'evaluateContinuityEligibility({operation, approved, startedBeforeFailure})',
-    negativeControl: 'an unstarted operation is refused — a lease for it would grant power the operator never held',
+    negativeControl:
+      'an unstarted operation is refused — a lease for it would grant power the operator never held',
   });
 
   // NFR-012 — BOUNDED ≤ 15 MIN: an over-ceiling request is clamped; a within-ceiling request is exact.
@@ -124,17 +123,21 @@ export function runBoundedContinuityScenario(inputs: ControllerInputs): Scenario
   const honoredSpan = (honored.lease.expiresAt as number) - (honored.lease.grantedAt as number);
   criteria.push({
     ref: 'NFR-012 (bounded ≤ 15 min)',
-    statement: 'A requested continuity duration is clamped to the 15-minute ceiling; a within-ceiling request is honored exactly.',
+    statement:
+      'A requested continuity duration is clamped to the 15-minute ceiling; a within-ceiling request is honored exactly.',
     satisfied: clampedSpan === CEILING_MS && honoredSpan === 7 * ONE_MINUTE,
     evidence: `requested 60min → span=${clampedSpan / ONE_MINUTE}min (ceiling ${CEILING_MS / ONE_MINUTE}); requested 7min → span=${honoredSpan / ONE_MINUTE}min`,
-    observedVia: 'grantContinuityLease(...).lease.expiresAt − grantedAt vs CONTINUITY_LEASE_CEILING_MS',
-    negativeControl: 'a 60-minute request cannot buy 60 minutes — the ceiling is a hard clamp, not a suggestion',
+    observedVia:
+      'grantContinuityLease(...).lease.expiresAt − grantedAt vs CONTINUITY_LEASE_CEILING_MS',
+    negativeControl:
+      'a 60-minute request cannot buy 60 minutes — the ceiling is a hard clamp, not a suggestion',
   });
 
   // FR-046 — the projected lease surfaces its active verdict + remaining window (bounded, nonrenewable).
   criteria.push({
     ref: 'FR-046 (lease surfaced)',
-    statement: 'The continuity operation surfaces an active lease with a positive, bounded remaining window and a reconcile-on-return duty.',
+    statement:
+      'The continuity operation surfaces an active lease with a positive, bounded remaining window and a reconcile-on-return duty.',
     satisfied:
       detail.continuityLease !== null &&
       detail.continuityLease.active === true &&
@@ -142,7 +145,8 @@ export function runBoundedContinuityScenario(inputs: ControllerInputs): Scenario
       detail.continuityLease.remainingMs <= CEILING_MS &&
       detail.continuityLease.mustReconcileOnReturn === true,
     evidence: `lease active=${detail.continuityLease?.active}, remainingMs=${detail.continuityLease?.remainingMs}, mustReconcileOnReturn=${detail.continuityLease?.mustReconcileOnReturn}`,
-    observedVia: 'OperationDetailModel(continuity).continuityLease.{active,remainingMs,mustReconcileOnReturn}',
+    observedVia:
+      'OperationDetailModel(continuity).continuityLease.{active,remainingMs,mustReconcileOnReturn}',
     negativeControl: `a non-continuity operation carries NO lease at all (continuityLease=${nonContinuity.continuityLease === null ? 'null' : 'present'}) — a lease is never fabricated`,
   });
 
@@ -151,14 +155,16 @@ export function runBoundedContinuityScenario(inputs: ControllerInputs): Scenario
   const noBuffered = continuityReturnObligation({ bufferedEffectCount: 0 });
   criteria.push({
     ref: 'FR-050 (reconcile on return)',
-    statement: 'Any buffered continuity effect forces a reconcile-before-mutation obligation on return.',
+    statement:
+      'Any buffered continuity effect forces a reconcile-before-mutation obligation on return.',
     satisfied:
       withBuffered.mustReconcileBeforeMutation === true &&
       withBuffered.reason === 'buffered_continuity_effects_must_reconcile_first' &&
       noBuffered.mustReconcileBeforeMutation === false,
     evidence: `buffered=2 → mustReconcile=${withBuffered.mustReconcileBeforeMutation}; buffered=0 → mustReconcile=${noBuffered.mustReconcileBeforeMutation}`,
     observedVia: 'continuityReturnObligation({bufferedEffectCount})',
-    negativeControl: 'with zero buffered effects there is no obligation — the duty is a function of real buffered work, not blanket',
+    negativeControl:
+      'with zero buffered effects there is no obligation — the duty is a function of real buffered work, not blanket',
   });
 
   return finish('bounded-continuity', criteria);

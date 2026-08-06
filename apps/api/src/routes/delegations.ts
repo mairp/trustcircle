@@ -154,9 +154,17 @@ function validateReason(raw: unknown): GovernanceApiReason {
   const code = rec['code'];
   const text = rec['text'];
   if (typeof code !== 'string' || !REASON_CODE_RE.test(code)) {
-    throw new BodyError('invalid_reason', 'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.', 422);
+    throw new BodyError(
+      'invalid_reason',
+      'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.',
+      422,
+    );
   }
-  if (typeof text !== 'string' || text.trim().length < REASON_TEXT_MIN || text.length > REASON_TEXT_MAX) {
+  if (
+    typeof text !== 'string' ||
+    text.trim().length < REASON_TEXT_MIN ||
+    text.length > REASON_TEXT_MAX
+  ) {
     throw new BodyError(
       'invalid_reason',
       `reason.text must be ${REASON_TEXT_MIN}..${REASON_TEXT_MAX} non-blank characters.`,
@@ -280,7 +288,13 @@ function createDelegation(deps: DelegationRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     let raw: unknown;

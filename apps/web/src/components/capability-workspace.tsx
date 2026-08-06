@@ -130,7 +130,7 @@ export function CapabilityWorkspace({
         ))}
       </section>
       {kind === 'trends' ? (
-        <section id="review-comparison" className="trend-board" aria-labelledby="trend-title">
+        <section id="trend-overview" className="trend-board" aria-labelledby="trend-title">
           <div className="record-region-heading">
             <div>
               <p className="domain-kicker">Current review snapshot</p>
@@ -147,22 +147,6 @@ export function CapabilityWorkspace({
                 <small>{section.observedAt ?? 'Observation time unavailable'}</small>
               </article>
             ))}
-          </div>
-          <div className="status-explanation status-explanation--unknown">
-            <div>
-              <h2>Previous review snapshot unavailable</h2>
-              <p>
-                A comparison requires an attributable prior snapshot with matching tenant, scope,
-                and control versions.
-              </p>
-            </div>
-            <p>
-              <strong>Safe next action</strong>
-              <span>
-                Retain the current review snapshot as governed evidence; future reviews can compare
-                without rewriting history.
-              </span>
-            </p>
           </div>
         </section>
       ) : (

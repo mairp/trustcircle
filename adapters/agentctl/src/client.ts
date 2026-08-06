@@ -99,7 +99,9 @@ export class AgentctlVersionPinError extends Error {
     readonly expected: Semver,
     readonly actual: string,
   ) {
-    super(`agentctl CLI version pin mismatch: expected ${expected}, got ${actual}. Refusing to invoke.`);
+    super(
+      `agentctl CLI version pin mismatch: expected ${expected}, got ${actual}. Refusing to invoke.`,
+    );
     this.name = 'AgentctlVersionPinError';
   }
 }
@@ -252,7 +254,9 @@ export async function dispatchAgentctl(
       stderrDigest,
       timedOut: true,
       jsonPayload: null,
-      payloadDigest: textDigest(canonicalJson({ timedOut: true, operationId: request.operationId })),
+      payloadDigest: textDigest(
+        canonicalJson({ timedOut: true, operationId: request.operationId }),
+      ),
     });
   }
 

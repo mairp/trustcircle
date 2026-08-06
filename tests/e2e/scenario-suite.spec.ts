@@ -27,15 +27,33 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const mod = (p: string) => import(join(ROOT, p));
 
-const hd = (await mod('tests/e2e/scenarios/human-decisions.ts')) as typeof import('./scenarios/human-decisions.ts');
-const sa = (await mod('tests/e2e/scenarios/standards-applicability.ts')) as typeof import('./scenarios/standards-applicability.ts');
-const ir = (await mod('tests/e2e/scenarios/integrity-remediation.ts')) as typeof import('./scenarios/integrity-remediation.ts');
-const co = (await mod('tests/e2e/scenarios/controller-operations.ts')) as typeof import('./scenarios/controller-operations.ts');
-const cr = (await mod('tests/e2e/scenarios/controller-rollback.ts')) as typeof import('./scenarios/controller-rollback.ts');
-const uro = (await mod('tests/e2e/scenarios/uncertain-remote-outcome.ts')) as typeof import('./scenarios/uncertain-remote-outcome.ts');
-const bc = (await mod('tests/e2e/scenarios/bounded-continuity.ts')) as typeof import('./scenarios/bounded-continuity.ts');
-const cin = (await mod('tests/e2e/scenarios/_controller-inputs.ts')) as typeof import('./scenarios/_controller-inputs.ts');
-const cmpi = (await mod('tests/e2e/scenarios/_compliance-inputs.ts')) as typeof import('./scenarios/_compliance-inputs.ts');
+const hd = (await mod(
+  'tests/e2e/scenarios/human-decisions.ts',
+)) as typeof import('./scenarios/human-decisions.ts');
+const sa = (await mod(
+  'tests/e2e/scenarios/standards-applicability.ts',
+)) as typeof import('./scenarios/standards-applicability.ts');
+const ir = (await mod(
+  'tests/e2e/scenarios/integrity-remediation.ts',
+)) as typeof import('./scenarios/integrity-remediation.ts');
+const co = (await mod(
+  'tests/e2e/scenarios/controller-operations.ts',
+)) as typeof import('./scenarios/controller-operations.ts');
+const cr = (await mod(
+  'tests/e2e/scenarios/controller-rollback.ts',
+)) as typeof import('./scenarios/controller-rollback.ts');
+const uro = (await mod(
+  'tests/e2e/scenarios/uncertain-remote-outcome.ts',
+)) as typeof import('./scenarios/uncertain-remote-outcome.ts');
+const bc = (await mod(
+  'tests/e2e/scenarios/bounded-continuity.ts',
+)) as typeof import('./scenarios/bounded-continuity.ts');
+const cin = (await mod(
+  'tests/e2e/scenarios/_controller-inputs.ts',
+)) as typeof import('./scenarios/_controller-inputs.ts');
+const cmpi = (await mod(
+  'tests/e2e/scenarios/_compliance-inputs.ts',
+)) as typeof import('./scenarios/_compliance-inputs.ts');
 
 // The canonical digest algorithm the runners themselves use — recomputed here as an INDEPENDENT witness.
 function canonical(value: unknown): string {
@@ -48,7 +66,8 @@ function canonical(value: unknown): string {
   }
   return JSON.stringify(value ?? null);
 }
-const digestOf = (criteria: unknown) => `sha256:${createHash('sha256').update(canonical(criteria)).digest('hex')}`;
+const digestOf = (criteria: unknown) =>
+  `sha256:${createHash('sha256').update(canonical(criteria)).digest('hex')}`;
 
 interface ScenarioResult {
   readonly scenario: string;
@@ -64,7 +83,9 @@ interface ScenarioResult {
  */
 function assertScenario(result: ScenarioResult, guideCommand: string): void {
   // Positive: the real engine satisfied every acceptance criterion against the frozen fixture world.
-  expect(result.criteria.length, `${result.scenario} must evaluate ≥1 criterion`).toBeGreaterThan(0);
+  expect(result.criteria.length, `${result.scenario} must evaluate ≥1 criterion`).toBeGreaterThan(
+    0,
+  );
   expect(result.allSatisfied, `${guideCommand} — every acceptance criterion satisfied`).toBe(true);
   for (const c of result.criteria) {
     expect(c.satisfied, `${result.scenario}/${c.ref} satisfied`).toBe(true);
@@ -79,9 +100,10 @@ function assertScenario(result: ScenarioResult, guideCommand: string): void {
   };
   const tamperedAll = tampered.criteria.every((c) => c.satisfied);
   expect(tamperedAll, `${result.scenario} negative control flips allSatisfied`).toBe(false);
-  expect(digestOf(tampered.criteria), `${result.scenario} negative control changes digest`).not.toBe(
-    result.digest,
-  );
+  expect(
+    digestOf(tampered.criteria),
+    `${result.scenario} negative control changes digest`,
+  ).not.toBe(result.digest);
 }
 
 const controllerInputs = cin.buildControllerInputs();
@@ -100,19 +122,31 @@ test.describe('scenario-suite · hermetic browserless realizations of the live g
   });
 
   test('Scenario 4 — standards applicability + truthful compliance (npm run test:e2e -- --scenario standards-applicability)', () => {
-    assertScenario(sa.runStandardsApplicabilityScenario(complianceInputs), 'standards-applicability');
+    assertScenario(
+      sa.runStandardsApplicabilityScenario(complianceInputs),
+      'standards-applicability',
+    );
   });
 
   test('Scenario 5 — integrity preservation, quarantine, repair, verified closure (npm run test:e2e -- --scenario integrity-remediation)', () => {
-    assertScenario(ir.runIntegrityRemediationScenario(ir.buildIntegrityInputs()), 'integrity-remediation');
+    assertScenario(
+      ir.runIntegrityRemediationScenario(ir.buildIntegrityInputs()),
+      'integrity-remediation',
+    );
   });
 
   test('Scenario 6 — destructive automation + rollback boundaries (npm run test:e2e -- --scenario destructive-remediation-boundaries)', () => {
-    assertScenario(cr.runControllerRollbackScenario(controllerInputs), 'destructive-remediation-boundaries');
+    assertScenario(
+      cr.runControllerRollbackScenario(controllerInputs),
+      'destructive-remediation-boundaries',
+    );
   });
 
   test('Scenario 7 — lost acknowledgement + idempotent reconciliation (npm run test:e2e -- --scenario uncertain-remote-outcome)', () => {
-    assertScenario(uro.runUncertainRemoteOutcomeScenario(controllerInputs), 'uncertain-remote-outcome');
+    assertScenario(
+      uro.runUncertainRemoteOutcomeScenario(controllerInputs),
+      'uncertain-remote-outcome',
+    );
   });
 
   test('Scenario 8 — continuity-first bounded operation (npm run test:e2e -- --scenario bounded-continuity)', () => {

@@ -3,6 +3,11 @@ export const PRODUCT_ANALYTICS_EVENTS = [
   'search_outcome',
   'saved_view_created',
   'workflow_feedback',
+  'time_to_find',
+  'time_to_acknowledge',
+  'time_to_resolve',
+  'workflow_abandoned',
+  'workspace_adoption',
 ] as const;
 
 export type ProductAnalyticsEventName = (typeof PRODUCT_ANALYTICS_EVENTS)[number];
@@ -92,10 +97,36 @@ export function validateProductAnalyticsEvent(value: unknown): ProductAnalyticsV
   if (feedback !== undefined && feedback !== 'helpful' && feedback !== 'not_helpful') {
     return { ok: false, reason: 'invalid_feedback' };
   }
+  const event = candidate['event'] as ProductAnalyticsEventName;
+  const timedEvents = new Set<ProductAnalyticsEventName>([
+    'time_to_find',
+    'time_to_acknowledge',
+    'time_to_resolve',
+    'workflow_abandoned',
+    'workspace_adoption',
+  ]);
+  if (event === 'search_outcome' && (resultCount === undefined || bucket === undefined)) {
+    return { ok: false, reason: 'missing_search_measure' };
+  }
+  if (timedEvents.has(event) && bucket === undefined) {
+    return { ok: false, reason: 'missing_duration_bucket' };
+  }
+  if (event === 'workflow_feedback' && (feedback === undefined || bucket === undefined)) {
+    return { ok: false, reason: 'missing_feedback_measure' };
+  }
+  if (timedEvents.has(event) && (resultCount !== undefined || feedback !== undefined)) {
+    return { ok: false, reason: 'invalid_measure_dimension' };
+  }
+  if (
+    (event === 'page_view' || event === 'saved_view_created') &&
+    (resultCount !== undefined || bucket !== undefined || feedback !== undefined)
+  ) {
+    return { ok: false, reason: 'invalid_measure_dimension' };
+  }
   return {
     ok: true,
     event: {
-      event: candidate['event'] as ProductAnalyticsEventName,
+      event,
       route: candidate['route'],
       ...(resultCount !== undefined ? { resultCount: resultCount as number } : {}),
       ...(bucket !== undefined ? { durationBucket: bucket as DurationBucket } : {}),

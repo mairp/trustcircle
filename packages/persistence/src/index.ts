@@ -13,3 +13,4 @@ export * from './unit-of-work.ts';
 // state) together with its audit event and outbox message, with independent read-back paths.
 export * from './decision-repository.ts';
 export * from './operational-case-repository.ts';
+export * from './governed-platform-repository.ts';

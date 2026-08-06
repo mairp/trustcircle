@@ -115,13 +115,19 @@ const ADAPTER_TRANSITIONS: Readonly<
 };
 
 /** True iff `to` is a permitted adapter-version lifecycle transition from `from`. */
-export function canAdapterTransition(from: AdapterLifecycleState, to: AdapterLifecycleState): boolean {
+export function canAdapterTransition(
+  from: AdapterLifecycleState,
+  to: AdapterLifecycleState,
+): boolean {
   return isAdapterLifecycleState(from) && isAdapterLifecycleState(to)
     ? ADAPTER_TRANSITIONS[from].includes(to)
     : false;
 }
 
-export function assertAdapterTransition(from: AdapterLifecycleState, to: AdapterLifecycleState): void {
+export function assertAdapterTransition(
+  from: AdapterLifecycleState,
+  to: AdapterLifecycleState,
+): void {
   if (!canAdapterTransition(from, to)) {
     throw new RangeError(`illegal adapter-version transition: ${from} → ${to}`);
   }
@@ -387,7 +393,9 @@ export class AdapterRegistry {
    * Advance a stored version through a guarded transition (see {@link applyAdapterTransition}),
    * persisting the new version value and appending the ledger entry. Returns the durable result.
    */
-  transition(input: Omit<AdapterTransitionInput, 'version'> & { versionId: Uuid }): AdapterTransitionResult {
+  transition(
+    input: Omit<AdapterTransitionInput, 'version'> & { versionId: Uuid },
+  ): AdapterTransitionResult {
     const version = this.requireVersionById(input.versionId);
     const { versionId: _drop, ...rest } = input;
     void _drop;

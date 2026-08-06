@@ -19,11 +19,7 @@ import { createHash } from 'node:crypto';
 
 /** The five drift dimensions this gate detects. */
 export type WorkflowDriftDimension =
-  | 'schema'
-  | 'subject'
-  | 'approval'
-  | 'response'
-  | 'worker_surface';
+  'schema' | 'subject' | 'approval' | 'response' | 'worker_surface';
 
 /** A pinned/observed surface descriptor: each field is a version-pinned digest of the surface. */
 export interface WorkflowSurfaceDescriptor {
@@ -67,7 +63,9 @@ export interface WorkflowConformanceGateInput {
 }
 
 function findingId(dimension: WorkflowDriftDimension, pinned: string, observed: string): string {
-  const digest = createHash('sha256').update([dimension, pinned, observed].join(' '), 'utf8').digest('hex');
+  const digest = createHash('sha256')
+    .update([dimension, pinned, observed].join(' '), 'utf8')
+    .digest('hex');
   return `workflow-drift-${dimension.replace(/_/g, '-')}-${digest.slice(0, 32)}`;
 }
 

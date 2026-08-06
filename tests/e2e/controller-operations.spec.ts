@@ -80,13 +80,17 @@ test.describe('controller registry — discovered, drift never masked, exact act
     await expect(page.locator('main#main')).toBeVisible();
   });
 
-  test('every governed controller is discovered and surfaced (FR-023 / SC-010)', async ({ page }) => {
+  test('every governed controller is discovered and surfaced (FR-023 / SC-010)', async ({
+    page,
+  }) => {
     const rows = page.getByTestId('controller-row');
     await expect(rows).toHaveCount(SEED.length);
     await expect(page.getByTestId('controller-result-status')).toBeVisible();
   });
 
-  test('a drifted controller shows DRIFT in text, never masked by health (FR-024)', async ({ page }) => {
+  test('a drifted controller shows DRIFT in text, never masked by health (FR-024)', async ({
+    page,
+  }) => {
     // The drifted scenario is `degraded` health with observed ≠ desired — drift must be surfaced anyway.
     const drifted = page.locator('[data-testid="controller-row"][data-drift="true"]').first();
     await expect(drifted).toBeVisible();
@@ -100,7 +104,9 @@ test.describe('controller registry — discovered, drift never masked, exact act
     await expect(clean.getByTestId('row-no-drift')).toBeVisible();
   });
 
-  test('each row exposes its EXACT permitted-action set (FR-024, no widening)', async ({ page }) => {
+  test('each row exposes its EXACT permitted-action set (FR-024, no widening)', async ({
+    page,
+  }) => {
     const rows = page.getByTestId('controller-row');
     const n = await rows.count();
     expect(n).toBeGreaterThan(0);
@@ -128,7 +134,9 @@ test.describe('operation detail (uncertain) — an acknowledgement is never a su
     await expect(page.locator('main#main')).toBeVisible();
   });
 
-  test('a timed-out dispatch is NOT confirmed and surfaces awaiting-reconciliation (FR-028)', async ({ page }) => {
+  test('a timed-out dispatch is NOT confirmed and surfaces awaiting-reconciliation (FR-028)', async ({
+    page,
+  }) => {
     const banner = page.getByTestId('confirmation-banner');
     await expect(banner).toHaveAttribute('data-effect-confirmed', 'false');
     await expect(banner).toHaveAttribute('data-awaiting-reconciliation', 'true');
@@ -140,10 +148,15 @@ test.describe('operation detail (uncertain) — an acknowledgement is never a su
     );
 
     // NEGATIVE control: the operation-main carries data-effect-confirmed=false (the whole view is honest).
-    await expect(page.getByTestId('operation-main')).toHaveAttribute('data-effect-confirmed', 'false');
+    await expect(page.getByTestId('operation-main')).toHaveAttribute(
+      'data-effect-confirmed',
+      'false',
+    );
   });
 
-  test('detail (uncertain) view has zero WCAG 2.2 AA accessibility violations', async ({ page }) => {
+  test('detail (uncertain) view has zero WCAG 2.2 AA accessibility violations', async ({
+    page,
+  }) => {
     await expectNoAxe(page);
   });
 });
@@ -171,7 +184,9 @@ test.describe('operation detail (verified success) — confirmed only via direct
     await expect(page.getByTestId('duplicate-effect-warning')).toHaveCount(0);
   });
 
-  test('detail (verified success) view has zero WCAG 2.2 AA accessibility violations', async ({ page }) => {
+  test('detail (verified success) view has zero WCAG 2.2 AA accessibility violations', async ({
+    page,
+  }) => {
     await expectNoAxe(page);
   });
 });
@@ -189,7 +204,9 @@ test.describe('operation detail (continuity) — bounded, nonrenewable window', 
     await expect(page.locator('main#main')).toBeVisible();
   });
 
-  test('an active continuity lease surfaces its bounded window and reconcile-on-return duty (FR-046/050)', async ({ page }) => {
+  test('an active continuity lease surfaces its bounded window and reconcile-on-return duty (FR-046/050)', async ({
+    page,
+  }) => {
     const region = page.getByTestId('continuity-region');
     await expect(region).toHaveAttribute('data-continuity-active', 'true');
     await expect(page.getByTestId('continuity-reconcile-obligation')).toBeVisible();
@@ -199,10 +216,15 @@ test.describe('operation detail (continuity) — bounded, nonrenewable window', 
     await page.setContent(renderOperationDetail({ tenant: TENANT, model: noLease }), {
       waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByTestId('continuity-region')).toHaveAttribute('data-continuity-active', 'false');
+    await expect(page.getByTestId('continuity-region')).toHaveAttribute(
+      'data-continuity-active',
+      'false',
+    );
   });
 
-  test('detail (continuity) view has zero WCAG 2.2 AA accessibility violations', async ({ page }) => {
+  test('detail (continuity) view has zero WCAG 2.2 AA accessibility violations', async ({
+    page,
+  }) => {
     await expectNoAxe(page);
   });
 });
@@ -220,16 +242,23 @@ test.describe('operation detail (rollback conflict) — protect newer state', ()
     await expect(page.locator('main#main')).toBeVisible();
   });
 
-  test('a rollback refused to protect newer state is surfaced as such, not as success (NS-011)', async ({ page }) => {
+  test('a rollback refused to protect newer state is surfaced as such, not as success (NS-011)', async ({
+    page,
+  }) => {
     const region = page.getByTestId('rollback-region');
     await expect(region).toHaveAttribute('data-rollback-result', 'rollback_refused_newer_state');
     await expect(region).toHaveAttribute('data-protected-newer-state', 'true');
     await expect(page.getByTestId('rollback-protected')).toBeVisible();
     // NEGATIVE control: this operation is NOT presented as a confirmed success.
-    await expect(page.getByTestId('confirmation-banner')).toHaveAttribute('data-effect-confirmed', 'false');
+    await expect(page.getByTestId('confirmation-banner')).toHaveAttribute(
+      'data-effect-confirmed',
+      'false',
+    );
   });
 
-  test('detail (rollback conflict) view has zero WCAG 2.2 AA accessibility violations', async ({ page }) => {
+  test('detail (rollback conflict) view has zero WCAG 2.2 AA accessibility violations', async ({
+    page,
+  }) => {
     await expectNoAxe(page);
   });
 });
@@ -247,12 +276,16 @@ test.describe('operation actions — gated, with a required idempotency key', ()
     await expect(page.locator('main#main')).toBeVisible();
   });
 
-  test('a state-changing action not permitted from the current state is DISABLED with a reason (FR-024/GAR-005)', async ({ page }) => {
+  test('a state-changing action not permitted from the current state is DISABLED with a reason (FR-024/GAR-005)', async ({
+    page,
+  }) => {
     // `execute` is not in the permitted set for a `reconciling` operation → disabled + stated reason.
     const execute = page.locator('[data-testid="operation-action"][data-kind="execute"]');
     await expect(execute).toHaveAttribute('data-enabled', 'false');
     await expect(execute).toHaveAttribute('disabled', '');
-    await expect(page.locator('[data-testid="action-disabled-reason"][data-kind="execute"]')).toBeVisible();
+    await expect(
+      page.locator('[data-testid="action-disabled-reason"][data-kind="execute"]'),
+    ).toBeVisible();
 
     // NEGATIVE control: a permitted read-only action (collect_evidence) IS enabled.
     const evidence = page.locator('[data-testid="operation-action"][data-kind="collect_evidence"]');
@@ -281,7 +314,10 @@ test.describe('acceptance runners — every criterion discharged, non-vacuously'
     expect(result.criteria.length).toBeGreaterThan(0);
     for (const c of result.criteria) {
       expect(c.satisfied, `criterion ${c.ref} satisfied`).toBe(true);
-      expect(c.negativeControl.length, `criterion ${c.ref} has a non-vacuity control`).toBeGreaterThan(0);
+      expect(
+        c.negativeControl.length,
+        `criterion ${c.ref} has a non-vacuity control`,
+      ).toBeGreaterThan(0);
     }
     expect(result.digest).toMatch(/^sha256:[0-9a-f]{64}$/);
   });

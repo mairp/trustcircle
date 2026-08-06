@@ -96,7 +96,9 @@ export type ContextRole =
   | 'independent_compliance_reviewer'
   | 'source_steward'
   | 'platform_admin'
-  | 'automation_principal';
+  | 'automation_principal'
+  | 'ai_governance_officer'
+  | 'integration_engineer';
 
 /** Roles that grant NO governance decision authority on their own (GAR-003). */
 export const NON_DECISION_CONTEXT_ROLES: ReadonlySet<ContextRole> = new Set<ContextRole>([

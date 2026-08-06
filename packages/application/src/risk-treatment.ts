@@ -97,7 +97,10 @@ export interface TreatmentMilestone {
 }
 
 /** A milestone's status AS-OF `now`: a planned/in-progress milestone past due is `overdue` (not inferred done). */
-export function milestoneStatusAsOf(m: TreatmentMilestone, now: EpochMillis): TreatmentMilestone['status'] {
+export function milestoneStatusAsOf(
+  m: TreatmentMilestone,
+  now: EpochMillis,
+): TreatmentMilestone['status'] {
   if (m.status === 'done') return 'done';
   return now >= m.dueAt ? 'overdue' : m.status;
 }

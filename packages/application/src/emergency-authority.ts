@@ -57,12 +57,23 @@ export function validateBreakGlassActivation(input: {
     return { ok: false, rejection: 'MISSING_REASON', detail: 'a break-glass reason is required' };
   }
   if (input.incidentId.trim().length === 0) {
-    return { ok: false, rejection: 'MISSING_INCIDENT', detail: 'a declared incident id is required' };
+    return {
+      ok: false,
+      rejection: 'MISSING_INCIDENT',
+      detail: 'a declared incident id is required',
+    };
   }
   if (input.monitoringEvidenceId.trim().length === 0) {
-    return { ok: false, rejection: 'MISSING_MONITORING', detail: 'monitoring evidence is required' };
+    return {
+      ok: false,
+      rejection: 'MISSING_MONITORING',
+      detail: 'monitoring evidence is required',
+    };
   }
-  if (input.reviewerPrincipalId === input.principalId || input.reviewerPrincipalId.trim().length === 0) {
+  if (
+    input.reviewerPrincipalId === input.principalId ||
+    input.reviewerPrincipalId.trim().length === 0
+  ) {
     return {
       ok: false,
       rejection: 'NON_INDEPENDENT_REVIEWER',
@@ -70,10 +81,18 @@ export function validateBreakGlassActivation(input: {
     };
   }
   if (!(input.expiresAt > input.activatedAt)) {
-    return { ok: false, rejection: 'WINDOW_INVALID', detail: 'expiresAt must be after activatedAt' };
+    return {
+      ok: false,
+      rejection: 'WINDOW_INVALID',
+      detail: 'expiresAt must be after activatedAt',
+    };
   }
   if (!(input.reviewDueAt >= input.activatedAt)) {
-    return { ok: false, rejection: 'MISSING_REVIEW_DUE', detail: 'reviewDueAt must be on/after activation' };
+    return {
+      ok: false,
+      rejection: 'MISSING_REVIEW_DUE',
+      detail: 'reviewDueAt must be on/after activation',
+    };
   }
   return { ok: true };
 }
@@ -83,7 +102,10 @@ export function validateBreakGlassActivation(input: {
  * Delegates to the authz `resolveBreakGlass` source of truth (active status, in-window, reason /
  * incident / monitoring present, independent reviewer). Fails closed.
  */
-export function resolveEmergencyAuthority(grant: BreakGlassGrant, now: number): BreakGlassResolution {
+export function resolveEmergencyAuthority(
+  grant: BreakGlassGrant,
+  now: number,
+): BreakGlassResolution {
   return resolveBreakGlass(grant, now);
 }
 
@@ -100,11 +122,7 @@ export function emergencyStop(grant: BreakGlassGrant, now: number): BreakGlassGr
 }
 
 export type BreakGlassMonitorState =
-  | 'active'
-  | 'expired_pending_review'
-  | 'review_overdue'
-  | 'reviewed'
-  | 'revoked';
+  'active' | 'expired_pending_review' | 'review_overdue' | 'reviewed' | 'revoked';
 
 export interface BreakGlassMonitor {
   readonly state: BreakGlassMonitorState;

@@ -111,7 +111,11 @@ export class StubControllerAdapter {
       idempotencyKey,
       applied: true,
       partial: opts.partial ?? false,
-      revision: opts.revision ?? this.#config.observedRevision ?? this.#config.echoSourceRevision ?? 'rev-applied',
+      revision:
+        opts.revision ??
+        this.#config.observedRevision ??
+        this.#config.echoSourceRevision ??
+        'rev-applied',
     });
   }
 
@@ -150,14 +154,22 @@ export class StubControllerAdapter {
     return this.#dispatch(req, idempotencyKey, pinnedProtocol, pinnedVersion, pinnedRevision);
   }
 
-  #echoTuple(pinnedProtocol: number, pinnedVersion: string, pinnedRevision: string): {
+  #echoTuple(
+    pinnedProtocol: number,
+    pinnedVersion: string,
+    pinnedRevision: string,
+  ): {
     protocol: number;
     version: string;
     revision: string;
   } {
     if (this.#config.driftEcho === true) {
       // Deliberately echo a DIFFERENT tuple than pinned (NS-005 drift).
-      return { protocol: pinnedProtocol + 1, version: `${pinnedVersion}-DRIFTED`, revision: `${pinnedRevision}-DRIFTED` };
+      return {
+        protocol: pinnedProtocol + 1,
+        version: `${pinnedVersion}-DRIFTED`,
+        revision: `${pinnedRevision}-DRIFTED`,
+      };
     }
     return {
       protocol: this.#config.echoProtocolVersion ?? pinnedProtocol,
@@ -223,7 +235,9 @@ export class StubControllerAdapter {
       sourceRevision: echo.revision,
       remoteEffectObserved: reportObserved,
       observedRevision,
-      detail: reportObserved ? 'dispatch acknowledged and remote effect directly observed' : 'dispatch acknowledged',
+      detail: reportObserved
+        ? 'dispatch acknowledged and remote effect directly observed'
+        : 'dispatch acknowledged',
     });
   }
 

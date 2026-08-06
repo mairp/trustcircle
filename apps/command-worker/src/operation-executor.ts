@@ -138,7 +138,11 @@ export interface StepDispatchResult {
 
 export interface OperationExecutorOracles {
   /** FR-024 execution guard — a deny short-circuits to `blocked` (never dispatches). */
-  readonly guard: (operation: ExecutableOperation, step: OperationStep, now: number) => OperationGuardVerdict;
+  readonly guard: (
+    operation: ExecutableOperation,
+    step: OperationStep,
+    now: number,
+  ) => OperationGuardVerdict;
   /** Cancellation signal — checked before start and between steps; true ⇒ stop safely (`stopped`). */
   readonly cancelled: (operation: ExecutableOperation) => boolean;
   /** The operation's own stop conditions — true ⇒ stop safely (`stopped`) at a checkpoint. */
@@ -149,9 +153,17 @@ export interface OperationExecutorPorts {
   /** The bounded batch of ready-to-execute operations at `now` (repository query). */
   readonly dueOperations: (now: number, limit: number) => Promise<readonly ExecutableOperation[]>;
   /** Dispatch one step through the out-of-process adapter under the operation's idempotency identity. */
-  readonly dispatch: (operation: ExecutableOperation, step: OperationStep, idempotencyKey: string) => Promise<StepDispatchResult>;
+  readonly dispatch: (
+    operation: ExecutableOperation,
+    step: OperationStep,
+    idempotencyKey: string,
+  ) => Promise<StepDispatchResult>;
   /** Persist a resumable checkpoint before/after the steps. Idempotent by (operation, phase). */
-  readonly checkpoint: (operation: ExecutableOperation, phase: 'before' | 'after', now: number) => Promise<void>;
+  readonly checkpoint: (
+    operation: ExecutableOperation,
+    phase: 'before' | 'after',
+    now: number,
+  ) => Promise<void>;
 }
 
 // ===========================================================================
@@ -216,7 +228,10 @@ export interface OperationPassResult {
 // dispatched at most once per identity, whatever the scan cadence. A NEW bound revision derives fresh.
 
 /** The ONE stable idempotency identity basis for an operation-step attempt. */
-export function operationStepIdentityBasis(operation: ExecutableOperation, step: OperationStep): {
+export function operationStepIdentityBasis(
+  operation: ExecutableOperation,
+  step: OperationStep,
+): {
   operationId: string;
   stepId: string;
   revision: string;
@@ -228,16 +243,43 @@ export function operationStepIdentityBasis(operation: ExecutableOperation, step:
   };
 }
 
-export function operationStepIdempotencyKey(operation: ExecutableOperation, step: OperationStep): string {
-  return 'op-' + digest({ ...operationStepIdentityBasis(operation, step), purpose: 'operation_idempotency' }).slice(0, 40);
+export function operationStepIdempotencyKey(
+  operation: ExecutableOperation,
+  step: OperationStep,
+): string {
+  return (
+    'op-' +
+    digest({
+      ...operationStepIdentityBasis(operation, step),
+      purpose: 'operation_idempotency',
+    }).slice(0, 40)
+  );
 }
 
-export function operationStepCorrelationId(operation: ExecutableOperation, step: OperationStep): string {
-  return 'corr-op-' + digest({ ...operationStepIdentityBasis(operation, step), purpose: 'operation_correlation' }).slice(0, 32);
+export function operationStepCorrelationId(
+  operation: ExecutableOperation,
+  step: OperationStep,
+): string {
+  return (
+    'corr-op-' +
+    digest({
+      ...operationStepIdentityBasis(operation, step),
+      purpose: 'operation_correlation',
+    }).slice(0, 32)
+  );
 }
 
-export function operationStepAttemptId(operation: ExecutableOperation, step: OperationStep): string {
-  return 'op-attempt-' + digest({ ...operationStepIdentityBasis(operation, step), purpose: 'operation_attempt' }).slice(0, 32);
+export function operationStepAttemptId(
+  operation: ExecutableOperation,
+  step: OperationStep,
+): string {
+  return (
+    'op-attempt-' +
+    digest({ ...operationStepIdentityBasis(operation, step), purpose: 'operation_attempt' }).slice(
+      0,
+      32,
+    )
+  );
 }
 
 // ===========================================================================
@@ -270,7 +312,8 @@ export class OperationExecutor {
     this.#controlVersion = opts.controlVersion;
     this.#owner = opts.owner ?? DEFAULT_OWNER;
     const b = opts.batchSize ?? DEFAULT_BATCH_SIZE;
-    if (!Number.isInteger(b) || b <= 0) throw new RangeError('batchSize must be a positive integer');
+    if (!Number.isInteger(b) || b <= 0)
+      throw new RangeError('batchSize must be a positive integer');
     this.#batchSize = b;
   }
 
@@ -462,7 +505,11 @@ export class OperationExecutor {
     );
   }
 
-  #stopped(operation: ExecutableOperation, step: OperationStep, detail: string): OperationItemResult {
+  #stopped(
+    operation: ExecutableOperation,
+    step: OperationStep,
+    detail: string,
+  ): OperationItemResult {
     return {
       operationId: operation.operationId,
       tenantId: operation.tenantId,
@@ -578,7 +625,13 @@ export class OperationExecutor {
         },
       });
       if (result.deduplicated) {
-        return { ...baseResult, outcome: detailed.outcome, deduplicated: true, safeNextAction: 'none', error: null };
+        return {
+          ...baseResult,
+          outcome: detailed.outcome,
+          deduplicated: true,
+          safeNextAction: 'none',
+          error: null,
+        };
       }
       if (result.status !== 'succeeded') {
         return {
@@ -589,9 +642,21 @@ export class OperationExecutor {
           error: `commit did not succeed: status=${result.status} nextAction=${result.nextAction}`,
         };
       }
-      return { ...baseResult, outcome: detailed.outcome, deduplicated: false, safeNextAction: detailed.safeNextAction, error: null };
+      return {
+        ...baseResult,
+        outcome: detailed.outcome,
+        deduplicated: false,
+        safeNextAction: detailed.safeNextAction,
+        error: null,
+      };
     } catch (err) {
-      return { ...baseResult, outcome: 'failed', deduplicated: false, safeNextAction: 'reconcile', error: describeExecutorError(err) };
+      return {
+        ...baseResult,
+        outcome: 'failed',
+        deduplicated: false,
+        safeNextAction: 'reconcile',
+        error: describeExecutorError(err),
+      };
     }
   }
 
@@ -603,7 +668,12 @@ export class OperationExecutor {
     tenantId: string,
     attemptId: string,
   ): Promise<{ version: number; stateDigest: string; state: unknown } | null> {
-    const row = await readCanonicalState(this.#db, tenantId, OPERATION_ATTEMPT_ENTITY_KIND, attemptId);
+    const row = await readCanonicalState(
+      this.#db,
+      tenantId,
+      OPERATION_ATTEMPT_ENTITY_KIND,
+      attemptId,
+    );
     if (!row) return null;
     return { version: row.version, stateDigest: row.stateDigest, state: row.state };
   }

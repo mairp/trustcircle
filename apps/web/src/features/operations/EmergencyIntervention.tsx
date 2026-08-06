@@ -143,7 +143,9 @@ function targetRegion(m: EmergencyInterventionModel): string {
 function consequenceRegion(m: EmergencyInterventionModel): string {
   const will = m.consequences.filter((c) => c.effect === 'will');
   const willNot = m.consequences.filter((c) => c.effect === 'will_not');
-  const willItems = will.map((c) => `<li data-testid="consequence-will">${esc(c.summary)}</li>`).join('');
+  const willItems = will
+    .map((c) => `<li data-testid="consequence-will">${esc(c.summary)}</li>`)
+    .join('');
   const willNotItems = willNot
     .map((c) => `<li data-testid="consequence-will-not">${esc(c.summary)}</li>`)
     .join('');
@@ -158,7 +160,10 @@ function consequenceRegion(m: EmergencyInterventionModel): string {
       </section>`;
 }
 
-function fieldError(m: EmergencyInterventionModel, field: InterventionValidationVM['field']): { errId: string; message: string } | null {
+function fieldError(
+  m: EmergencyInterventionModel,
+  field: InterventionValidationVM['field'],
+): { errId: string; message: string } | null {
   const v = m.validation.find((x) => x.field === field);
   if (v === undefined) return null;
   return { errId: `err-intervention-${field}`, message: v.message };

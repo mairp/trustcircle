@@ -48,7 +48,9 @@ const PASSING: Omit<ReturnToServiceInput, 'at'> = {
 };
 
 /** Map each named checklist input flag to the failing-check label the verdict reports. */
-const CHECK_FLAG: ReadonlyArray<readonly [keyof typeof PASSING, (typeof RETURN_TO_SERVICE_CHECKS)[number]]> = [
+const CHECK_FLAG: ReadonlyArray<
+  readonly [keyof typeof PASSING, (typeof RETURN_TO_SERVICE_CHECKS)[number]]
+> = [
   ['identityVerified', 'identity'],
   ['contractsVerified', 'contracts'],
   ['credentialsVerified', 'credentials'],
@@ -64,28 +66,58 @@ describe('return to service · offline work gets a bounded, honest disposition (
   const nonDeferrable = { workId: 'w-2', deferrable: false };
 
   it('intentionally-inactive + deferrable ⇒ defer (held, not retried)', () => {
-    const d = dispatch({ runtimeState: 'intentionally_inactive', availabilityClass: 'optional', work, now: NOW, expiresAt: NOW + ONE_HOUR });
+    const d = dispatch({
+      runtimeState: 'intentionally_inactive',
+      availabilityClass: 'optional',
+      work,
+      now: NOW,
+      expiresAt: NOW + ONE_HOUR,
+    });
     expect(d.disposition).toBe('defer');
     expect(d.expired).toBe(false);
   });
 
   it('on-demand + inactive ⇒ request_activation (ask, do not fail)', () => {
-    const d = dispatch({ runtimeState: 'intentionally_inactive', availabilityClass: 'on-demand', work, now: NOW, expiresAt: NOW + ONE_HOUR });
+    const d = dispatch({
+      runtimeState: 'intentionally_inactive',
+      availabilityClass: 'on-demand',
+      work,
+      now: NOW,
+      expiresAt: NOW + ONE_HOUR,
+    });
     expect(d.disposition).toBe('request_activation');
   });
 
   it('transient (returning) + deferrable ⇒ queue to drain on recovery', () => {
-    const d = dispatch({ runtimeState: 'returning', availabilityClass: 'optional', work, now: NOW, expiresAt: NOW + ONE_HOUR });
+    const d = dispatch({
+      runtimeState: 'returning',
+      availabilityClass: 'optional',
+      work,
+      now: NOW,
+      expiresAt: NOW + ONE_HOUR,
+    });
     expect(d.disposition).toBe('queue');
   });
 
   it('hard-unavailable + non-deferrable ⇒ visible governed rejection (never fake success)', () => {
-    const d = dispatch({ runtimeState: 'unavailable', availabilityClass: 'optional', work: nonDeferrable, now: NOW, expiresAt: NOW + ONE_HOUR });
+    const d = dispatch({
+      runtimeState: 'unavailable',
+      availabilityClass: 'optional',
+      work: nonDeferrable,
+      now: NOW,
+      expiresAt: NOW + ONE_HOUR,
+    });
     expect(d.disposition).toBe('reject');
   });
 
   it('past the expiry deadline ⇒ expire — BOUNDED, never retried forever', () => {
-    const d = dispatch({ runtimeState: 'intentionally_inactive', availabilityClass: 'optional', work, now: NOW + 2 * ONE_HOUR, expiresAt: NOW + ONE_HOUR });
+    const d = dispatch({
+      runtimeState: 'intentionally_inactive',
+      availabilityClass: 'optional',
+      work,
+      now: NOW + 2 * ONE_HOUR,
+      expiresAt: NOW + ONE_HOUR,
+    });
     expect(d.disposition).toBe('expire');
     expect(d.expired).toBe(true);
   });
@@ -110,7 +142,14 @@ describe('return to service · resume is refused unless every prerequisite is re
 
   it('the checklist is total — the eight checks are the frozen return-to-service set', () => {
     expect([...RETURN_TO_SERVICE_CHECKS]).toEqual([
-      'identity', 'contracts', 'credentials', 'authority', 'versions', 'snapshots', 'backlog', 'evidence',
+      'identity',
+      'contracts',
+      'credentials',
+      'authority',
+      'versions',
+      'snapshots',
+      'backlog',
+      'evidence',
     ]);
   });
 });
@@ -119,7 +158,14 @@ describe('return to service · backlog + cursor recovery is surfaced, never auto
   const prior = { sourceRef: 'src-A', mappingVersion: 'map-v1', highWater: { 'agg-1': 100 } };
 
   function bev(sequence: number, extra: Partial<BatchEvent> = {}): BatchEvent {
-    return { dedupKey: `k-${sequence}`, aggregateRef: 'agg-1', sequence, sourceRef: 'src-A', mappingVersion: 'map-v1', ...extra };
+    return {
+      dedupKey: `k-${sequence}`,
+      aggregateRef: 'agg-1',
+      sequence,
+      sourceRef: 'src-A',
+      mappingVersion: 'map-v1',
+      ...extra,
+    };
   }
 
   it('a reconciled (contiguous, in-order, single-source) backlog has NO findings — safe to resume', () => {
@@ -130,8 +176,8 @@ describe('return to service · backlog + cursor recovery is surfaced, never auto
   it('a gap + duplicate + mapping drift + source-identity drift are all SURFACED together', () => {
     const report = detect(prior, [
       bev(102, { mappingVersion: 'map-v2', sourceRef: 'src-B' }), // gap (101 missing), mapping+source drift
-      bev(104),                                                    // gap (103 missing)
-      bev(104),                                                    // duplicate
+      bev(104), // gap (103 missing)
+      bev(104), // duplicate
     ]);
     expect(report.hasFindings).toBe(true);
     expect(report.countByKind.backlog_gap).toBeGreaterThanOrEqual(1);
@@ -165,13 +211,25 @@ describe('return to service · the composed safe-resume path', () => {
   const manifest = NAMED_MANIFESTS.kanban;
 
   function bev(sequence: number): BatchEvent {
-    return { dedupKey: `k-${sequence}`, aggregateRef: 'agg-1', sequence, sourceRef: 'src-A', mappingVersion: 'map-v1' };
+    return {
+      dedupKey: `k-${sequence}`,
+      aggregateRef: 'agg-1',
+      sequence,
+      sourceRef: 'src-A',
+      mappingVersion: 'map-v1',
+    };
   }
 
   it('bounded offline hold → reconciled backlog → supported contract → every check proven ⇒ resume', () => {
     // 1. While offline, deferrable work is bounded (deferred), not retried forever.
     expect(
-      dispatch({ runtimeState: 'intentionally_inactive', availabilityClass: 'optional', work: { workId: 'w', deferrable: true }, now: NOW, expiresAt: NOW + ONE_HOUR }).disposition,
+      dispatch({
+        runtimeState: 'intentionally_inactive',
+        availabilityClass: 'optional',
+        work: { workId: 'w', deferrable: true },
+        now: NOW,
+        expiresAt: NOW + ONE_HOUR,
+      }).disposition,
     ).toBe('defer');
 
     // 2. The backlog reconciles cleanly (no findings) and the contract major is supported.
@@ -192,7 +250,11 @@ describe('return to service · the composed safe-resume path', () => {
   it('an UNreconciled backlog keeps the backlog check false ⇒ resume refused', () => {
     const backlog = detect(prior, [bev(103)]); // 101..102 missing → a gap
     expect(backlog.hasFindings).toBe(true);
-    const v = evaluateReturnToService({ ...PASSING, backlogReconciled: !backlog.hasFindings, at: NOW as number });
+    const v = evaluateReturnToService({
+      ...PASSING,
+      backlogReconciled: !backlog.hasFindings,
+      at: NOW as number,
+    });
     expect(v.readyToResume).toBe(false);
     expect(v.failingChecks).toEqual(['backlog']);
   });

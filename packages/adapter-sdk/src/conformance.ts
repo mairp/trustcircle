@@ -48,6 +48,14 @@ export const CONFORMANCE_DIMENSIONS = [
   'rollback',
   'health',
   'version_overlap',
+  'malformed',
+  'delayed',
+  'out_of_order',
+  'partial_delivery',
+  'unauthorized',
+  'rate_limit',
+  'revocation',
+  'terminal_failure',
   'version_drift',
   'idempotency',
   'reconciliation',
@@ -89,8 +97,19 @@ export type ConformanceProbe = (kase: ConformanceCase) => Promise<ProbeResult>;
 export function buildConformanceSuite(manifest: AdapterManifest): readonly ConformanceCase[] {
   const declared = new Set<AdapterCapability>(manifest.capabilities);
   const ALL: readonly AdapterCapability[] = [
-    'discover', 'inspect', 'snapshot', 'subscribe', 'simulate', 'execute',
-    'pause', 'resume', 'reconcile', 'rollback', 'collect_evidence', 'quarantine', 'restore',
+    'discover',
+    'inspect',
+    'snapshot',
+    'subscribe',
+    'simulate',
+    'execute',
+    'pause',
+    'resume',
+    'reconcile',
+    'rollback',
+    'collect_evidence',
+    'quarantine',
+    'restore',
   ];
   const undeclared = ALL.find((c) => !declared.has(c)) ?? 'execute';
   const cases: ConformanceCase[] = [
@@ -140,7 +159,11 @@ export function buildConformanceSuite(manifest: AdapterManifest): readonly Confo
       id: 'C-version-overlap',
       dimension: 'version_overlap',
       description: 'during an overlap window both contract majors are honored',
-      action: { kind: 'overlap', min: manifest.contract_range.minimum, max: manifest.contract_range.maximum },
+      action: {
+        kind: 'overlap',
+        min: manifest.contract_range.minimum,
+        max: manifest.contract_range.maximum,
+      },
       expect: { oldHonored: true, newHonored: true },
     },
     {
@@ -163,6 +186,62 @@ export function buildConformanceSuite(manifest: AdapterManifest): readonly Confo
       description: 'reconciliation is safe during source degradation',
       action: { kind: 'reconcile', degraded: true },
       expect: { safe: true },
+    },
+    {
+      id: 'C-malformed',
+      dimension: 'malformed',
+      description: 'malformed source payloads are refused without an effect',
+      action: { kind: 'ingest', payload: 'malformed' },
+      expect: { refused: true, reason: 'malformed_payload', effectCount: 0 },
+    },
+    {
+      id: 'C-delayed',
+      dimension: 'delayed',
+      description: 'delayed delivery preserves the observation and exposes uncertainty',
+      action: { kind: 'deliver', delayed: true },
+      expect: { retained: true, freshness: 'unknown' },
+    },
+    {
+      id: 'C-out-of-order',
+      dimension: 'out_of_order',
+      description: 'out-of-order delivery is retained without advancing the source sequence',
+      action: { kind: 'deliver', outOfOrder: true },
+      expect: { retained: true, sequenceAdvanced: false },
+    },
+    {
+      id: 'C-partial-delivery',
+      dimension: 'partial_delivery',
+      description: 'partial delivery remains visible and requires reconciliation',
+      action: { kind: 'deliver', partial: true },
+      expect: { partial: true, reconciliationRequired: true },
+    },
+    {
+      id: 'C-unauthorized',
+      dimension: 'unauthorized',
+      description: 'an unauthorized operation is refused before dispatch',
+      action: { kind: 'command', authority: 'denied' },
+      expect: { refused: true, reason: 'unauthorized', effectCount: 0 },
+    },
+    {
+      id: 'C-rate-limit',
+      dimension: 'rate_limit',
+      description: 'rate limiting is retryable only within declared bounds',
+      action: { kind: 'command', sourceResponse: 'rate_limited' },
+      expect: { retryable: true, retryAfterHonored: true },
+    },
+    {
+      id: 'C-revocation',
+      dimension: 'revocation',
+      description: 'revocation blocks new work while preserving reconciliation',
+      action: { kind: 'command', credentialState: 'revoked' },
+      expect: { newWorkBlocked: true, reconciliationAvailable: true },
+    },
+    {
+      id: 'C-terminal-failure',
+      dimension: 'terminal_failure',
+      description: 'terminal failure stops retry and retains sanitized evidence',
+      action: { kind: 'command', sourceResponse: 'terminal' },
+      expect: { terminal: true, retryScheduled: false, evidenceRetained: true },
     },
   ];
   return Object.freeze(cases);
@@ -250,20 +329,76 @@ export interface ConformanceResultManifest {
   readonly passedCount: number;
   readonly verdicts: readonly CaseVerdict[];
   readonly ranAt: number;
+  readonly environmentDigest: string;
+  readonly fixtureDigests: readonly string[];
+  readonly toolVersions: Readonly<Record<string, string>>;
+  readonly caseEvidenceRefs: readonly ConformanceCaseEvidence[];
+  readonly startedAt: number;
+  readonly completedAt: number;
   readonly resultDigest: string;
-  readonly signature: { readonly algorithm: 'HMAC-SHA256'; readonly keyId: string; readonly value: string };
+  readonly signature: {
+    readonly algorithm: 'HMAC-SHA256';
+    readonly keyId: string;
+    readonly value: string;
+  };
+}
+
+export interface ConformanceCaseEvidence {
+  readonly caseId: string;
+  readonly evidenceRef: string;
 }
 
 export interface SealConformanceInput {
   readonly outcome: ConformanceRunOutcome;
   readonly manifestDigest: string;
-  readonly ranAt: number;
+  readonly ranAt?: number;
+  readonly environmentDigest?: string;
+  readonly fixtureDigests?: readonly string[];
+  readonly toolVersions?: Readonly<Record<string, string>>;
+  readonly caseEvidenceRefs?: readonly ConformanceCaseEvidence[];
+  readonly startedAt?: number;
+  readonly completedAt?: number;
   readonly keyId: string;
   readonly signingKey: string;
 }
 
 /** Seal a conformance outcome into a signed, digest-bound result manifest. */
 export function sealConformanceResult(input: SealConformanceInput): ConformanceResultManifest {
+  const completedAt = input.completedAt ?? input.ranAt;
+  if (!Number.isInteger(completedAt) || Number(completedAt) < 0) {
+    throw new RangeError('completedAt or ranAt must be a non-negative epoch-ms');
+  }
+  const startedAt = input.startedAt ?? completedAt!;
+  if (!Number.isInteger(startedAt) || Number(startedAt) < 0 || startedAt > completedAt!) {
+    throw new RangeError('startedAt must be a non-negative epoch-ms not after completedAt');
+  }
+  const environmentDigest =
+    input.environmentDigest ??
+    createHash('sha256')
+      .update(
+        canonicalJson({
+          adapterId: input.outcome.adapterId,
+          suiteVersion: input.outcome.suiteVersion,
+        }),
+        'utf8',
+      )
+      .digest('hex');
+  if (!/^[a-f0-9]{64}$/.test(environmentDigest)) {
+    throw new TypeError('environmentDigest must be a sha256 hex digest');
+  }
+  const fixtureDigests = Object.freeze([...(input.fixtureDigests ?? [])]);
+  if (fixtureDigests.some((digest) => !/^[a-f0-9]{64}$/.test(digest))) {
+    throw new TypeError('fixtureDigests must contain only sha256 hex digests');
+  }
+  const caseIds = new Set(input.outcome.verdicts.map((verdict) => verdict.caseId));
+  const caseEvidenceRefs = Object.freeze([...(input.caseEvidenceRefs ?? [])]);
+  if (
+    caseEvidenceRefs.some(
+      (entry) => !caseIds.has(entry.caseId) || entry.evidenceRef.trim().length === 0,
+    )
+  ) {
+    throw new TypeError('caseEvidenceRefs must resolve to a conformance case and evidence ref');
+  }
   const body = {
     kind: 'adapter-conformance-result' as const,
     adapterId: input.outcome.adapterId,
@@ -274,7 +409,13 @@ export function sealConformanceResult(input: SealConformanceInput): ConformanceR
     total: input.outcome.total,
     passedCount: input.outcome.passedCount,
     verdicts: input.outcome.verdicts,
-    ranAt: input.ranAt,
+    environmentDigest,
+    fixtureDigests,
+    toolVersions: Object.freeze({ ...(input.toolVersions ?? {}) }),
+    caseEvidenceRefs,
+    startedAt,
+    completedAt: completedAt!,
+    ranAt: completedAt!,
   };
   const preimage = canonicalJson(body);
   const resultDigest = createHash('sha256').update(preimage, 'utf8').digest('hex');

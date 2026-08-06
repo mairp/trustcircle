@@ -45,7 +45,8 @@ export type { TenantScope };
 
 export interface AccessibilityFinding {
   /** The compliance presenter under audit. */
-  readonly presenter: 'coverage-view' | 'applicability-review' | 'evidence-explorer' | 'audit-explorer';
+  readonly presenter:
+    'coverage-view' | 'applicability-review' | 'evidence-explorer' | 'audit-explorer';
   /** A short kebab-case rule id. */
   readonly rule: string;
   /** The WCAG success criterion or governance rule reference. */
@@ -96,7 +97,8 @@ export function structuralFindings(
     out.push({ presenter, rule, ref, detail });
   };
 
-  if (!/^<!doctype html>/i.test(html)) push('doctype', 'html', 'Output must be a full HTML document.');
+  if (!/^<!doctype html>/i.test(html))
+    push('doctype', 'html', 'Output must be a full HTML document.');
   if (!/<html lang="en"/.test(html)) push('html-lang', 'WCAG 3.1.1', '<html> must declare lang.');
 
   const h1s = count(html, /<h1\b/g);
@@ -108,11 +110,17 @@ export function structuralFindings(
   if (!/<main id="main"[^>]*tabindex="-1"/.test(html)) {
     push('main-landmark', 'WCAG 1.3.1', '<main id="main" tabindex="-1"> landmark is required.');
   }
-  if (!/role="status"/.test(html)) push('live-status', 'WCAG 4.1.3', 'A role=status live region is required.');
-  if (!hasTestId(html, 'tenant-scope')) push('tenant-scope', 'scope', 'A tenant-scope banner is required.');
+  if (!/role="status"/.test(html))
+    push('live-status', 'WCAG 4.1.3', 'A role=status live region is required.');
+  if (!hasTestId(html, 'tenant-scope'))
+    push('tenant-scope', 'scope', 'A tenant-scope banner is required.');
 
   if (!/overflow-wrap:\s*anywhere/.test(html)) {
-    push('reflow-wrap', 'WCAG 1.4.10', 'overflow-wrap:anywhere is required so content reflows at 400%.');
+    push(
+      'reflow-wrap',
+      'WCAG 1.4.10',
+      'overflow-wrap:anywhere is required so content reflows at 400%.',
+    );
   }
   if (!/:focus-visible/.test(html)) {
     push('focus-visible', 'WCAG 2.4.7', 'A :focus-visible outline is required.');
@@ -128,22 +136,32 @@ function coverageFindings(html: string, model: CoverageViewModel): Accessibility
     out.push({ presenter: 'coverage-view', rule, ref, detail });
   };
 
-  if (!hasTestId(html, 'claim-boundary')) push('claim-boundary-region', 'FR-032', 'A claim-boundary banner is required.');
-  if (!hasTestId(html, 'obligations')) push('obligations-region', 'FR-031', 'An obligations region is required.');
-  if (!hasTestId(html, 'assessments')) push('assessments-region', 'FR-033', 'An assessments region is required.');
-  if (!hasTestId(html, 'coverage-metadata')) push('metadata-region', 'FR-035', 'A coverage-metadata region is required.');
-  if (!hasTestId(html, 'coverage-summary')) push('coverage-summary', 'FR-031', 'A coverage summary is required.');
+  if (!hasTestId(html, 'claim-boundary'))
+    push('claim-boundary-region', 'FR-032', 'A claim-boundary banner is required.');
+  if (!hasTestId(html, 'obligations'))
+    push('obligations-region', 'FR-031', 'An obligations region is required.');
+  if (!hasTestId(html, 'assessments'))
+    push('assessments-region', 'FR-033', 'An assessments region is required.');
+  if (!hasTestId(html, 'coverage-metadata'))
+    push('metadata-region', 'FR-035', 'A coverage-metadata region is required.');
+  if (!hasTestId(html, 'coverage-summary'))
+    push('coverage-summary', 'FR-031', 'A coverage summary is required.');
 
   // The claim-boundary element must reflect the model's boundary EXACTLY.
   const boundaryAttr = attrOfTestId(html, 'claim-boundary', 'data-claim-boundary');
   if (boundaryAttr !== model.claimBoundary) {
-    push('claim-boundary-honesty', 'FR-032', 'The claim-boundary banner must reflect model.claimBoundary.');
+    push(
+      'claim-boundary-honesty',
+      'FR-032',
+      'The claim-boundary banner must reflect model.claimBoundary.',
+    );
   }
 
   // The CARDINAL anti-lie (FR-055 / SC-012): the RENDERED label must not misrepresent the boundary.
-  const renderedLabel = attrOfTestId(html, 'claim-boundary-label', 'data-boundary') !== undefined
-    ? extractLabelText(html)
-    : (boundaryAttr ?? model.claimBoundary);
+  const renderedLabel =
+    attrOfTestId(html, 'claim-boundary-label', 'data-boundary') !== undefined
+      ? extractLabelText(html)
+      : (boundaryAttr ?? model.claimBoundary);
   const mislabel = assertNoInternalCertificationMislabel(model.claimBoundary, renderedLabel);
   if (mislabel !== null) {
     push('claim-boundary-mislabel', 'FR-055', mislabel);
@@ -152,41 +170,75 @@ function coverageFindings(html: string, model: CoverageViewModel): Accessibility
   // An internal-readiness boundary must NOT read as external certification.
   const isExternalCertAttr = attrOfTestId(html, 'claim-boundary', 'data-is-external-certification');
   if (INTERNAL_READINESS.includes(model.claimBoundary) && isExternalCertAttr !== 'false') {
-    push('internal-readiness-not-cert', 'SC-012', 'An internal-readiness boundary must carry data-is-external-certification="false".');
+    push(
+      'internal-readiness-not-cert',
+      'SC-012',
+      'An internal-readiness boundary must carry data-is-external-certification="false".',
+    );
   }
   // When the boundary is not `certified`, an explicit not-certified note must be present.
   if (model.claimBoundary !== 'certified' && !hasTestId(html, 'not-certified-note')) {
-    push('not-certified-note', 'SC-012', 'A non-certified boundary must state that internal readiness is not external certification.');
+    push(
+      'not-certified-note',
+      'SC-012',
+      'A non-certified boundary must state that internal readiness is not external certification.',
+    );
   }
 
   // Certification honesty: a null certification must be stated as absent, never rendered as certified.
   if (model.certification === null) {
     if (!hasTestId(html, 'no-certification')) {
-      push('no-certification-stated', 'FR-034', 'A null certification must be stated as no external certification.');
+      push(
+        'no-certification-stated',
+        'FR-034',
+        'A null certification must be stated as no external certification.',
+      );
     }
     if (hasTestId(html, 'certification') && !hasTestId(html, 'no-certification')) {
-      push('null-cert-not-rendered', 'FR-034', 'A null certification must not render a certification block.');
+      push(
+        'null-cert-not-rendered',
+        'FR-034',
+        'A null certification must not render a certification block.',
+      );
     }
   } else if (!hasTestId(html, 'certification')) {
-    push('certification-block', 'FR-034', 'A non-null certification must render a certification block.');
+    push(
+      'certification-block',
+      'FR-034',
+      'A non-null certification must render a certification block.',
+    );
   } else {
     const displayableAttr = attrOfTestId(html, 'certification', 'data-displayable');
     if (displayableAttr !== (model.certification.displayable ? 'true' : 'false')) {
-      push('certification-displayable-honesty', 'FR-034', 'The certification block must reflect certification.displayable.');
+      push(
+        'certification-displayable-honesty',
+        'FR-034',
+        'The certification block must reflect certification.displayable.',
+      );
     }
   }
 
   // FR-031: every UNCOVERED obligation row must surface a coverage-gap.
   for (const r of model.obligations) {
     if (r.covered) continue;
-    const rowRe = new RegExp(`<tr[^>]*\\bdata-obligation-id="${escapeRe(r.obligationId)}"[^>]*>([\\s\\S]*?)</tr>`);
+    const rowRe = new RegExp(
+      `<tr[^>]*\\bdata-obligation-id="${escapeRe(r.obligationId)}"[^>]*>([\\s\\S]*?)</tr>`,
+    );
     const rowHtml = rowRe.exec(html)?.[1];
     if (rowHtml === undefined) {
-      push('uncovered-row-rendered', 'FR-031', `Uncovered obligation ${r.obligationId} must be rendered.`);
+      push(
+        'uncovered-row-rendered',
+        'FR-031',
+        `Uncovered obligation ${r.obligationId} must be rendered.`,
+      );
       continue;
     }
     if (!/data-testid="coverage-gap"/.test(rowHtml)) {
-      push('uncovered-surfaces-gap', 'FR-031', `Uncovered obligation ${r.obligationId} must surface a coverage-gap.`);
+      push(
+        'uncovered-surfaces-gap',
+        'FR-031',
+        `Uncovered obligation ${r.obligationId} must surface a coverage-gap.`,
+      );
     }
   }
 
@@ -206,7 +258,10 @@ const INTERNAL_READINESS: readonly CoverageViewModel['claimBoundary'][] = [
 function extractLabelText(html: string): string {
   const re = /<[^>]*\bdata-testid="claim-boundary-label"[^>]*>([\s\S]*?)<\/p>/;
   const inner = re.exec(html)?.[1] ?? '';
-  return inner.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return inner
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** Escape a string for use as a literal inside a RegExp. */
@@ -241,7 +296,9 @@ export function auditComplianceAccessibility(
  * not external certification, and states that no external certification exists. This is the
  * anti-masquerade guarantee: a view given nothing can never look certified.
  */
-export function auditEmptyComplianceModelsAreHonest(tenant: TenantScope): readonly AccessibilityFinding[] {
+export function auditEmptyComplianceModelsAreHonest(
+  tenant: TenantScope,
+): readonly AccessibilityFinding[] {
   const findings: AccessibilityFinding[] = [];
   const html = renderCoverageView({ tenant, model: EMPTY_COVERAGE_VIEW });
 
@@ -250,7 +307,8 @@ export function auditEmptyComplianceModelsAreHonest(tenant: TenantScope): readon
       presenter: 'coverage-view',
       rule: 'empty-not-certified',
       ref: 'SC-012',
-      detail: 'An empty coverage view must report the claim boundary as incomplete (never certified).',
+      detail:
+        'An empty coverage view must report the claim boundary as incomplete (never certified).',
     });
   }
   if (attrOfTestId(html, 'claim-boundary', 'data-is-external-certification') !== 'false') {
@@ -266,7 +324,8 @@ export function auditEmptyComplianceModelsAreHonest(tenant: TenantScope): readon
       presenter: 'coverage-view',
       rule: 'empty-not-certified-note',
       ref: 'SC-012',
-      detail: 'An empty coverage view must state that internal readiness is not external certification.',
+      detail:
+        'An empty coverage view must state that internal readiness is not external certification.',
     });
   }
   if (!hasTestId(html, 'no-certification')) {

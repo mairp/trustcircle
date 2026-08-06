@@ -85,7 +85,10 @@ export interface WorkflowSnapshotPort {
 
 /** The read-only AsyncAPI event seam. Drains already-collected ordered events. No direct DB. */
 export interface WorkflowEventPort {
-  readonly readEvents: (runId: string, sinceSequence: number | null) => Promise<readonly RawWorkflowEvent[]>;
+  readonly readEvents: (
+    runId: string,
+    sinceSequence: number | null,
+  ) => Promise<readonly RawWorkflowEvent[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -139,7 +142,10 @@ export function payloadDigest(value: unknown): string {
 }
 
 function seal<T>(env: Omit<ObservationEnvelope<T>, 'payloadDigest'>): ObservationEnvelope<T> {
-  return Object.freeze({ ...env, payloadDigest: payloadDigest(env.payload) }) as ObservationEnvelope<T>;
+  return Object.freeze({
+    ...env,
+    payloadDigest: payloadDigest(env.payload),
+  }) as ObservationEnvelope<T>;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +217,11 @@ export async function readWorkflowRun(
 
   // One ordered view: events sorted by aggregateSequence (nulls last, stable by eventId).
   const orderedEvents = [...rawEvents].sort((a, b) => {
-    if (a.aggregateSequence !== null && b.aggregateSequence !== null && a.aggregateSequence !== b.aggregateSequence) {
+    if (
+      a.aggregateSequence !== null &&
+      b.aggregateSequence !== null &&
+      a.aggregateSequence !== b.aggregateSequence
+    ) {
       return a.aggregateSequence - b.aggregateSequence;
     }
     if (a.aggregateSequence === null && b.aggregateSequence !== null) return 1;

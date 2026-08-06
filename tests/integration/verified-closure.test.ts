@@ -20,7 +20,12 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
 
-import { verifyClosure, gateResultsFrom, type ClosureGateFacts, type VerifyCommand } from '@trustcircle/application';
+import {
+  verifyClosure,
+  gateResultsFrom,
+  type ClosureGateFacts,
+  type VerifyCommand,
+} from '@trustcircle/application';
 import {
   CLOSURE_GATES,
   makeReason,
@@ -68,7 +73,10 @@ const FACT_KEYS: readonly (keyof ClosureGateFacts)[] = [
   'closureTransitionAudited',
 ];
 
-function verifyCommand(facts: ClosureGateFacts, overrides: Partial<VerifyCommand> = {}): VerifyCommand {
+function verifyCommand(
+  facts: ClosureGateFacts,
+  overrides: Partial<VerifyCommand> = {},
+): VerifyCommand {
   return {
     id: uuidFromSlug('verification'),
     tenantId: TENANT,

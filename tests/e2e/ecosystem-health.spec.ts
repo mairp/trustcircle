@@ -102,8 +102,12 @@ test.describe('ecosystem health · connector resilience signed manifest (FR-029 
     const as2 = manifest.lines.find((l) => l.assertionRef === 'US6-AS2')!;
     const retryWitness = as2.evidence.find((e) => e.readPath === 'retry-decision')!;
     // Bounded retry: transient retries with a real next-attempt; terminal + exhausted stop.
-    expect(retryWitness.witnessed.some((w) => /transient: action=retry\|key=op-outage-42/.test(w))).toBe(true);
-    expect(retryWitness.witnessed.some((w) => /terminal\(unauthorized\): action=stop/.test(w))).toBe(true);
+    expect(
+      retryWitness.witnessed.some((w) => /transient: action=retry\|key=op-outage-42/.test(w)),
+    ).toBe(true);
+    expect(
+      retryWitness.witnessed.some((w) => /terminal\(unauthorized\): action=stop/.test(w)),
+    ).toBe(true);
     expect(retryWitness.witnessed.some((w) => /exhausted\(5\/5\): action=stop/.test(w))).toBe(true);
   });
 
@@ -124,7 +128,9 @@ test.describe('ecosystem health · connector resilience signed manifest (FR-029 
       ingestion.some((e) => e.witnessed.some((w) => /onceDigest===twiceDigest → true/.test(w))),
     ).toBe(true);
     expect(
-      ingestion.some((e) => e.witnessed.some((w) => /forwardDigest===rebuiltDigest → true/.test(w))),
+      ingestion.some((e) =>
+        e.witnessed.some((w) => /forwardDigest===rebuiltDigest → true/.test(w)),
+      ),
     ).toBe(true);
 
     // The SC-011 success criterion is present and met.
@@ -143,10 +149,14 @@ test.describe('ecosystem health · connector resilience signed manifest (FR-029 
     const forged = deep(manifest);
     const line = forged.lines.find((l) => l.assertionRef === 'US6-AS4')!;
     const w = line.evidence.find((e) => e.readPath === 'reconciliation-run')!;
-    w.witnessed = w.witnessed.map((s) => s.replace(/driftedRun:(.*)resolved=false/, 'driftedRun:$1resolved=true'));
+    w.witnessed = w.witnessed.map((s) =>
+      s.replace(/driftedRun:(.*)resolved=false/, 'driftedRun:$1resolved=true'),
+    );
     const v = verifyConnectorResilienceManifest(forged);
     expect(v.ok).toBe(false);
-    expect(v.reasons.some((r) => /US6-AS4 does not witness the conflict staying visible/.test(r))).toBe(true);
+    expect(
+      v.reasons.some((r) => /US6-AS4 does not witness the conflict staying visible/.test(r)),
+    ).toBe(true);
   });
 
   test('every surfaced anomaly / drift stays visible with a specific owner action (gap register)', () => {
@@ -219,7 +229,9 @@ test.describe('ecosystem health · named adapters + core-only activation signed 
     const lifecycle = core.evidence.filter((e) => e.readPath === 'component-lifecycle');
     expect(
       lifecycle.some((e) =>
-        e.witnessed.some((w) => /core activated:.*activationState=active\|runtimeState=active/.test(w)),
+        e.witnessed.some((w) =>
+          /core activated:.*activationState=active\|runtimeState=active/.test(w),
+        ),
       ),
     ).toBe(true);
     const inactive = lifecycle.find((e) => e.detail.includes('optional/on-demand'))!;
@@ -275,16 +287,30 @@ test.describe('ecosystem health · distinct per-journey evidence manifests (T272
     const digests = JOURNEYS.map((j) => projectJourneyManifest(j, full).manifestDigest);
     expect(new Set(digests).size).toBe(digests.length);
     // Concrete: Kanban journey digest ≠ workflow/agentctl journey digest ≠ profile journey digest.
-    const byScope = new Map(JOURNEYS.map((j) => [j.scope, projectJourneyManifest(j, full).manifestDigest]));
-    expect(byScope.get('scenario-9-kanban-projection')).not.toBe(byScope.get('scenario-10-workflow-agentctl'));
-    expect(byScope.get('scenario-9-kanban-projection')).not.toBe(byScope.get('profile-core-only-activation'));
-    expect(byScope.get('scenario-10-workflow-agentctl')).not.toBe(byScope.get('profile-core-only-activation'));
+    const byScope = new Map(
+      JOURNEYS.map((j) => [j.scope, projectJourneyManifest(j, full).manifestDigest]),
+    );
+    expect(byScope.get('scenario-9-kanban-projection')).not.toBe(
+      byScope.get('scenario-10-workflow-agentctl'),
+    );
+    expect(byScope.get('scenario-9-kanban-projection')).not.toBe(
+      byScope.get('profile-core-only-activation'),
+    );
+    expect(byScope.get('scenario-10-workflow-agentctl')).not.toBe(
+      byScope.get('profile-core-only-activation'),
+    );
   });
 
   test('NEGATIVE control: tampering the Kanban journey changes ONLY its digest, and fails verify', () => {
     const full = emitNamedAdaptersManifest();
-    const kanban = projectJourneyManifest(JOURNEYS.find((j) => j.scope === 'scenario-9-kanban-projection')!, full);
-    const wf = projectJourneyManifest(JOURNEYS.find((j) => j.scope === 'scenario-10-workflow-agentctl')!, full);
+    const kanban = projectJourneyManifest(
+      JOURNEYS.find((j) => j.scope === 'scenario-9-kanban-projection')!,
+      full,
+    );
+    const wf = projectJourneyManifest(
+      JOURNEYS.find((j) => j.scope === 'scenario-10-workflow-agentctl')!,
+      full,
+    );
 
     const tampered = deep(kanban);
     (tampered.adapterLines[0].evidence[0] as { witnessed: string[] }).witnessed[0] += '_X';
@@ -298,7 +324,10 @@ test.describe('ecosystem health · distinct per-journey evidence manifests (T272
 
   test('NEGATIVE control: a journey digest copied onto another scope fails verify (no shared copies)', () => {
     const full = emitNamedAdaptersManifest();
-    const kanban = projectJourneyManifest(JOURNEYS.find((j) => j.scope === 'scenario-9-kanban-projection')!, full);
+    const kanban = projectJourneyManifest(
+      JOURNEYS.find((j) => j.scope === 'scenario-9-kanban-projection')!,
+      full,
+    );
     // Forge: relabel the Kanban journey as the profile scope (the old byte-identical-copy defect).
     const forged = deep(kanban);
     forged.journeyScope = 'profile-core-only-activation';

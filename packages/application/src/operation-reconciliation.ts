@@ -79,25 +79,43 @@ export function reconcileOperation(input: ReconcileInput): ReconciliationOutcome
   if (!input.usedRemoteObservation || input.remoteObservedState === undefined) {
     // Could not read the authoritative remote — the effect is still unknown; stay blocked.
     result = 'still_uncertain';
-    reason = makeReason('remote_unobservable', 'the authoritative remote state could not be read; the effect remains unknown and no new mutation may proceed');
+    reason = makeReason(
+      'remote_unobservable',
+      'the authoritative remote state could not be read; the effect remains unknown and no new mutation may proceed',
+    );
   } else if (duplicateEffect) {
     // A single logical dispatch produced more than one observed effect — a duplicate governed effect.
     result = 'conflict';
-    reason = makeReason('duplicate_effect', `observed ${input.observedEffectCount} effects for a single logical dispatch (SC-011 one-effect rule violated); surfaced as a conflict for compensation`);
+    reason = makeReason(
+      'duplicate_effect',
+      `observed ${input.observedEffectCount} effects for a single logical dispatch (SC-011 one-effect rule violated); surfaced as a conflict for compensation`,
+    );
   } else if (input.remoteHoldsNewerState === true && !input.remoteMatchesDesired) {
     result = 'conflict';
-    reason = makeReason('newer_remote_state', 'the remote holds a different, newer legitimate state than desired; reconciled as a conflict (protect newer state)');
+    reason = makeReason(
+      'newer_remote_state',
+      'the remote holds a different, newer legitimate state than desired; reconciled as a conflict (protect newer state)',
+    );
   } else if (input.remoteMatchesDesired && input.observedEffectCount === 1) {
     // Exactly one effect, directly observed — the change is present and confirmed.
     result = 'reconciled_effect_present';
-    reason = makeReason('effect_present', 'a single remote effect was directly observed; the desired change is present (confirmed by observation, not acknowledgement)');
+    reason = makeReason(
+      'effect_present',
+      'a single remote effect was directly observed; the desired change is present (confirmed by observation, not acknowledgement)',
+    );
   } else if (input.observedEffectCount === 0) {
     // Directly observed that the dispatch did NOT take effect — a redispatch is safe (idempotent).
     result = 'reconciled_no_effect';
-    reason = makeReason('no_effect', 'a direct remote read shows the dispatch did not take effect; a redispatch under the same idempotency identity is safe');
+    reason = makeReason(
+      'no_effect',
+      'a direct remote read shows the dispatch did not take effect; a redispatch under the same idempotency identity is safe',
+    );
   } else {
     result = 'still_uncertain';
-    reason = makeReason('inconclusive', 'the remote observation did not conclusively establish presence or absence of the effect');
+    reason = makeReason(
+      'inconclusive',
+      'the remote observation did not conclusively establish presence or absence of the effect',
+    );
   }
 
   const run = makeReconciliationRun({
@@ -112,9 +130,13 @@ export function reconcileOperation(input: ReconcileInput): ReconciliationOutcome
     // exactOptionalPropertyTypes: forward each optional only when present, never as explicit undefined.
     ...(input.desiredState !== undefined ? { desiredState: input.desiredState } : {}),
     ...(input.dispatchedState !== undefined ? { dispatchedState: input.dispatchedState } : {}),
-    ...(input.remoteObservedState !== undefined ? { remoteObservedState: input.remoteObservedState } : {}),
+    ...(input.remoteObservedState !== undefined
+      ? { remoteObservedState: input.remoteObservedState }
+      : {}),
     ...(input.canonicalState !== undefined ? { canonicalState: input.canonicalState } : {}),
-    ...(input.reconciledAttemptIds !== undefined ? { reconciledAttemptIds: input.reconciledAttemptIds } : {}),
+    ...(input.reconciledAttemptIds !== undefined
+      ? { reconciledAttemptIds: input.reconciledAttemptIds }
+      : {}),
   });
 
   return {
@@ -129,14 +151,18 @@ export function reconcileOperation(input: ReconcileInput): ReconciliationOutcome
  * Gate a NEW mutation on reconciliation (FR-028 reconcile-before-mutation). A new mutation is
  * permitted only when the latest reconciliation ESTABLISHED actual state. Returns a structured verdict.
  */
-export function mayMutateAfterReconciliation(
-  latest: ReconciliationRun | undefined,
-): { readonly permitted: boolean; readonly reason: string } {
+export function mayMutateAfterReconciliation(latest: ReconciliationRun | undefined): {
+  readonly permitted: boolean;
+  readonly reason: string;
+} {
   if (latest === undefined) {
     return { permitted: false, reason: 'no_reconciliation_run_yet' };
   }
   if (!reconciliationEstablishedState(latest)) {
-    return { permitted: false, reason: `reconciliation_result_${latest.result}_did_not_establish_state` };
+    return {
+      permitted: false,
+      reason: `reconciliation_result_${latest.result}_did_not_establish_state`,
+    };
   }
   return { permitted: true, reason: 'state_established_mutation_permitted' };
 }

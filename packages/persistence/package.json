@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@trustcircle/domain": "*",
-    "@trustcircle/application": "*"
+    "@trustcircle/application": "*",
+    "pg": "8.22.0"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -24,14 +24,8 @@
 
 import { describe, it, expect } from 'vitest';
 
-import {
-  AdapterClient,
-  type AdapterClientConfig,
-} from '@trustcircle/adapter-sdk';
-import {
-  reconcileOperation,
-  mayMutateAfterReconciliation,
-} from '@trustcircle/application';
+import { AdapterClient, type AdapterClientConfig } from '@trustcircle/adapter-sdk';
+import { reconcileOperation, mayMutateAfterReconciliation } from '@trustcircle/application';
 
 import { StubControllerAdapter } from '../fixtures/adapters/stub-adapter.ts';
 import { NOW, TENANT, uuidFromSlug } from '../fixtures/controllers.ts';
@@ -91,7 +85,10 @@ describe('one identity → one effect across a retry (FR-026/SC-011)', () => {
 
 describe('reconciliation is the ONLY success path and it gates the next mutation (FR-028)', () => {
   it('a single directly-observed effect reconciles to reconciled_effect_present and unblocks mutation', async () => {
-    const adapter = new StubControllerAdapter({ applyEffectOnDispatch: true, observedRevision: 'rev-1000' });
+    const adapter = new StubControllerAdapter({
+      applyEffectOnDispatch: true,
+      observedRevision: 'rev-1000',
+    });
     const client = clientOver(adapter);
     await client.dispatch(DISPATCH);
     const obs = await client.observe(OP, IDEM);
@@ -147,7 +144,10 @@ describe('reconciliation is the ONLY success path and it gates the next mutation
 
 describe('a duplicate effect is surfaced as a conflict, never a success (SC-011)', () => {
   it('observe reporting >1 effect reconciles to conflict + duplicateEffect', async () => {
-    const adapter = new StubControllerAdapter({ applyEffectOnDispatch: true, duplicateEffect: true });
+    const adapter = new StubControllerAdapter({
+      applyEffectOnDispatch: true,
+      duplicateEffect: true,
+    });
     const client = clientOver(adapter);
     await client.dispatch(DISPATCH);
     const obs = await client.observe(OP, IDEM);

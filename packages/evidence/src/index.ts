@@ -16,3 +16,5 @@ export * from './original-preservation.ts';
 // attempts, buffered continuity effects, remote observations, rollback, reconciliation, verification
 // (Phase 6 / User Story 4 / FR-025, FR-027, FR-028, FR-049, NS-011, SC-011).
 export * from './operation-evidence.ts';
+
+export * from './evidence-package.ts';

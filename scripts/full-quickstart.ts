@@ -103,79 +103,453 @@ export interface Step {
 // they actually run (which requires TC_HAS_INFRA / TC_HAS_BROWSER).
 export const STEPS: readonly Step[] = [
   // ── Bootstrap and contract gates (all host-runnable) ─────────────────────────────────────────
-  { id: 'bootstrap.contracts.validate', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run contracts:validate', tier: 'host-runnable', command: 'npm', args: ['run', 'contracts:validate'] },
-  { id: 'bootstrap.contracts.check', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run contracts:check', tier: 'host-runnable', command: 'npm', args: ['run', 'contracts:check'] },
-  { id: 'bootstrap.typecheck', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run typecheck', tier: 'host-runnable', command: 'npm', args: ['run', 'typecheck'] },
-  { id: 'bootstrap.unit', kind: 'bootstrap', guideSection: 'Bootstrap and contract gates', guideCommand: 'npm run test:unit', tier: 'host-runnable', command: 'npm', args: ['run', 'test:unit'] },
+  {
+    id: 'bootstrap.contracts.validate',
+    kind: 'bootstrap',
+    guideSection: 'Bootstrap and contract gates',
+    guideCommand: 'npm run contracts:validate',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'contracts:validate'],
+  },
+  {
+    id: 'bootstrap.contracts.check',
+    kind: 'bootstrap',
+    guideSection: 'Bootstrap and contract gates',
+    guideCommand: 'npm run contracts:check',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'contracts:check'],
+  },
+  {
+    id: 'bootstrap.typecheck',
+    kind: 'bootstrap',
+    guideSection: 'Bootstrap and contract gates',
+    guideCommand: 'npm run typecheck',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'typecheck'],
+  },
+  {
+    id: 'bootstrap.unit',
+    kind: 'bootstrap',
+    guideSection: 'Bootstrap and contract gates',
+    guideCommand: 'npm run test:unit',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:unit'],
+  },
 
   // ── Start the isolated stack. The guide brings up a live Docker stack, migrates, seeds, and runs
   // a live health probe. On this host the SAME bring-up behaviour (component set, minimum-service
   // health, connectivity, safe degradation, migration, seed round-trip, readiness verdict) is proven
   // in-process; the literal live commands are full-fidelity companions that need real infra. ───────
-  { id: 'stack.up.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait', tier: 'host-runnable', command: 'npx', args: ['vitest', 'run', '--project', 'integration', 'core-only-profile'] },
-  { id: 'stack.up.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.up.hostrun' },
-  { id: 'stack.migrate.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run db:migrate', tier: 'host-runnable', command: 'npm', args: ['run', 'test:migrations'] },
-  { id: 'stack.migrate.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run db:migrate', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.migrate.hostrun' },
-  { id: 'stack.seed.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run fixtures:seed -- --profile e2e', tier: 'host-runnable', command: 'npm', args: ['run', 'test:persistence'] },
-  { id: 'stack.seed.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run fixtures:seed -- --profile e2e', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.seed.hostrun' },
-  { id: 'stack.health.hostrun', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run health', tier: 'host-runnable', command: 'npm', args: ['run', 'test:application'] },
-  { id: 'stack.health.live', kind: 'stack', guideSection: 'Start the isolated stack', guideCommand: 'npm run health', tier: 'full-fidelity', requires: 'live-stack', coveredByHostRunnable: 'stack.health.hostrun' },
+  {
+    id: 'stack.up.hostrun',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand:
+      'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait',
+    tier: 'host-runnable',
+    command: 'npx',
+    args: ['vitest', 'run', '--project', 'integration', 'core-only-profile'],
+  },
+  {
+    id: 'stack.up.live',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand:
+      'docker compose -f deploy/compose/control-plane.yml --profile e2e up -d --build --wait',
+    tier: 'full-fidelity',
+    requires: 'live-stack',
+    coveredByHostRunnable: 'stack.up.hostrun',
+  },
+  {
+    id: 'stack.migrate.hostrun',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand: 'npm run db:migrate',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:migrations'],
+  },
+  {
+    id: 'stack.migrate.live',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand: 'npm run db:migrate',
+    tier: 'full-fidelity',
+    requires: 'live-stack',
+    coveredByHostRunnable: 'stack.migrate.hostrun',
+  },
+  {
+    id: 'stack.seed.hostrun',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand: 'npm run fixtures:seed -- --profile e2e',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:persistence'],
+  },
+  {
+    id: 'stack.seed.live',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand: 'npm run fixtures:seed -- --profile e2e',
+    tier: 'full-fidelity',
+    requires: 'live-stack',
+    coveredByHostRunnable: 'stack.seed.hostrun',
+  },
+  {
+    id: 'stack.health.hostrun',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand: 'npm run health',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:application'],
+  },
+  {
+    id: 'stack.health.live',
+    kind: 'stack',
+    guideSection: 'Start the isolated stack',
+    guideCommand: 'npm run health',
+    tier: 'full-fidelity',
+    requires: 'live-stack',
+    coveredByHostRunnable: 'stack.health.hostrun',
+  },
 
   // ── Scenario 1 — open-ended discovery + visible gaps ─────────────────────────────────────────
-  { id: 'scenario.01.discovery', kind: 'scenario', guideSection: 'Scenario 1', guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary', tier: 'host-runnable', command: 'npm', args: ['run', 'test:discovery'] },
-  { id: 'scenario.01.discovery.browser', kind: 'scenario', guideSection: 'Scenario 1', guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.01.discovery' },
+  {
+    id: 'scenario.01.discovery',
+    kind: 'scenario',
+    guideSection: 'Scenario 1',
+    guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:discovery'],
+  },
+  {
+    id: 'scenario.01.discovery.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 1',
+    guideCommand: 'npm run test:e2e -- --scenario discovery-open-boundary',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.01.discovery',
+  },
   // ── Scenario 2 — human decisions + SoD ───────────────────────────────────────────────────────
-  { id: 'scenario.02.human-decisions', kind: 'scenario', guideSection: 'Scenario 2', guideCommand: 'npm run test:e2e -- --scenario human-decisions', tier: 'host-runnable', command: 'npm', args: ['run', 'test:sod'] },
-  { id: 'scenario.02.human-decisions.browser', kind: 'scenario', guideSection: 'Scenario 2', guideCommand: 'npm run test:e2e -- --scenario human-decisions', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.02.human-decisions' },
+  {
+    id: 'scenario.02.human-decisions',
+    kind: 'scenario',
+    guideSection: 'Scenario 2',
+    guideCommand: 'npm run test:e2e -- --scenario human-decisions',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:sod'],
+  },
+  {
+    id: 'scenario.02.human-decisions.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 2',
+    guideCommand: 'npm run test:e2e -- --scenario human-decisions',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.02.human-decisions',
+  },
   // ── Scenario 3 — federated cross-tenant joint approval ───────────────────────────────────────
-  { id: 'scenario.03.cross-tenant-joint', kind: 'scenario', guideSection: 'Scenario 3', guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval', tier: 'host-runnable', command: 'npm', args: ['run', 'test:sod'] },
-  { id: 'scenario.03.cross-tenant-joint.browser', kind: 'scenario', guideSection: 'Scenario 3', guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.03.cross-tenant-joint' },
+  {
+    id: 'scenario.03.cross-tenant-joint',
+    kind: 'scenario',
+    guideSection: 'Scenario 3',
+    guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:sod'],
+  },
+  {
+    id: 'scenario.03.cross-tenant-joint.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 3',
+    guideCommand: 'npm run test:e2e -- --scenario cross-tenant-joint-approval',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.03.cross-tenant-joint',
+  },
   // ── Scenario 4 — standards applicability + truthful compliance ───────────────────────────────
-  { id: 'scenario.04.standards', kind: 'scenario', guideSection: 'Scenario 4', guideCommand: 'npm run test:e2e -- --scenario standards-applicability', tier: 'host-runnable', command: 'npm', args: ['run', 'test:integration'] },
-  { id: 'scenario.04.standards.browser', kind: 'scenario', guideSection: 'Scenario 4', guideCommand: 'npm run test:e2e -- --scenario standards-applicability', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.04.standards' },
+  {
+    id: 'scenario.04.standards',
+    kind: 'scenario',
+    guideSection: 'Scenario 4',
+    guideCommand: 'npm run test:e2e -- --scenario standards-applicability',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:integration'],
+  },
+  {
+    id: 'scenario.04.standards.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 4',
+    guideCommand: 'npm run test:e2e -- --scenario standards-applicability',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.04.standards',
+  },
   // ── Scenario 5 — corrupted-item preservation / quarantine / repair / verified closure ────────
-  { id: 'scenario.05.integrity', kind: 'scenario', guideSection: 'Scenario 5', guideCommand: 'npm run test:e2e -- --scenario integrity-remediation', tier: 'host-runnable', command: 'npm', args: ['run', 'test:domain'] },
-  { id: 'scenario.05.integrity.browser', kind: 'scenario', guideSection: 'Scenario 5', guideCommand: 'npm run test:e2e -- --scenario integrity-remediation', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.05.integrity' },
+  {
+    id: 'scenario.05.integrity',
+    kind: 'scenario',
+    guideSection: 'Scenario 5',
+    guideCommand: 'npm run test:e2e -- --scenario integrity-remediation',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:domain'],
+  },
+  {
+    id: 'scenario.05.integrity.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 5',
+    guideCommand: 'npm run test:e2e -- --scenario integrity-remediation',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.05.integrity',
+  },
   // ── Scenario 6 — destructive automation + rollback boundaries ────────────────────────────────
-  { id: 'scenario.06.destructive', kind: 'scenario', guideSection: 'Scenario 6', guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries', tier: 'host-runnable', command: 'npm', args: ['run', 'test:policy'] },
-  { id: 'scenario.06.destructive.browser', kind: 'scenario', guideSection: 'Scenario 6', guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.06.destructive' },
+  {
+    id: 'scenario.06.destructive',
+    kind: 'scenario',
+    guideSection: 'Scenario 6',
+    guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:policy'],
+  },
+  {
+    id: 'scenario.06.destructive.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 6',
+    guideCommand: 'npm run test:e2e -- --scenario destructive-remediation-boundaries',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.06.destructive',
+  },
   // ── Scenario 7 — lost acknowledgement + idempotent reconciliation ────────────────────────────
-  { id: 'scenario.07.lost-ack', kind: 'scenario', guideSection: 'Scenario 7', guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome', tier: 'host-runnable', command: 'npm', args: ['run', 'test:worker'] },
-  { id: 'scenario.07.lost-ack.browser', kind: 'scenario', guideSection: 'Scenario 7', guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.07.lost-ack' },
+  {
+    id: 'scenario.07.lost-ack',
+    kind: 'scenario',
+    guideSection: 'Scenario 7',
+    guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:worker'],
+  },
+  {
+    id: 'scenario.07.lost-ack.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 7',
+    guideCommand: 'npm run test:e2e -- --scenario uncertain-remote-outcome',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.07.lost-ack',
+  },
   // ── Scenario 8 — continuity-first bounded operation ──────────────────────────────────────────
-  { id: 'scenario.08.continuity', kind: 'scenario', guideSection: 'Scenario 8', guideCommand: 'npm run test:e2e -- --scenario bounded-continuity', tier: 'host-runnable', command: 'npm', args: ['run', 'test:resilience'] },
-  { id: 'scenario.08.continuity.browser', kind: 'scenario', guideSection: 'Scenario 8', guideCommand: 'npm run test:e2e -- --scenario bounded-continuity', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.08.continuity' },
+  {
+    id: 'scenario.08.continuity',
+    kind: 'scenario',
+    guideSection: 'Scenario 8',
+    guideCommand: 'npm run test:e2e -- --scenario bounded-continuity',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:resilience'],
+  },
+  {
+    id: 'scenario.08.continuity.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 8',
+    guideCommand: 'npm run test:e2e -- --scenario bounded-continuity',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.08.continuity',
+  },
   // ── Scenario 9 — Kanban projection boundary ──────────────────────────────────────────────────
-  { id: 'scenario.09.kanban', kind: 'scenario', guideSection: 'Scenario 9', guideCommand: 'npm run test:e2e -- --scenario adapter-kanban', tier: 'host-runnable', command: 'npm', args: ['run', 'test:projector'] },
-  { id: 'scenario.09.kanban.browser', kind: 'scenario', guideSection: 'Scenario 9', guideCommand: 'npm run test:e2e -- --scenario adapter-kanban', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.09.kanban' },
+  {
+    id: 'scenario.09.kanban',
+    kind: 'scenario',
+    guideSection: 'Scenario 9',
+    guideCommand: 'npm run test:e2e -- --scenario adapter-kanban',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:projector'],
+  },
+  {
+    id: 'scenario.09.kanban.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 9',
+    guideCommand: 'npm run test:e2e -- --scenario adapter-kanban',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.09.kanban',
+  },
   // ── Scenario 10 — workflow_orchestration + agentctl compatibility ────────────────────────────
-  { id: 'scenario.10.workflow-agentctl', kind: 'scenario', guideSection: 'Scenario 10', guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration', tier: 'host-runnable', command: 'npm', args: ['run', 'test:integration'] },
-  { id: 'scenario.10.workflow-agentctl.browser', kind: 'scenario', guideSection: 'Scenario 10', guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.10.workflow-agentctl' },
+  {
+    id: 'scenario.10.workflow-agentctl',
+    kind: 'scenario',
+    guideSection: 'Scenario 10',
+    guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:integration'],
+  },
+  {
+    id: 'scenario.10.workflow-agentctl.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 10',
+    guideCommand: 'npm run test:e2e -- --scenario adapter-workflow-orchestration',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.10.workflow-agentctl',
+  },
   // ── Scenario 11 — connector outage, replay, projection rebuild ───────────────────────────────
-  { id: 'scenario.11.connector-resilience', kind: 'scenario', guideSection: 'Scenario 11', guideCommand: 'npm run test:e2e -- --scenario connector-resilience', tier: 'host-runnable', command: 'npm', args: ['run', 'test:recovery'] },
-  { id: 'scenario.11.connector-resilience.browser', kind: 'scenario', guideSection: 'Scenario 11', guideCommand: 'npm run test:e2e -- --scenario connector-resilience', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.11.connector-resilience' },
+  {
+    id: 'scenario.11.connector-resilience',
+    kind: 'scenario',
+    guideSection: 'Scenario 11',
+    guideCommand: 'npm run test:e2e -- --scenario connector-resilience',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:recovery'],
+  },
+  {
+    id: 'scenario.11.connector-resilience.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 11',
+    guideCommand: 'npm run test:e2e -- --scenario connector-resilience',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.11.connector-resilience',
+  },
 
   // ── Scenario 12 — tenant isolation, retention, tamper (all host-runnable) ────────────────────
-  { id: 'scenario.12.evidence-retention', kind: 'scenario', guideSection: 'Scenario 12', guideCommand: 'npm run test:e2e -- --scenario evidence-retention', tier: 'host-runnable', command: 'npx', args: ['playwright', 'test', '--project=evidence-retention'], env: { TC_NO_WEBSERVER: '1' } },
-  { id: 'scenario.12.audit-tamper', kind: 'scenario', guideSection: 'Scenario 12', guideCommand: 'npm run test:e2e -- --scenario audit-tamper', tier: 'host-runnable', command: 'npx', args: ['playwright', 'test', '--project=audit-tamper'], env: { TC_NO_WEBSERVER: '1' } },
-  { id: 'scenario.12.tenant-rls', kind: 'scenario', guideSection: 'Scenario 12', guideCommand: 'npm run test:security -- --scenario tenant-rls', tier: 'host-runnable', command: 'npm', args: ['run', 'test:security'] },
+  {
+    id: 'scenario.12.evidence-retention',
+    kind: 'scenario',
+    guideSection: 'Scenario 12',
+    guideCommand: 'npm run test:e2e -- --scenario evidence-retention',
+    tier: 'host-runnable',
+    command: 'npx',
+    args: ['playwright', 'test', '--project=evidence-retention'],
+    env: { TC_NO_WEBSERVER: '1' },
+  },
+  {
+    id: 'scenario.12.audit-tamper',
+    kind: 'scenario',
+    guideSection: 'Scenario 12',
+    guideCommand: 'npm run test:e2e -- --scenario audit-tamper',
+    tier: 'host-runnable',
+    command: 'npx',
+    args: ['playwright', 'test', '--project=audit-tamper'],
+    env: { TC_NO_WEBSERVER: '1' },
+  },
+  {
+    id: 'scenario.12.tenant-rls',
+    kind: 'scenario',
+    guideSection: 'Scenario 12',
+    guideCommand: 'npm run test:security -- --scenario tenant-rls',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:security'],
+  },
 
   // ── Scenario 13 — contract & DB evolution (host-runnable) ────────────────────────────────────
-  { id: 'scenario.13.contract-matrix', kind: 'scenario', guideSection: 'Scenario 13', guideCommand: 'npm run test:contract -- --matrix previous-supported,current', tier: 'host-runnable', command: 'npm', args: ['run', 'test:contract'] },
-  { id: 'scenario.13.migrations', kind: 'scenario', guideSection: 'Scenario 13', guideCommand: 'npm run test:migrations -- --from previous-supported --to current', tier: 'host-runnable', command: 'npm', args: ['run', 'test:migrations'] },
+  {
+    id: 'scenario.13.contract-matrix',
+    kind: 'scenario',
+    guideSection: 'Scenario 13',
+    guideCommand: 'npm run test:contract -- --matrix previous-supported,current',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:contract'],
+  },
+  {
+    id: 'scenario.13.migrations',
+    kind: 'scenario',
+    guideSection: 'Scenario 13',
+    guideCommand: 'npm run test:migrations -- --from previous-supported --to current',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:migrations'],
+  },
 
   // ── Scenario 14 — disaster recovery (host-runnable) ──────────────────────────────────────────
-  { id: 'scenario.14.canonical-restore', kind: 'scenario', guideSection: 'Scenario 14', guideCommand: 'npm run test:recovery -- --scenario canonical-restore', tier: 'host-runnable', command: 'npm', args: ['run', 'test:recovery'] },
+  {
+    id: 'scenario.14.canonical-restore',
+    kind: 'scenario',
+    guideSection: 'Scenario 14',
+    guideCommand: 'npm run test:recovery -- --scenario canonical-restore',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:recovery'],
+  },
 
   // ── Scenario 15 — dashboards, accessibility, scale, export ───────────────────────────────────
-  { id: 'scenario.15.role-dashboards', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:e2e -- --scenario role-dashboards', tier: 'host-runnable', command: 'npm', args: ['run', 'test:projector'] },
-  { id: 'scenario.15.role-dashboards.browser', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:e2e -- --scenario role-dashboards', tier: 'full-fidelity', requires: 'live-stack+browser', coveredByHostRunnable: 'scenario.15.role-dashboards' },
-  { id: 'scenario.15.accessibility', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:accessibility', tier: 'host-runnable', command: 'npx', args: ['playwright', 'test', '--project=accessibility-full-suite'], env: { TC_NO_WEBSERVER: '1' } },
-  { id: 'scenario.15.accessibility.browser', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:accessibility', tier: 'full-fidelity', requires: 'browser', coveredByHostRunnable: 'scenario.15.accessibility' },
-  { id: 'scenario.15.performance', kind: 'scenario', guideSection: 'Scenario 15', guideCommand: 'npm run test:performance -- --profile acceptance', tier: 'host-runnable', command: 'npm', args: ['run', 'test:performance:acceptance'] },
+  {
+    id: 'scenario.15.role-dashboards',
+    kind: 'scenario',
+    guideSection: 'Scenario 15',
+    guideCommand: 'npm run test:e2e -- --scenario role-dashboards',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:projector'],
+  },
+  {
+    id: 'scenario.15.role-dashboards.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 15',
+    guideCommand: 'npm run test:e2e -- --scenario role-dashboards',
+    tier: 'full-fidelity',
+    requires: 'live-stack+browser',
+    coveredByHostRunnable: 'scenario.15.role-dashboards',
+  },
+  {
+    id: 'scenario.15.accessibility',
+    kind: 'scenario',
+    guideSection: 'Scenario 15',
+    guideCommand: 'npm run test:accessibility',
+    tier: 'host-runnable',
+    command: 'npx',
+    args: ['playwright', 'test', '--project=accessibility-full-suite'],
+    env: { TC_NO_WEBSERVER: '1' },
+  },
+  {
+    id: 'scenario.15.accessibility.browser',
+    kind: 'scenario',
+    guideSection: 'Scenario 15',
+    guideCommand: 'npm run test:accessibility',
+    tier: 'full-fidelity',
+    requires: 'browser',
+    coveredByHostRunnable: 'scenario.15.accessibility',
+  },
+  {
+    id: 'scenario.15.performance',
+    kind: 'scenario',
+    guideSection: 'Scenario 15',
+    guideCommand: 'npm run test:performance -- --profile acceptance',
+    tier: 'host-runnable',
+    command: 'npm',
+    args: ['run', 'test:performance:acceptance'],
+  },
 
   // ── Full release gate (host-runnable; exit 3 = HELD) ─────────────────────────────────────────
-  { id: 'release.gate', kind: 'release', guideSection: 'Full release gate', guideCommand: 'npm run verify:release', tier: 'host-runnable', command: 'node', args: ['--experimental-strip-types', 'scripts/verify-release.ts'], heldOnExit3: true },
+  {
+    id: 'release.gate',
+    kind: 'release',
+    guideSection: 'Full release gate',
+    guideCommand: 'npm run verify:release',
+    tier: 'host-runnable',
+    command: 'node',
+    args: ['--experimental-strip-types', 'scripts/verify-release.ts'],
+    heldOnExit3: true,
+  },
 ];
 
 export type StepStatus = 'passed' | 'failed' | 'held' | 'not-run-here';
@@ -229,7 +603,12 @@ export function runAll(opts: RunOptions): { results: StepResult[]; aggregate: Ag
       if (fullFidelityCanRun(step, opts) && !opts.dryRun) {
         // Host advertises the infra/browser: run the live rendering. (Not reachable on this headless host.)
         const cover = step.coveredByHostRunnable!;
-        return { step, status: 'passed', code: 0, note: `full-fidelity rendering ran (infra/browser present); mirrors ${cover}` };
+        return {
+          step,
+          status: 'passed',
+          code: 0,
+          note: `full-fidelity rendering ran (infra/browser present); mirrors ${cover}`,
+        };
       }
       const cover = step.coveredByHostRunnable!;
       return {
@@ -240,7 +619,8 @@ export function runAll(opts: RunOptions): { results: StepResult[]; aggregate: Ag
       };
     }
     // host-runnable
-    if (opts.dryRun) return { step, status: 'not-run-here', code: null, note: 'dry-run (not executed)' };
+    if (opts.dryRun)
+      return { step, status: 'not-run-here', code: null, note: 'dry-run (not executed)' };
     return executeHostRunnable(step);
   });
 
@@ -255,7 +635,9 @@ export function runAll(opts: RunOptions): { results: StepResult[]; aggregate: Ag
   const sections = new Set(STEPS.map((s) => s.guideSection));
   let coverageGap = false;
   for (const section of sections) {
-    const hostRunnableHere = STEPS.filter((s) => s.guideSection === section && s.tier === 'host-runnable');
+    const hostRunnableHere = STEPS.filter(
+      (s) => s.guideSection === section && s.tier === 'host-runnable',
+    );
     if (hostRunnableHere.length === 0) continue;
     const anyPassed = hostRunnableHere.some((s) => byId.get(s.id)!.status === 'passed');
     // release gate section may be held (exit 3) rather than passed; that is not a coverage gap.
@@ -315,7 +697,11 @@ export interface Manifest {
   readonly signature?: string;
 }
 
-export function buildManifest(results: StepResult[], opts: RunOptions, generatedAt: string): Manifest {
+export function buildManifest(
+  results: StepResult[],
+  opts: RunOptions,
+  generatedAt: string,
+): Manifest {
   const steps = results.map((r) => ({
     id: r.step.id,
     kind: r.step.kind,
@@ -343,11 +729,7 @@ export function buildManifest(results: StepResult[], opts: RunOptions, generated
     fullFidelityDeferredToCi: full.filter((s) => s.status === 'not-run-here').length,
   };
   const status: 'passed' | 'failed' | 'held' =
-    counts.hostRunnableFailed > 0
-      ? 'failed'
-      : counts.hostRunnableHeld > 0
-        ? 'held'
-        : 'passed';
+    counts.hostRunnableFailed > 0 ? 'failed' : counts.hostRunnableHeld > 0 ? 'held' : 'passed';
   const body = {
     kind: 'full-quickstart-validation' as const,
     guide: 'specs/001-governance-control-plane/quickstart.md',
@@ -376,27 +758,44 @@ export function selfTest(): { ok: true } {
   for (let i = 1; i <= 15; i++) {
     if (!sections.has(`Scenario ${i}`)) throw new Error(`quickstart plan missing Scenario ${i}`);
   }
-  for (const req of ['Bootstrap and contract gates', 'Start the isolated stack', 'Full release gate']) {
+  for (const req of [
+    'Bootstrap and contract gates',
+    'Start the isolated stack',
+    'Full release gate',
+  ]) {
     if (!sections.has(req)) throw new Error(`quickstart plan missing section: ${req}`);
   }
   const sectionsNeedingHostRun = new Set(
     STEPS.filter((s) => s.kind === 'scenario' || s.kind === 'stack').map((s) => s.guideSection),
   );
   for (const section of sectionsNeedingHostRun) {
-    const hostRunnable = STEPS.some((s) => s.guideSection === section && s.tier === 'host-runnable');
+    const hostRunnable = STEPS.some(
+      (s) => s.guideSection === section && s.tier === 'host-runnable',
+    );
     if (!hostRunnable) {
-      throw new Error(`section "${section}" has NO host-runnable step — it would be perpetually indeterminate`);
+      throw new Error(
+        `section "${section}" has NO host-runnable step — it would be perpetually indeterminate`,
+      );
     }
   }
   const byId = new Map(STEPS.map((s) => [s.id, s]));
   for (const s of STEPS) {
     if (s.tier === 'full-fidelity') {
-      if (!s.coveredByHostRunnable) throw new Error(`full-fidelity step ${s.id} must name coveredByHostRunnable`);
+      if (!s.coveredByHostRunnable)
+        throw new Error(`full-fidelity step ${s.id} must name coveredByHostRunnable`);
       const cover = byId.get(s.coveredByHostRunnable);
-      if (!cover) throw new Error(`full-fidelity step ${s.id} references unknown host-runnable ${s.coveredByHostRunnable}`);
-      if (cover.tier !== 'host-runnable') throw new Error(`full-fidelity step ${s.id} must be covered by a host-runnable step`);
-      if (cover.guideSection !== s.guideSection) throw new Error(`full-fidelity step ${s.id} covered by a step in a different section`);
-      if (s.command) throw new Error(`full-fidelity step ${s.id} must not declare a host command (it is not run here)`);
+      if (!cover)
+        throw new Error(
+          `full-fidelity step ${s.id} references unknown host-runnable ${s.coveredByHostRunnable}`,
+        );
+      if (cover.tier !== 'host-runnable')
+        throw new Error(`full-fidelity step ${s.id} must be covered by a host-runnable step`);
+      if (cover.guideSection !== s.guideSection)
+        throw new Error(`full-fidelity step ${s.id} covered by a step in a different section`);
+      if (s.command)
+        throw new Error(
+          `full-fidelity step ${s.id} must not declare a host command (it is not run here)`,
+        );
     } else if (!s.command) {
       throw new Error(`host-runnable step ${s.id} must declare a command`);
     }
@@ -425,7 +824,9 @@ if (isEntry) {
   selfTest();
 
   if (argv.includes('--self-test')) {
-    console.log(`full-quickstart plan OK — ${STEPS.length} steps cover bootstrap, 15 scenarios, and the release gate.`);
+    console.log(
+      `full-quickstart plan OK — ${STEPS.length} steps cover bootstrap, 15 scenarios, and the release gate.`,
+    );
     process.exit(0);
   }
   if (argv.includes('--list')) {
@@ -449,7 +850,9 @@ if (isEntry) {
 
   console.log('\n─── full quickstart validation summary ───');
   for (const r of results) {
-    console.log(`${r.status.toUpperCase().padEnd(13)} ${r.step.id.padEnd(40)} ${r.step.guideSection}`);
+    console.log(
+      `${r.status.toUpperCase().padEnd(13)} ${r.step.id.padEnd(40)} ${r.step.guideSection}`,
+    );
   }
   console.log(`\nmanifest: ${OUT_FILE}`);
   console.log(

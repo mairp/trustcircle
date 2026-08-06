@@ -65,7 +65,10 @@ function pkg(over: Partial<Parameters<typeof makeDecisionPackage>[0]> = {}): Dec
   });
 }
 
-const APPROVE_REASON: Reason = makeReason('risk_accepted', 'compensating controls verified in staging run');
+const APPROVE_REASON: Reason = makeReason(
+  'risk_accepted',
+  'compensating controls verified in staging run',
+);
 
 function permitVerdict(): EffectAuthorityVerdict {
   return { permitted: true, denyReason: null, authorityAssignmentId: ASSIGNMENT };
@@ -157,7 +160,11 @@ describe('T092 — rejected decision attempt (AC3): a refusal is itself a durabl
     const out = decideDecisionAction(
       command({
         decision: p,
-        authority: { permitted: false, denyReason: 'SOD_VIOLATION', authorityAssignmentId: ASSIGNMENT },
+        authority: {
+          permitted: false,
+          denyReason: 'SOD_VIOLATION',
+          authorityAssignmentId: ASSIGNMENT,
+        },
       }),
       decisionPackageDigest(p),
     );
@@ -190,7 +197,11 @@ describe('T092 — rejected decision attempt (AC3): a refusal is itself a durabl
   });
 
   it('PACKAGE_INVALIDATED: acting on an invalidated package is refused', () => {
-    const p = pkg({ status: 'invalidated', invalidationReason: 'scope changed', invalidatedAt: NOW - 1 });
+    const p = pkg({
+      status: 'invalidated',
+      invalidationReason: 'scope changed',
+      invalidatedAt: NOW - 1,
+    });
     const out = decideDecisionAction(command({ decision: p }), decisionPackageDigest(p));
     expect(out.rejectionCode).toBe('PACKAGE_INVALIDATED');
   });

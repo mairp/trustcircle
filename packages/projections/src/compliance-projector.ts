@@ -19,6 +19,7 @@ import { type Uuid, type EpochMillis } from '@trustcircle/domain';
 import {
   reconstructCoverage,
   coverageReferenceCount,
+  type FrameworkMappingRecord,
   type CoverageInputs,
   type CoverageResult,
   type CoverageScope,
@@ -81,6 +82,68 @@ export interface ComplianceCoverageModel {
   readonly metadata: CoverageProjectionMetadata;
 }
 
+export type MatrixControlCoverage =
+  'covered' | 'partial' | 'unmapped' | 'disputed' | 'not_assessed' | 'not_applicable';
+export type MatrixEvidenceSufficiency =
+  'sufficient' | 'partial' | 'insufficient' | 'not_assessed' | 'not_applicable';
+export type MatrixReadiness = 'ready' | 'not_ready' | 'not_assessed' | 'not_applicable';
+export type MatrixAssessment = 'assessed' | 'not_assessed' | 'disputed' | 'not_applicable';
+export type MatrixCertification = 'certified' | 'not_certified' | 'out_of_scope' | 'not_applicable';
+export type MatrixDuty =
+  'organizational_obligation' | 'guidance_only' | 'draft_only' | 'external_assurance_scope';
+
+export interface FrameworkClaimFact {
+  readonly mappingId: string;
+  readonly tenantId: string;
+  readonly controlCoverage: MatrixControlCoverage;
+  readonly evidenceSufficiency: MatrixEvidenceSufficiency;
+  readonly readiness: MatrixReadiness;
+  readonly assessment: MatrixAssessment;
+  readonly certification: MatrixCertification;
+  readonly observedAt: number;
+  readonly evidenceRefs: readonly string[];
+}
+
+export interface FrameworkMatrixRow {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly sourcePublicationId: string;
+  readonly sourceClauseRef: string;
+  readonly requirementType: FrameworkMappingRecord['sourceMaterialType'];
+  readonly applicability: FrameworkMappingRecord['applicabilityState'];
+  readonly duty: MatrixDuty;
+  readonly targetType: FrameworkMappingRecord['targetType'];
+  readonly targetRef: string;
+  readonly mappingType: FrameworkMappingRecord['mappingType'];
+  readonly mappingStatus: FrameworkMappingRecord['status'];
+  readonly coverageExtent: FrameworkMappingRecord['coverageExtent'];
+  readonly conditions: readonly string[];
+  readonly controlCoverage: MatrixControlCoverage;
+  readonly evidenceSufficiency: MatrixEvidenceSufficiency;
+  readonly readiness: MatrixReadiness;
+  readonly assessment: MatrixAssessment;
+  readonly certification: MatrixCertification;
+  readonly evidenceRefs: readonly string[];
+  readonly mappingOwnerPrincipalId: string;
+  readonly obligationOwnerPrincipalId?: string;
+  readonly rationale: string;
+  readonly confidenceBand: FrameworkMappingRecord['confidenceBand'];
+  readonly mappingVersion: number;
+  readonly supersedesMappingId?: string;
+  readonly supersededByMappingId?: string;
+  readonly reviewedByPrincipalId?: string;
+  readonly reviewedAt?: number;
+}
+
+export interface FrameworkMatrixModel {
+  readonly tenantId: string;
+  readonly publicationId?: string;
+  readonly at: number;
+  readonly rows: readonly FrameworkMatrixRow[];
+  readonly metadata: CoverageProjectionMetadata;
+  readonly digest: string;
+}
+
 export interface ComplianceProjectorInput {
   readonly tenantId: Uuid;
   /** Evidence older than this (relative to `at`) is `aging`; older still is `stale` (default 90 days). */
@@ -104,13 +167,17 @@ export class ComplianceCoverageProjector {
   readonly #mappings = new Map<string, ControlMapping>();
   readonly #evaluations = new Map<string, ControlEvaluationFact>();
   readonly #certifications = new Map<string, ExternalCertification>();
+  readonly #frameworkMappings = new Map<string, FrameworkMappingRecord>();
+  readonly #frameworkClaims = new Map<string, FrameworkClaimFact>();
 
   constructor(input: ComplianceProjectorInput) {
     this.#tenantId = reqUuid(input.tenantId, 'projector.tenantId');
     const aging = input.agingHorizonMillis ?? 30 * DAY;
     const stale = input.staleHorizonMillis ?? 90 * DAY;
-    if (!Number.isInteger(aging) || aging <= 0) throw new RangeError('agingHorizonMillis must be positive');
-    if (!Number.isInteger(stale) || stale <= aging) throw new RangeError('staleHorizonMillis must exceed aging');
+    if (!Number.isInteger(aging) || aging <= 0)
+      throw new RangeError('agingHorizonMillis must be positive');
+    if (!Number.isInteger(stale) || stale <= aging)
+      throw new RangeError('staleHorizonMillis must exceed aging');
     this.#aging = aging;
     this.#stale = stale;
   }
@@ -145,6 +212,50 @@ export class ComplianceCoverageProjector {
   ingestCertification(c: ExternalCertification): void {
     this.#guardTenant(c.tenantId, c.id);
     this.#certifications.set(reqUuid(c.id, 'certification.id'), c);
+  }
+
+  ingestFrameworkMapping(mapping: FrameworkMappingRecord): void {
+    this.#guardTenant(mapping.tenantId as Uuid, mapping.id);
+    this.#frameworkMappings.set(reqUuid(mapping.id, 'frameworkMapping.id'), mapping);
+  }
+  ingestFrameworkClaim(claim: FrameworkClaimFact): void {
+    this.#guardTenant(claim.tenantId as Uuid, claim.mappingId);
+    reqUuid(claim.mappingId, 'frameworkClaim.mappingId');
+    reqEpoch(claim.observedAt, 'frameworkClaim.observedAt');
+    if (
+      !['covered', 'partial', 'unmapped', 'disputed', 'not_assessed', 'not_applicable'].includes(
+        claim.controlCoverage,
+      )
+    ) {
+      throw new TypeError('framework claim control coverage is unsupported');
+    }
+    if (
+      !['sufficient', 'partial', 'insufficient', 'not_assessed', 'not_applicable'].includes(
+        claim.evidenceSufficiency,
+      )
+    ) {
+      throw new TypeError('framework claim evidence sufficiency is unsupported');
+    }
+    if (!['ready', 'not_ready', 'not_assessed', 'not_applicable'].includes(claim.readiness)) {
+      throw new TypeError('framework claim readiness is unsupported');
+    }
+    if (!['assessed', 'not_assessed', 'disputed', 'not_applicable'].includes(claim.assessment)) {
+      throw new TypeError('framework claim assessment is unsupported');
+    }
+    if (
+      !['certified', 'not_certified', 'out_of_scope', 'not_applicable'].includes(
+        claim.certification,
+      )
+    ) {
+      throw new TypeError('framework claim certification is unsupported');
+    }
+    if (!Array.isArray(claim.evidenceRefs) || claim.evidenceRefs.some((ref) => !ref)) {
+      throw new TypeError('framework claim evidence refs must be a list of non-empty refs');
+    }
+    this.#frameworkClaims.set(
+      claim.mappingId,
+      Object.freeze({ ...claim, evidenceRefs: Object.freeze([...claim.evidenceRefs]) }),
+    );
   }
 
   /** The newest evidence instant across ingested evaluations (0 if none) — the source cursor. */
@@ -183,7 +294,10 @@ export class ComplianceCoverageProjector {
    * Project the coverage model for an exact (scope, at). Composes the application coverage engine and
    * attaches freshness metadata. Deterministic — no state mutation, no wall clock.
    */
-  coverage(scope: Omit<CoverageScope, 'tenantId'> & { tenantId?: Uuid }, at: EpochMillis): ComplianceCoverageModel {
+  coverage(
+    scope: Omit<CoverageScope, 'tenantId'> & { tenantId?: Uuid },
+    at: EpochMillis,
+  ): ComplianceCoverageModel {
     reqEpoch(at, 'at');
     const fullScope: CoverageScope = {
       tenantId: this.#tenantId,
@@ -207,6 +321,155 @@ export class ComplianceCoverageProjector {
     });
   }
 
+  frameworkMatrix(
+    scope: Readonly<{ publicationId?: string }>,
+    at: EpochMillis,
+  ): FrameworkMatrixModel {
+    reqEpoch(at, 'at');
+    if (scope.publicationId !== undefined) {
+      reqUuid(scope.publicationId, 'frameworkMatrix.publicationId');
+    }
+    const dutyFor = (mapping: FrameworkMappingRecord): MatrixDuty => {
+      if (
+        mapping.sourceMaterialType === 'requirement' ||
+        mapping.sourceMaterialType === 'organizational_duty'
+      ) {
+        return 'organizational_obligation';
+      }
+      if (mapping.sourceMaterialType === 'guidance') return 'guidance_only';
+      if (mapping.sourceMaterialType === 'draft') return 'draft_only';
+      return 'external_assurance_scope';
+    };
+    const rows = [...this.#frameworkMappings.values()]
+      .filter(
+        (mapping) =>
+          scope.publicationId === undefined || mapping.sourcePublicationId === scope.publicationId,
+      )
+      .sort(
+        (a, b) =>
+          a.sourceClauseRef.localeCompare(b.sourceClauseRef) ||
+          a.targetRef.localeCompare(b.targetRef) ||
+          a.id.localeCompare(b.id),
+      )
+      .map((mapping): FrameworkMatrixRow => {
+        const claim = this.#frameworkClaims.get(mapping.id);
+        const currentClaim = claim !== undefined && claim.observedAt <= at ? claim : undefined;
+        const notApplicable =
+          mapping.mappingType === 'not_applicable' ||
+          mapping.applicabilityState === 'not_applicable';
+        const disputed = mapping.status === 'disputed' || mapping.mappingType === 'conflicts';
+        const partial =
+          mapping.mappingType === 'partially_supports' || mapping.coverageExtent === 'partial';
+        const controlCoverage: MatrixControlCoverage = notApplicable
+          ? 'not_applicable'
+          : (currentClaim?.controlCoverage ??
+            (disputed
+              ? 'disputed'
+              : partial
+                ? 'partial'
+                : mapping.coverageExtent === 'none'
+                  ? 'unmapped'
+                  : 'not_assessed'));
+        const evidenceSufficiency: MatrixEvidenceSufficiency = notApplicable
+          ? 'not_applicable'
+          : (currentClaim?.evidenceSufficiency ?? (partial ? 'partial' : 'not_assessed'));
+        const readiness: MatrixReadiness = notApplicable
+          ? 'not_applicable'
+          : (currentClaim?.readiness ?? 'not_assessed');
+        const assessment: MatrixAssessment = notApplicable
+          ? 'not_applicable'
+          : (currentClaim?.assessment ?? (disputed ? 'disputed' : 'not_assessed'));
+        const certification: MatrixCertification = notApplicable
+          ? 'not_applicable'
+          : (currentClaim?.certification ?? 'not_certified');
+        return Object.freeze({
+          id: mapping.id,
+          tenantId: mapping.tenantId,
+          sourcePublicationId: mapping.sourcePublicationId,
+          sourceClauseRef: mapping.sourceClauseRef,
+          requirementType: mapping.sourceMaterialType,
+          applicability: mapping.applicabilityState,
+          duty: dutyFor(mapping),
+          targetType: mapping.targetType,
+          targetRef: mapping.targetRef,
+          mappingType: mapping.mappingType,
+          mappingStatus: mapping.status,
+          coverageExtent: mapping.coverageExtent,
+          conditions: Object.freeze([...mapping.conditions]),
+          controlCoverage,
+          evidenceSufficiency,
+          readiness,
+          assessment,
+          certification,
+          evidenceRefs: Object.freeze(
+            [...new Set([...mapping.evidenceRefs, ...(currentClaim?.evidenceRefs ?? [])])].sort(),
+          ),
+          mappingOwnerPrincipalId: mapping.mappingOwnerPrincipalId,
+          ...(mapping.obligationOwnerPrincipalId === undefined
+            ? {}
+            : { obligationOwnerPrincipalId: mapping.obligationOwnerPrincipalId }),
+          rationale: mapping.rationale,
+          confidenceBand: mapping.confidenceBand,
+          mappingVersion: mapping.version,
+          ...(mapping.supersedesMappingId === undefined
+            ? {}
+            : { supersedesMappingId: mapping.supersedesMappingId }),
+          ...(mapping.supersededByMappingId === undefined
+            ? {}
+            : { supersededByMappingId: mapping.supersededByMappingId }),
+          ...(mapping.reviewedByPrincipalId === undefined
+            ? {}
+            : { reviewedByPrincipalId: mapping.reviewedByPrincipalId }),
+          ...(mapping.reviewedAt === undefined ? {} : { reviewedAt: mapping.reviewedAt }),
+        });
+      });
+    let sourceCursor = 0;
+    for (const mapping of this.#frameworkMappings.values()) {
+      if (mapping.updatedAt > sourceCursor) sourceCursor = mapping.updatedAt;
+    }
+    for (const claim of this.#frameworkClaims.values()) {
+      if (claim.observedAt <= at && claim.observedAt > sourceCursor) {
+        sourceCursor = claim.observedAt;
+      }
+    }
+    const gapCount = rows.filter(
+      (row) =>
+        row.mappingStatus !== 'active' ||
+        row.applicability === 'conditional' ||
+        row.applicability === 'undetermined' ||
+        !['covered', 'not_applicable'].includes(row.controlCoverage) ||
+        !['sufficient', 'not_applicable'].includes(row.evidenceSufficiency) ||
+        !['ready', 'not_applicable'].includes(row.readiness) ||
+        !['assessed', 'not_applicable'].includes(row.assessment),
+    ).length;
+    const metadata: CoverageProjectionMetadata = Object.freeze({
+      generatedAt: at,
+      sourceCursor: sourceCursor as EpochMillis,
+      freshness: this.#freshness(sourceCursor as EpochMillis, at),
+      partialCoverage: gapCount > 0,
+      coverageGapCount: gapCount,
+    });
+    const digest =
+      'sha256:' +
+      sha256(
+        canonical({
+          tenantId: this.#tenantId,
+          publicationId: scope.publicationId ?? null,
+          at,
+          rows,
+          metadata,
+        }),
+      );
+    return Object.freeze({
+      tenantId: this.#tenantId,
+      ...(scope.publicationId === undefined ? {} : { publicationId: scope.publicationId }),
+      at,
+      rows: Object.freeze(rows),
+      metadata,
+      digest,
+    });
+  }
+
   /** The count of ingested rows across all kinds. */
   size(): number {
     return (
@@ -214,7 +477,9 @@ export class ComplianceCoverageProjector {
       this.#obligations.size +
       this.#mappings.size +
       this.#evaluations.size +
-      this.#certifications.size
+      this.#certifications.size +
+      this.#frameworkMappings.size +
+      this.#frameworkClaims.size
     );
   }
 
@@ -222,7 +487,10 @@ export class ComplianceCoverageProjector {
    * The content digest of the projected coverage at (scope, at) — the durable-effect witness.
    * Identical ingested rows + identical scope + identical `at` ⇒ identical digest.
    */
-  snapshotDigest(scope: Omit<CoverageScope, 'tenantId'> & { tenantId?: Uuid }, at: EpochMillis): string {
+  snapshotDigest(
+    scope: Omit<CoverageScope, 'tenantId'> & { tenantId?: Uuid },
+    at: EpochMillis,
+  ): string {
     const model = this.coverage(scope, at);
     return `sha256:${sha256(
       canonical({
@@ -241,4 +509,8 @@ export class ComplianceCoverageProjector {
 }
 
 // Re-export the types the engine consumes so downstream ingesters can type their rows without a deep import.
-export type { ControlEvaluationFact, CoverageScope, CoverageResult } from '@trustcircle/application';
+export type {
+  ControlEvaluationFact,
+  CoverageScope,
+  CoverageResult,
+} from '@trustcircle/application';

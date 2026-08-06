@@ -165,7 +165,8 @@ export function raiseAlert(input: RaiseAlertInput): Alert {
     throw new TypeError('raiseAlert: an alert must name a connector or a component subject');
   }
   if (input.connectorId !== undefined) assertUuid(input.connectorId, 'raiseAlert.connectorId');
-  if (input.componentKey !== undefined) assertNonEmpty(input.componentKey, 'raiseAlert.componentKey');
+  if (input.componentKey !== undefined)
+    assertNonEmpty(input.componentKey, 'raiseAlert.componentKey');
   const severity = input.severity ?? 'medium';
   if (!isAlertSeverity(severity)) {
     throw new TypeError(`raiseAlert.severity must be one of ${ALERT_SEVERITIES.join('|')}`);
@@ -208,9 +209,7 @@ export function notifyOwner(alert: Alert, at: EpochMillis): Alert {
   }
   if (alert.ownerNotifiedAt !== undefined) {
     // Already notified — preserve the first notification instant; only advance state if still open.
-    return alert.state === 'open'
-      ? Object.freeze({ ...alert, state: 'notified' as const })
-      : alert;
+    return alert.state === 'open' ? Object.freeze({ ...alert, state: 'notified' as const }) : alert;
   }
   return Object.freeze({ ...alert, ownerNotifiedAt: at, state: 'notified' as const });
 }
@@ -218,7 +217,9 @@ export function notifyOwner(alert: Alert, at: EpochMillis): Alert {
 /** Acknowledge an alert (owner has seen it). Only a notified alert may be acknowledged. */
 export function acknowledgeAlert(alert: Alert): Alert {
   if (alert.state !== 'notified') {
-    throw new RangeError(`acknowledgeAlert: only a notified alert may be acknowledged (was ${alert.state})`);
+    throw new RangeError(
+      `acknowledgeAlert: only a notified alert may be acknowledged (was ${alert.state})`,
+    );
   }
   return Object.freeze({ ...alert, state: 'acknowledged' as const });
 }

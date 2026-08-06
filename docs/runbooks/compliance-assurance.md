@@ -93,15 +93,15 @@ This runbook documents the behavior implemented and verified in:
 
 ## 1. The invariants (what the platform guarantees, and how to verify each)
 
-| # | Invariant | Where enforced | How it is verified |
-|---|-----------|----------------|--------------------|
-| 1 | **Publication facts are immutable and versioned.** A standard publication records publisher, identifier, exact title, edition, publication date, status, material type, source URI, and registry version — never a conformity claim. Superseding a publication mints a new version; the prior is retained. | `packages/domain/src/compliance.ts` (`makeStandardPublication`, `publicationSupersedes`), `packages/application/src/standards-import.ts` | `tests/unit/standards-registry.test.ts` (frozen aggregates, supersession, deterministic import ids) |
-| 2 | **Applicability requires independent review.** A proposed decision is durable but **not active**; it activates only when an **independent** reviewer (never the proposer, never an incompatible role) approves it with a mandatory reason, producing a superseding version. | `packages/application/src/applicability-service.ts`, `packages/authz/src/compliance-review.ts`, `packages/domain/src/compliance.ts` (`applicabilityIsActive`, `applicabilityVersionSupersedes`) | `tests/unit/applicability-state-machine.test.ts` (proposer≠reviewer, incompatible-role, versioning, rejection ordering) |
-| 3 | **Non-applicability expires; the gap reopens.** A `not_applicable` decision past its review instant reopens its obligation gap rather than persisting as a silent exemption. | `packages/domain/src/compliance.ts` (`nonApplicabilityReopensGap`), `packages/application/src/coverage-engine.ts` | `tests/unit/applicability-state-machine.test.ts`, `tests/integration/compliance-coverage.test.ts` (`reopened_non_applicability` gap) |
-| 4 | **Coverage states are computed separately, and stale evidence is never inferred as current.** Design, implementation, operating-effectiveness, evidence-sufficiency, readiness, assessment, and certification are distinct; stale evidence surfaces a `stale_evidence` gap and caps the boundary below `ready`. | `packages/application/src/coverage-engine.ts` | `tests/integration/compliance-coverage.test.ts` (stale/unmapped/reopened gaps, cross-tenant isolation, evidence windows) |
-| 5 | **Readiness is never certification.** The overall `claimBoundary` reaches `certified` **only** when a verifiable, in-validity external certificate is displayable; an expired certificate never promotes the boundary. | `packages/application/src/coverage-engine.ts`, `packages/application/src/external-assurance.ts` | `tests/integration/compliance-coverage.test.ts` (ready vs certified vs expired-cert), `tests/contract/compliance-api.contract.test.ts` (claim_boundary enum rejects `accredited`) |
-| 6 | **Evidence access is tenant-authorized; bodies are never leaked.** Evidence metadata is returned only to the owning tenant; an unauthorized body is withheld with a notice, never the bodyRef. | `apps/api/src/routes/compliance.ts` (`getEvidenceMetadata`), `apps/web/src/features/evidence/EvidenceExplorer.tsx` | `tests/contract/compliance-api.contract.test.ts` (envelope is metadata-only), `tests/e2e/compliance-audit-readiness.spec.ts` (body-withheld, no leak) |
-| 7 | **An audit export is reproducible, authorized, custody-linked, signed, and gap-explicit.** Coverage is reconstructed as-of an exact instant; references are filtered to the tenant (excluded count shown); a tamper-evident custody chain and an HMAC-signed manifest bind the package; every gap is listed verbatim. | `apps/command-worker/src/audit-export.ts` | `tests/performance/evidence-export.test.ts` (100k-reference scope, access filtering, custody, signature, gaps, 15-minute objective) |
+| #   | Invariant                                                                                                                                                                                                                                                                                                             | Where enforced                                                                                                                                                                                  | How it is verified                                                                                                                                                                |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Publication facts are immutable and versioned.** A standard publication records publisher, identifier, exact title, edition, publication date, status, material type, source URI, and registry version — never a conformity claim. Superseding a publication mints a new version; the prior is retained.            | `packages/domain/src/compliance.ts` (`makeStandardPublication`, `publicationSupersedes`), `packages/application/src/standards-import.ts`                                                        | `tests/unit/standards-registry.test.ts` (frozen aggregates, supersession, deterministic import ids)                                                                               |
+| 2   | **Applicability requires independent review.** A proposed decision is durable but **not active**; it activates only when an **independent** reviewer (never the proposer, never an incompatible role) approves it with a mandatory reason, producing a superseding version.                                           | `packages/application/src/applicability-service.ts`, `packages/authz/src/compliance-review.ts`, `packages/domain/src/compliance.ts` (`applicabilityIsActive`, `applicabilityVersionSupersedes`) | `tests/unit/applicability-state-machine.test.ts` (proposer≠reviewer, incompatible-role, versioning, rejection ordering)                                                           |
+| 3   | **Non-applicability expires; the gap reopens.** A `not_applicable` decision past its review instant reopens its obligation gap rather than persisting as a silent exemption.                                                                                                                                          | `packages/domain/src/compliance.ts` (`nonApplicabilityReopensGap`), `packages/application/src/coverage-engine.ts`                                                                               | `tests/unit/applicability-state-machine.test.ts`, `tests/integration/compliance-coverage.test.ts` (`reopened_non_applicability` gap)                                              |
+| 4   | **Coverage states are computed separately, and stale evidence is never inferred as current.** Design, implementation, operating-effectiveness, evidence-sufficiency, readiness, assessment, and certification are distinct; stale evidence surfaces a `stale_evidence` gap and caps the boundary below `ready`.       | `packages/application/src/coverage-engine.ts`                                                                                                                                                   | `tests/integration/compliance-coverage.test.ts` (stale/unmapped/reopened gaps, cross-tenant isolation, evidence windows)                                                          |
+| 5   | **Readiness is never certification.** The overall `claimBoundary` reaches `certified` **only** when a verifiable, in-validity external certificate is displayable; an expired certificate never promotes the boundary.                                                                                                | `packages/application/src/coverage-engine.ts`, `packages/application/src/external-assurance.ts`                                                                                                 | `tests/integration/compliance-coverage.test.ts` (ready vs certified vs expired-cert), `tests/contract/compliance-api.contract.test.ts` (claim_boundary enum rejects `accredited`) |
+| 6   | **Evidence access is tenant-authorized; bodies are never leaked.** Evidence metadata is returned only to the owning tenant; an unauthorized body is withheld with a notice, never the bodyRef.                                                                                                                        | `apps/api/src/routes/compliance.ts` (`getEvidenceMetadata`), `apps/web/src/features/evidence/EvidenceExplorer.tsx`                                                                              | `tests/contract/compliance-api.contract.test.ts` (envelope is metadata-only), `tests/e2e/compliance-audit-readiness.spec.ts` (body-withheld, no leak)                             |
+| 7   | **An audit export is reproducible, authorized, custody-linked, signed, and gap-explicit.** Coverage is reconstructed as-of an exact instant; references are filtered to the tenant (excluded count shown); a tamper-evident custody chain and an HMAC-signed manifest bind the package; every gap is listed verbatim. | `apps/command-worker/src/audit-export.ts`                                                                                                                                                       | `tests/performance/evidence-export.test.ts` (100k-reference scope, access filtering, custody, signature, gaps, 15-minute objective)                                               |
 
 Each invariant carries a **negative control** in its test: a fact whose flip drives the oracle red, so
 no assertion passes vacuously.
@@ -115,44 +115,39 @@ show me the coverage, the evidence lineage, and every gap." It is produced async
 scope (up to and beyond 100,000 evidence references) never blocks the request.
 
 **Request (officer).**
+
 1. `POST /v1/audit/exports` with `{ scope, period: { from, to }, reason: { code, text } }`. The route
    validates the wire shape, attaches the tenant + requester identity, and **enqueues** the export — it
    performs no export work inline and returns `202 Accepted` with an `operation_id`.
 2. The request is **idempotent**: re-submitting the same scope + period + reason returns the same
    operation (an `idempotent-replay` header marks the replay).
 
-**Processing (platform — `AuditExportWorker`).**
-3. Coverage is reconstructed **purely** as-of `reconstructedAt` (default: `period.to`) via
-   `reconstructCoverage`, so the same inputs + instant always yield a **byte-identical** package
-   (SC-013).
-4. Every candidate evidence reference is **authorized to the export's tenant**; cross-tenant references
-   are **excluded** and the excluded count is recorded — a visible omission, never a silent one, and
-   never a leak (FR-053).
-5. The in-scope references are folded into an **ordered chain of custody**: each link's `chainDigest`
-   folds in the prior link's digest, so a reorder or drop breaks the fold (`custodyChainIsIntact`)
-   (FR-052).
-6. Every coverage **gap** is copied into the package **verbatim** — the export never hides, downgrades,
-   or infers-away a gap; an all-covered scope yields an empty gap list (SC-022).
-7. The claim boundary is copied from the engine and **never promoted**; the worker **refuses to sign** a
-   package whose boundary is `certified` without a displayable certification (FR-055, SC-012).
-8. The package body is HMAC-SHA-256 **signed** (`signManifest`); `verifyManifest` re-derives and
-   constant-time-compares it, so tampering with any covered field is detectable (FR-056). The signed
-   package is persisted and the operation is committed through the shared transactional unit-of-work (an
-   operation-state row + the signed-manifest evidence ref + an audit event + an outbox notification,
-   atomic or not at all).
+**Processing (platform — `AuditExportWorker`).** 3. Coverage is reconstructed **purely** as-of `reconstructedAt` (default: `period.to`) via
+`reconstructCoverage`, so the same inputs + instant always yield a **byte-identical** package
+(SC-013). 4. Every candidate evidence reference is **authorized to the export's tenant**; cross-tenant references
+are **excluded** and the excluded count is recorded — a visible omission, never a silent one, and
+never a leak (FR-053). 5. The in-scope references are folded into an **ordered chain of custody**: each link's `chainDigest`
+folds in the prior link's digest, so a reorder or drop breaks the fold (`custodyChainIsIntact`)
+(FR-052). 6. Every coverage **gap** is copied into the package **verbatim** — the export never hides, downgrades,
+or infers-away a gap; an all-covered scope yields an empty gap list (SC-022). 7. The claim boundary is copied from the engine and **never promoted**; the worker **refuses to sign** a
+package whose boundary is `certified` without a displayable certification (FR-055, SC-012). 8. The package body is HMAC-SHA-256 **signed** (`signManifest`); `verifyManifest` re-derives and
+constant-time-compares it, so tampering with any covered field is detectable (FR-056). The signed
+package is persisted and the operation is committed through the shared transactional unit-of-work (an
+operation-state row + the signed-manifest evidence ref + an audit event + an outbox notification,
+atomic or not at all).
 
-**Review (auditor).**
-9. The auditor opens the **Auditor Trace** surface (`AuditExplorer.tsx`): the exact `from`/`to`/
-   `reconstructed-at` window, the ledger checkpoint, the reconstruction reference count, the decision /
-   mapping / finding / remediation tables, the **signed export manifests**, and the **explicit gap
-   list** — with a standing note that the export is internal readiness evidence, **not** an external
-   certification claim unless a verifiable certificate is displayed.
+**Review (auditor).** 9. The auditor opens the **Auditor Trace** surface (`AuditExplorer.tsx`): the exact `from`/`to`/
+`reconstructed-at` window, the ledger checkpoint, the reconstruction reference count, the decision /
+mapping / finding / remediation tables, the **signed export manifests**, and the **explicit gap
+list** — with a standing note that the export is internal readiness evidence, **not** an external
+certification claim unless a verifiable certificate is displayed.
 
 ---
 
 ## 3. Operating procedure — management review and corrective action
 
 **Management review (cadence).**
+
 - A review is due on a fixed cadence; `reviewCadenceLapsed(review, now)` surfaces a lapsed cadence
   rather than silently treating an overdue review as current (`packages/application/src/management-review.ts`).
 - A review captures the **required inputs** (audit results, gap/coverage status, exception status, risk
@@ -160,6 +155,7 @@ scope (up to and beyond 100,000 evidence references) never blocks the request.
   and due dates, and tracks **follow-up** to closure.
 
 **Corrective action (nonconformity → closure).**
+
 - A nonconformity is recorded with its correction, **root cause**, and a corrective action with an
   owner and due date.
 - Closure is gated on an **effectiveness review** (`reviewEffectiveness`) — a corrective action is not
@@ -211,7 +207,7 @@ npx vitest run --config tests/e2e/scenarios/_evidence/gate7/vitest.nonvacuity.co
 
 ### Non-vacuity control (durable)
 
-A green accessibility witness only means something if a *broken* presenter would go RED.
+A green accessibility witness only means something if a _broken_ presenter would go RED.
 `nonvacuity.test.ts` (run under `vitest.nonvacuity.config.ts`) renders the SHIPPED CoverageView presenter
 over the honest model (positive control → `ok`, 0 findings) and over two DEGRADED renders — a `ready`
 boundary mislabelled as "certified" with its not-certified note scrubbed, and an uncovered obligation

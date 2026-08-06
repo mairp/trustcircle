@@ -185,11 +185,23 @@ function listStandardsPublications(deps: StandardsRouteDeps): RouteHandler {
     let limit = DEFAULT_LIMIT;
     if (rawLimit !== null && rawLimit !== '') {
       if (!/^\d+$/.test(rawLimit)) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', 'limit must be a non-negative integer.');
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          'limit must be a non-negative integer.',
+        );
       }
       const n = Number(rawLimit);
       if (!Number.isInteger(n) || n < MIN_LIMIT || n > MAX_LIMIT) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`);
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`,
+        );
       }
       limit = n;
     }
@@ -253,7 +265,10 @@ function parseSeedEnvelope(raw: unknown): {
     }
   }
   const registryVersion = body['registryVersion'];
-  if (registryVersion !== undefined && (typeof registryVersion !== 'number' || !Number.isInteger(registryVersion))) {
+  if (
+    registryVersion !== undefined &&
+    (typeof registryVersion !== 'number' || !Number.isInteger(registryVersion))
+  ) {
     throw new StandardsSeedRejected('registryVersion must be an integer when present.');
   }
   const scope = body['scope'];
@@ -319,7 +334,9 @@ function importStandardsPublications(deps: StandardsRouteDeps): RouteHandler {
 
     const correlationId = c.ctx?.correlationId ?? '';
     const command: StandardsSeedCommand = {
-      ...(envelope.registryVersion !== undefined ? { registryVersion: envelope.registryVersion } : {}),
+      ...(envelope.registryVersion !== undefined
+        ? { registryVersion: envelope.registryVersion }
+        : {}),
       ...(envelope.scope !== undefined ? { scope: envelope.scope } : {}),
       publications: envelope.publications,
       now: nowOf(),
@@ -336,8 +353,17 @@ function importStandardsPublications(deps: StandardsRouteDeps): RouteHandler {
       if (e instanceof StandardsSeedRejected) {
         return problem(c, 422, 'invalid_seed', 'Unprocessable', e.message);
       }
-      if (e instanceof Error && (e.name === 'StandardsImportError' || e.name === 'TypeError' || e.name === 'RangeError')) {
-        return problem(c, 422, 'invalid_seed', 'Unprocessable', `The standards seed was rejected: ${e.message}`);
+      if (
+        e instanceof Error &&
+        (e.name === 'StandardsImportError' || e.name === 'TypeError' || e.name === 'RangeError')
+      ) {
+        return problem(
+          c,
+          422,
+          'invalid_seed',
+          'Unprocessable',
+          `The standards seed was rejected: ${e.message}`,
+        );
       }
       return problem(
         c,

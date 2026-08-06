@@ -558,6 +558,45 @@ export interface DiscoveryResult {
   readonly qualityCounts: Readonly<Record<StatusGroup, number>>;
 }
 
+export interface RelatedAssetRecord {
+  readonly section: ConsoleSectionState;
+  readonly record: ConsoleRecordDetail;
+}
+
+const ASSET_REFERENCE_FIELD_LABELS = new Set([
+  'Asset ID',
+  'Subject',
+  'Asset',
+  'Asset reference',
+  'Target asset',
+  'Governed asset',
+]);
+
+function normalizedAssetReference(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function relatedAssetRecords(
+  assetId: string,
+  sections: readonly ConsoleSectionState[],
+): readonly RelatedAssetRecord[] {
+  const reference = normalizedAssetReference(assetId);
+  if (!reference) return [];
+  return sections.flatMap((section): readonly RelatedAssetRecord[] =>
+    section.id === 'inventory'
+      ? []
+      : section.records
+          .filter((record) =>
+            record.fields.some(
+              (field) =>
+                ASSET_REFERENCE_FIELD_LABELS.has(field.label) &&
+                normalizedAssetReference(field.value) === reference,
+            ),
+          )
+          .map((record) => ({ section, record })),
+  );
+}
+
 function assetIdentifier(record: ConsoleRecordDetail): string | undefined {
   return fieldValue(record, ['Asset ID']);
 }

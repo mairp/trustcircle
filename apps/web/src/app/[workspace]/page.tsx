@@ -7,9 +7,27 @@ import {
 import { CopilotWorkspace } from '../../components/copilot-workspace.tsx';
 import { AuthenticationRequired } from '../../components/degraded-state.tsx';
 import { DiscoveryWorkspace } from '../../components/discovery-workspace.tsx';
+import {
+  GovernedAiWorkspace,
+  GovernedConnectorWorkspace,
+  GovernedEvidenceWorkspace,
+  GovernedFrameworkMatrixWorkspace,
+  GovernedMonitoringWorkspace,
+  GovernedPlatformWorkspace,
+  GovernedRegisterWorkspace,
+} from '../../components/governed-platform-workspace.tsx';
 import { OperatorShell } from '../../components/operator-shell.tsx';
 import { WorkspaceOverview } from '../../components/workspace-overview.tsx';
 import { loadConsole, loadConsoleSection } from '../../lib/console-loader.ts';
+import {
+  loadGovernedAiWorkspace,
+  loadGovernedConnectorWorkspace,
+  loadGovernedEvidenceWorkspace,
+  loadGovernedFrameworkMatrixWorkspace,
+  loadGovernedMonitoringWorkspace,
+  loadGovernedRegisterWorkspace,
+  loadGovernedReviewWorkspace,
+} from '../../lib/governed-platform.ts';
 import { parseDiscoveryQuery, workspaceForHref } from '../../lib/platform-workspaces.ts';
 import { operationsWorkspaceCapabilities, permittedDomains } from '../../lib/permissions.ts';
 import { resolveOperatorSession } from '../../lib/session-context.ts';
@@ -49,6 +67,21 @@ export default async function WorkspacePage({
     CAPABILITY_KINDS.has(workspace.id as CapabilityWorkspaceKind);
   const sections = needsAllSections ? await loadConsole(plans, session) : [];
   const section = plan ? await loadConsoleSection(plan, session) : undefined;
+  const reviewState =
+    workspace.id === 'trends' ? await loadGovernedReviewWorkspace(session) : undefined;
+  const registerState =
+    workspace.id === 'registers' ? await loadGovernedRegisterWorkspace(session) : undefined;
+  const evidenceState =
+    workspace.id === 'evidence' ? await loadGovernedEvidenceWorkspace(session) : undefined;
+  const monitoringState =
+    workspace.id === 'automation' ? await loadGovernedMonitoringWorkspace(session) : undefined;
+  const aiState =
+    workspace.id === 'ai-governance' ? await loadGovernedAiWorkspace(session) : undefined;
+  const connectorState =
+    workspace.id === 'integrations' ? await loadGovernedConnectorWorkspace(session) : undefined;
+  const frameworkMatrixState =
+    workspace.id === 'compliance' ? await loadGovernedFrameworkMatrixWorkspace(session) : undefined;
+
   return (
     <OperatorShell
       session={session}
@@ -71,8 +104,43 @@ export default async function WorkspacePage({
         />
       ) : workspace.id === 'copilot' ? (
         <CopilotWorkspace sections={sections} question={queryParams['question']} />
+      ) : workspace.id === 'trends' && reviewState ? (
+        <>
+          <CapabilityWorkspace kind="trends" sections={sections} />
+          <GovernedPlatformWorkspace state={reviewState} />
+        </>
+      ) : workspace.id === 'registers' && registerState ? (
+        <>
+          <CapabilityWorkspace kind="registers" sections={sections} />
+          <GovernedRegisterWorkspace state={registerState} />
+        </>
+      ) : workspace.id === 'automation' && monitoringState ? (
+        <>
+          <CapabilityWorkspace kind="automation" sections={sections} />
+          <GovernedMonitoringWorkspace state={monitoringState} />
+        </>
+      ) : workspace.id === 'ai-governance' && aiState ? (
+        <>
+          <CapabilityWorkspace kind="ai-governance" sections={sections} />
+          <GovernedAiWorkspace state={aiState} />
+        </>
       ) : CAPABILITY_KINDS.has(workspace.id as CapabilityWorkspaceKind) ? (
         <CapabilityWorkspace kind={workspace.id as CapabilityWorkspaceKind} sections={sections} />
+      ) : workspace.id === 'evidence' && evidenceState && section ? (
+        <>
+          <WorkspaceOverview section={section} />
+          <GovernedEvidenceWorkspace state={evidenceState} />
+        </>
+      ) : workspace.id === 'integrations' && connectorState && section ? (
+        <>
+          <WorkspaceOverview section={section} />
+          <GovernedConnectorWorkspace state={connectorState} />
+        </>
+      ) : workspace.id === 'compliance' && frameworkMatrixState && section ? (
+        <>
+          <WorkspaceOverview section={section} />
+          <GovernedFrameworkMatrixWorkspace state={frameworkMatrixState} />
+        </>
       ) : section ? (
         <WorkspaceOverview section={section} />
       ) : null}

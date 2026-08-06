@@ -230,14 +230,17 @@ export function makeIntegrityRuleVersion(input: {
   const lifecycleState = input.lifecycleState ?? 'draft';
   assertMember(lifecycleState, RULE_LIFECYCLE_STATES, 'rule.lifecycleState');
   assertUuid(input.ownerPrincipalId, 'rule.ownerPrincipalId');
-  if (input.approvalDecisionId !== undefined) assertUuid(input.approvalDecisionId, 'rule.approvalDecisionId');
+  if (input.approvalDecisionId !== undefined)
+    assertUuid(input.approvalDecisionId, 'rule.approvalDecisionId');
   const tests = (input.tests ?? []).map((t) => frozenObj(t));
   if (input.effectiveFrom !== undefined) assertEpoch(input.effectiveFrom, 'rule.effectiveFrom');
   if (input.effectiveTo !== undefined) assertEpoch(input.effectiveTo, 'rule.effectiveTo');
   // Fail-closed activation: an ACTIVE version must carry ≥1 test and an activation instant.
   if (lifecycleState === 'active') {
     if (input.effectiveFrom === undefined) {
-      throw new TypeError('an active rule version requires an effectiveFrom instant (fail-closed activation)');
+      throw new TypeError(
+        'an active rule version requires an effectiveFrom instant (fail-closed activation)',
+      );
     }
     if (tests.length < 1) {
       throw new TypeError('an active rule version requires ≥ 1 test (fail-closed activation)');
@@ -258,7 +261,9 @@ export function makeIntegrityRuleVersion(input: {
     lowRiskRepairEligible: input.lowRiskRepairEligible ?? false,
     tests: Object.freeze(tests),
     monitoring: Object.freeze((input.monitoring ?? []).map((m) => frozenObj(m))),
-    policyControlMappings: Object.freeze((input.policyControlMappings ?? []).map((m) => frozenObj(m))),
+    policyControlMappings: Object.freeze(
+      (input.policyControlMappings ?? []).map((m) => frozenObj(m)),
+    ),
     ownerPrincipalId: input.ownerPrincipalId,
     approvalDecisionId: input.approvalDecisionId,
     lifecycleState,
@@ -400,7 +405,8 @@ export function makeIntegrityCase(input: {
     throw new TypeError('case.ownershipGap=true is incompatible with a named owner');
   }
   if (!ownershipGap) {
-    if (owner === null) throw new TypeError('case.ownerPrincipalId required when ownershipGap=false');
+    if (owner === null)
+      throw new TypeError('case.ownerPrincipalId required when ownershipGap=false');
     assertUuid(owner, 'case.ownerPrincipalId');
   }
   if (input.quarantineId !== undefined) assertUuid(input.quarantineId, 'case.quarantineId');
@@ -413,8 +419,13 @@ export function makeIntegrityCase(input: {
   const state = input.state ?? 'detected';
   assertMember(state, INTEGRITY_CASE_STATES, 'case.state');
   // Verified Closure Gate: repaired/closed MUST cite a resolution verification.
-  if ((state === 'repaired' || state === 'closed') && input.resolutionVerificationId === undefined) {
-    throw new TypeError(`case.state=${state} requires a resolutionVerificationId (Verified Closure Gate)`);
+  if (
+    (state === 'repaired' || state === 'closed') &&
+    input.resolutionVerificationId === undefined
+  ) {
+    throw new TypeError(
+      `case.state=${state} requires a resolutionVerificationId (Verified Closure Gate)`,
+    );
   }
   const version = input.version ?? 1;
   if (!Number.isInteger(version) || version < 1) throw new RangeError('case.version must be ≥ 1');
@@ -540,7 +551,8 @@ export function makeQuarantine(input: {
   assertTenant(input.tenantId, 'quarantine.tenantId');
   assertUuid(input.integrityCaseId, 'quarantine.integrityCaseId');
   assertUuid(input.originalEvidenceId, 'quarantine.originalEvidenceId');
-  for (const cap of input.blockedCapabilities) assertNonEmpty(cap, 'quarantine.blockedCapabilities entry');
+  for (const cap of input.blockedCapabilities)
+    assertNonEmpty(cap, 'quarantine.blockedCapabilities entry');
   const deps = input.blockedDependencyIds ?? [];
   for (const d of deps) assertUuid(d, 'quarantine.blockedDependencyIds entry');
   assertNonEmpty(input.reason.code, 'quarantine.reason.code');
@@ -557,7 +569,8 @@ export function makeQuarantine(input: {
   if (status === 'released' && input.releaseDecisionId === undefined) {
     throw new TypeError('a released quarantine must carry a releaseDecisionId (release authority)');
   }
-  if (input.releaseDecisionId !== undefined) assertUuid(input.releaseDecisionId, 'quarantine.releaseDecisionId');
+  if (input.releaseDecisionId !== undefined)
+    assertUuid(input.releaseDecisionId, 'quarantine.releaseDecisionId');
   const cadence = input.reviewCadenceMs ?? 86_400_000;
   if (!Number.isInteger(cadence) || cadence <= 0) {
     throw new RangeError('quarantine.reviewCadenceMs must be a positive integer');
@@ -575,7 +588,9 @@ export function makeQuarantine(input: {
     authorityRef: frozenObj(input.authorityRef),
     visibilityPolicy: visibility,
     originalEvidenceId: input.originalEvidenceId,
-    releasePreconditions: Object.freeze((input.releasePreconditions ?? []).map((p) => frozenObj(p))),
+    releasePreconditions: Object.freeze(
+      (input.releasePreconditions ?? []).map((p) => frozenObj(p)),
+    ),
     releaseDecisionId: input.releaseDecisionId,
     reviewCadenceMs: cadence,
     reviewDueAt: input.reviewDueAt,
@@ -593,7 +608,9 @@ export function quarantineBlocks(q: Quarantine, capability: string): boolean {
 
 /** Inspection is ALWAYS permitted while quarantined — containment blocks execution, not review. */
 export function quarantinePermitsInspection(q: Quarantine): boolean {
-  return q.visibilityPolicy === 'visible_inspectable' || q.visibilityPolicy === 'visible_restricted';
+  return (
+    q.visibilityPolicy === 'visible_inspectable' || q.visibilityPolicy === 'visible_restricted'
+  );
 }
 
 export function quarantineDigest(q: Quarantine): string {
@@ -718,9 +735,11 @@ export function makeRemediationPlan(input: {
       throw new TypeError('a pre_authorized_low_risk plan must bind a policyVersionId (FR-021)');
     }
   }
-  if (input.policyVersionId !== undefined) assertUuid(input.policyVersionId, 'plan.policyVersionId');
+  if (input.policyVersionId !== undefined)
+    assertUuid(input.policyVersionId, 'plan.policyVersionId');
   if (input.simulationId !== undefined) assertUuid(input.simulationId, 'plan.simulationId');
-  if (input.approvalDecisionId !== undefined) assertUuid(input.approvalDecisionId, 'plan.approvalDecisionId');
+  if (input.approvalDecisionId !== undefined)
+    assertUuid(input.approvalDecisionId, 'plan.approvalDecisionId');
   assertUuid(input.ownerPrincipalId, 'plan.ownerPrincipalId');
   const status = input.status ?? 'draft';
   assertMember(status, REMEDIATION_STATUSES, 'plan.status');
@@ -893,20 +912,27 @@ export function makeRepairAttempt(input: {
   if (input.actualSourceRevision !== undefined) {
     assertNonEmpty(input.actualSourceRevision, 'attempt.actualSourceRevision');
   }
-  if (input.appliedPolicyVersionId !== undefined) assertUuid(input.appliedPolicyVersionId, 'attempt.appliedPolicyVersionId');
+  if (input.appliedPolicyVersionId !== undefined)
+    assertUuid(input.appliedPolicyVersionId, 'attempt.appliedPolicyVersionId');
   if (input.decisionId !== undefined) assertUuid(input.decisionId, 'attempt.decisionId');
   assertUuid(input.executorPrincipalId, 'attempt.executorPrincipalId');
-  if (input.derivedEvidenceId !== undefined) assertUuid(input.derivedEvidenceId, 'attempt.derivedEvidenceId');
+  if (input.derivedEvidenceId !== undefined)
+    assertUuid(input.derivedEvidenceId, 'attempt.derivedEvidenceId');
   const outcome = input.outcome ?? 'pending';
   assertMember(outcome, REPAIR_OUTCOMES, 'attempt.outcome');
   // FR-022: a VERIFIED outcome must produce a DERIVED item (provenance) — no derived, no verified.
   if (outcome === 'verified' && input.derivedEvidenceId === undefined) {
     throw new TypeError('a verified repair must carry a derivedEvidenceId (FR-022 provenance)');
   }
-  if (input.rollbackOutcome !== undefined) assertMember(input.rollbackOutcome, ROLLBACK_OUTCOMES, 'attempt.rollbackOutcome');
+  if (input.rollbackOutcome !== undefined)
+    assertMember(input.rollbackOutcome, ROLLBACK_OUTCOMES, 'attempt.rollbackOutcome');
   const steps = (input.stepOutcomes ?? []).map((s) => {
     assertNonEmpty(s.step, 'attempt.stepOutcomes[].step');
-    assertMember(s.result, ['ok', 'skipped', 'stopped', 'failed'] as const, 'attempt.stepOutcomes[].result');
+    assertMember(
+      s.result,
+      ['ok', 'skipped', 'stopped', 'failed'] as const,
+      'attempt.stepOutcomes[].result',
+    );
     return compact<RepairStepOutcome>({ step: s.step, result: s.result, detail: s.detail });
   });
   assertEpoch(input.startedAt, 'attempt.startedAt');
@@ -1080,7 +1106,8 @@ export function makeVerificationRecord(input: {
   assertUuid(input.verifierPrincipalId, 'verification.verifierPrincipalId');
   assertUuid(input.independenceCheckId, 'verification.independenceCheckId');
   assertUuid(input.evidenceManifestId, 'verification.evidenceManifestId');
-  if (input.reconciliationId !== undefined) assertUuid(input.reconciliationId, 'verification.reconciliationId');
+  if (input.reconciliationId !== undefined)
+    assertUuid(input.reconciliationId, 'verification.reconciliationId');
   const gates = input.gateResults.map((g) => {
     assertMember(g.gate, CLOSURE_GATES, 'verification.gateResults[].gate');
     assertMember(g.result, VERIFICATION_RESULTS, 'verification.gateResults[].result');
@@ -1098,7 +1125,9 @@ export function makeVerificationRecord(input: {
     const passedGates = new Set(gates.filter((g) => g.result === 'passed').map((g) => g.gate));
     for (const g of CLOSURE_GATES) {
       if (!passedGates.has(g)) {
-        throw new TypeError(`a passed verification requires gate '${g}' to pass (Verified Closure Gate)`);
+        throw new TypeError(
+          `a passed verification requires gate '${g}' to pass (Verified Closure Gate)`,
+        );
       }
     }
   }

@@ -8,6 +8,7 @@ export * from './separation-of-duties.ts';
 export * from './oidc.ts';
 export * from './workload-identity.ts';
 export * from './authority.ts';
+export * from './governed-platform-authority.ts';
 
 // Re-exports the INDEPENDENT COMPLIANCE-REVIEW distinctness guard (Phase 7 / User Story 5 —
 // Demonstrate Compliance and Audit Readiness / FR-053, FR-055, SC-022): the applicability-review

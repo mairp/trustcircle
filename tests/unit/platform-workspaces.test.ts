@@ -8,6 +8,7 @@ import {
   classifyRecordStatus,
   deploymentIdentity,
   parseDiscoveryQuery,
+  relatedAssetRecords,
   searchConsoleSections,
   statusExplanation,
   workspaceForDomain,
@@ -85,6 +86,43 @@ const runtime: ConsoleSectionState = {
         { label: 'Health', value: 'Failed', emphasis: 'status' },
         { label: 'Owner', value: 'platform-ops' },
         { label: 'Safe next action', value: 'Inspect retry and dead-letter diagnostics.' },
+      ],
+    },
+  ],
+};
+
+const evidence: ConsoleSectionState = {
+  ...inventory,
+  id: 'evidence',
+  title: 'Evidence lifecycle',
+  path: '/v1/evidence',
+  summary: '3 evidence references observed.',
+  description: 'Evidence metadata.',
+  emptyMessage: 'No evidence.',
+  detailsLabel: 'Evidence records',
+  records: [
+    {
+      id: 'evidence-exact',
+      title: 'Exact asset evidence',
+      fields: [
+        { label: 'Evidence ID', value: 'evidence-exact', emphasis: 'identifier' },
+        { label: 'Subject', value: 'asset-critical', emphasis: 'identifier' },
+      ],
+    },
+    {
+      id: 'evidence-collision',
+      title: 'Colliding asset evidence',
+      fields: [
+        { label: 'Evidence ID', value: 'evidence-collision', emphasis: 'identifier' },
+        { label: 'Subject', value: 'asset-critical-copy', emphasis: 'identifier' },
+      ],
+    },
+    {
+      id: 'evidence-prose',
+      title: 'Narrative that mentions asset-critical',
+      fields: [
+        { label: 'Evidence ID', value: 'evidence-prose', emphasis: 'identifier' },
+        { label: 'Source system', value: 'asset-critical', emphasis: 'identifier' },
       ],
     },
   ],
@@ -185,6 +223,15 @@ describe('global discovery and governed URL views', () => {
   });
 });
 
+describe('Asset 360 projection', () => {
+  it('uses exact explicit identifier fields and never substring or prose matches', () => {
+    expect(relatedAssetRecords('asset-critical', [inventory, evidence])).toEqual([
+      { section: evidence, record: evidence.records[0] },
+    ]);
+    expect(relatedAssetRecords('asset-missing', [inventory, evidence])).toEqual([]);
+  });
+});
+
 describe('deployment identity', () => {
   it('exposes disclosure-safe build, profile, schema, and drift metadata', () => {
     const identity = deploymentIdentity({
@@ -200,6 +247,40 @@ describe('deployment identity', () => {
       profile: 'staging',
       schemaVersion: '0090',
       drift: 'matched',
+    });
+  });
+
+  it('keeps mismatched and unknown release identity distinct', () => {
+    expect(
+      deploymentIdentity({
+        TC_BUILD_COMMIT: 'abcdef1234567890',
+        TC_APPROVED_BUILD_COMMIT: 'fedcba6543210987',
+        TC_DEPLOYMENT_PROFILE: 'production',
+      }),
+    ).toMatchObject({ drift: 'mismatch', profile: 'production', mode: 'production' });
+    expect(
+      deploymentIdentity({
+        TC_BUILD_COMMIT: 'abcdef1234567890',
+        TC_DEPLOYMENT_PROFILE: 'staging',
+      }),
+    ).toMatchObject({ drift: 'unknown', profile: 'staging', mode: 'staging' });
+  });
+
+  it.each(['preview', 'staging', 'production', 'continuity', 'degraded', 'development'] as const)(
+    'preserves the supported %s profile and mode',
+    (profile) => {
+      expect(deploymentIdentity({ TC_DEPLOYMENT_PROFILE: profile })).toMatchObject({
+        profile,
+        mode: profile,
+      });
+    },
+  );
+
+  it('shows an unknown safe profile without promoting it to a production mode', () => {
+    expect(deploymentIdentity({ TC_DEPLOYMENT_PROFILE: 'custom-cell' })).toMatchObject({
+      profile: 'custom-cell',
+      mode: 'development',
+      drift: 'unknown',
     });
   });
 });

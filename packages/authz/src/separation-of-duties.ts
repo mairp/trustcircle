@@ -99,7 +99,9 @@ export type RoleKey =
   | 'independent_compliance_reviewer'
   | 'source_steward'
   | 'platform_admin'
-  | 'automation_principal';
+  | 'automation_principal'
+  | 'ai_governance_officer'
+  | 'integration_engineer';
 
 /** Roles that carry NO governance decision authority on their own (GAR-003, spec.md role table). */
 export const NON_DECISION_ROLES: ReadonlySet<RoleKey> = new Set<RoleKey>([

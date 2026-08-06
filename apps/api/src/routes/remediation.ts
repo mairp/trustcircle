@@ -257,9 +257,17 @@ function validateReason(raw: unknown): GovernanceApiReason {
   const code = rec['code'];
   const text = rec['text'];
   if (typeof code !== 'string' || !REASON_CODE_RE.test(code)) {
-    throw new BodyError('invalid_reason', 'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.', 422);
+    throw new BodyError(
+      'invalid_reason',
+      'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.',
+      422,
+    );
   }
-  if (typeof text !== 'string' || text.trim().length < REASON_TEXT_MIN || text.length > REASON_TEXT_MAX) {
+  if (
+    typeof text !== 'string' ||
+    text.trim().length < REASON_TEXT_MIN ||
+    text.length > REASON_TEXT_MAX
+  ) {
     throw new BodyError(
       'invalid_reason',
       `reason.text must be ${REASON_TEXT_MIN}..${REASON_TEXT_MAX} non-blank characters.`,
@@ -277,7 +285,10 @@ function asObject(raw: unknown, field: string): Record<string, unknown> {
 }
 
 function asObjectArray(raw: unknown, field: string): Record<string, unknown>[] {
-  if (!Array.isArray(raw) || raw.some((x) => typeof x !== 'object' || x === null || Array.isArray(x))) {
+  if (
+    !Array.isArray(raw) ||
+    raw.some((x) => typeof x !== 'object' || x === null || Array.isArray(x))
+  ) {
     throw new BodyError('invalid_field', `${field} must be an array of objects.`);
   }
   return raw as Record<string, unknown>[];
@@ -300,10 +311,7 @@ function parseRemediationCommand(raw: unknown): {
   }
   const mode = body['mode'];
   if (typeof mode !== 'string' || !REMEDIATION_MODE_SET.has(mode)) {
-    throw new BodyError(
-      'invalid_mode',
-      `mode must be one of ${REMEDIATION_MODES.join(', ')}.`,
-    );
+    throw new BodyError('invalid_mode', `mode must be one of ${REMEDIATION_MODES.join(', ')}.`);
   }
   const reason = validateReason(body['reason']);
   const planRaw = asObject(body['plan'], 'plan');
@@ -371,7 +379,10 @@ function parseVerificationCommand(raw: unknown): {
     if (rx === null) out.residualRiskExceptionId = null;
     else if (typeof rx === 'string' && isUuid(rx)) out.residualRiskExceptionId = rx as Uuid;
     else {
-      throw new BodyError('invalid_residual_risk', 'residual_risk_exception_id must be a uuid or null.');
+      throw new BodyError(
+        'invalid_residual_risk',
+        'residual_risk_exception_id must be a uuid or null.',
+      );
     }
   }
   return out;
@@ -393,11 +404,23 @@ interface CommandContext {
 function commandPreamble(c: AppContext): CommandContext | Response {
   const tenantId = requireTenant(c);
   if (tenantId === undefined) {
-    return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+    return problem(
+      c,
+      403,
+      'tenant_scope_required',
+      'Forbidden',
+      'A valid tenant scope is required.',
+    );
   }
   const caseId = caseIdOf(c);
   if (caseId === undefined) {
-    return problem(c, 400, 'invalid_case_id', 'Bad Request', 'The case id path segment must be a uuid.');
+    return problem(
+      c,
+      400,
+      'invalid_case_id',
+      'Bad Request',
+      'The case id path segment must be a uuid.',
+    );
   }
   const ifMatch = parseIfMatch(c.req.header('if-match'));
   if (ifMatch === null) {
@@ -469,7 +492,9 @@ function proposeOrExecuteRemediation(deps: RemediationRouteDeps): RouteHandler {
           e.code,
           e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request',
           e.message,
-          e.httpStatus === 422 ? ['supply a structured reason {code, text} justifying this remediation'] : [],
+          e.httpStatus === 422
+            ? ['supply a structured reason {code, text} justifying this remediation']
+            : [],
         );
       }
       throw e;
@@ -565,7 +590,9 @@ function verifyIntegrityCase(deps: RemediationRouteDeps): RouteHandler {
           e.code,
           e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request',
           e.message,
-          e.httpStatus === 422 ? ['supply a structured reason {code, text} justifying this verification'] : [],
+          e.httpStatus === 422
+            ? ['supply a structured reason {code, text} justifying this verification']
+            : [],
         );
       }
       throw e;

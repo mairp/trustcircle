@@ -58,7 +58,10 @@ const OBJECTIVE_MILLIS = 900_000;
 const HEADROOM_CEILING_MILLIS = 60_000;
 
 /** A fixed, non-random signing key — the secret is a literal, so the whole suite is byte-stable. */
-const SIGNING_KEY: SigningKey = { keyId: 'test-audit-export-key-1', secret: 'test-secret-material' };
+const SIGNING_KEY: SigningKey = {
+  keyId: 'test-audit-export-key-1',
+  secret: 'test-secret-material',
+};
 const ALT_KEY: SigningKey = { keyId: 'other-key', secret: 'other-secret-material' };
 
 /** A stable, zero-padded evidence id from an index — deterministic, unique, sortable. */
@@ -94,9 +97,7 @@ function scopeFor(tenantId: typeof TENANT | typeof OTHER_TENANT): AuditExportReq
 }
 
 /** The `Omit<CoverageInputs,'scope'|'at'>` slice a request carries — derived from a fixture inputs bag. */
-function coverageInputsFrom(
-  inputs: typeof READY_INPUTS,
-): AuditExportRequest['coverageInputs'] {
+function coverageInputsFrom(inputs: typeof READY_INPUTS): AuditExportRequest['coverageInputs'] {
   return {
     decisions: inputs.decisions,
     obligations: inputs.obligations,
@@ -152,7 +153,9 @@ describe('100,000-reference scoped export (SC-013 scale)', () => {
     const elapsedMs = performance.now() - started;
 
     // For the record — the test's OWN external measurement, not app logic.
-    console.error(`[T188] 100k-reference export built in ${elapsedMs.toFixed(1)} ms (in-scope=${inScope}, excluded=${outOfScope})`);
+    console.error(
+      `[T188] 100k-reference export built in ${elapsedMs.toFixed(1)} ms (in-scope=${inScope}, excluded=${outOfScope})`,
+    );
 
     // The manifest/reference entry count equals the IN-SCOPE refs — never the total.
     expect(pkg.body.referenceCount).toBe(inScope);
@@ -176,8 +179,12 @@ describe('100,000-reference scoped export (SC-013 scale)', () => {
 
 describe('access filtering (FR-053)', () => {
   it('excludes OTHER_TENANT references from a TENANT-scoped export', () => {
-    const tenantRefs = Array.from({ length: 10 }, (_, i) => makeRef(i, TENANT as unknown as string));
-    const otherRefs = Array.from({ length: 4 }, (_, i) => makeRef(1000 + i, OTHER_TENANT as unknown as string));
+    const tenantRefs = Array.from({ length: 10 }, (_, i) =>
+      makeRef(i, TENANT as unknown as string),
+    );
+    const otherRefs = Array.from({ length: 4 }, (_, i) =>
+      makeRef(1000 + i, OTHER_TENANT as unknown as string),
+    );
     const request = makeRequest({ tenant: TENANT, references: [...tenantRefs, ...otherRefs] });
     const body = buildAuditExportBody(request);
 
@@ -195,9 +202,15 @@ describe('access filtering (FR-053)', () => {
 
   it('symmetrically excludes TENANT references from an OTHER_TENANT-scoped export (negative control)', () => {
     const tenantRefs = Array.from({ length: 7 }, (_, i) => makeRef(i, TENANT as unknown as string));
-    const otherRefs = Array.from({ length: 5 }, (_, i) => makeRef(2000 + i, OTHER_TENANT as unknown as string));
+    const otherRefs = Array.from({ length: 5 }, (_, i) =>
+      makeRef(2000 + i, OTHER_TENANT as unknown as string),
+    );
     // OTHER_TENANT scope with an empty coverage picture (no obligations) so the boundary is honest.
-    const request = makeRequest({ tenant: OTHER_TENANT, references: [...tenantRefs, ...otherRefs], inputs: REOPENED_INPUTS });
+    const request = makeRequest({
+      tenant: OTHER_TENANT,
+      references: [...tenantRefs, ...otherRefs],
+      inputs: REOPENED_INPUTS,
+    });
     const { kept, excluded } = authorizeReferences(request.evidenceReferences, request.tenantId);
 
     expect(kept.length).toBe(otherRefs.length);
@@ -254,7 +267,10 @@ describe('signed manifest (FR-056)', () => {
   const refs = Array.from({ length: 12 }, (_, i) => makeRef(i, TENANT as unknown as string));
 
   it('carries a signature + body digest and verifies', () => {
-    const pkg = buildAuditExportPackage(makeRequest({ tenant: TENANT, references: refs }), SIGNING_KEY);
+    const pkg = buildAuditExportPackage(
+      makeRequest({ tenant: TENANT, references: refs }),
+      SIGNING_KEY,
+    );
     expect(pkg.manifest.algorithm).toBe('HMAC-SHA-256');
     expect(typeof pkg.manifest.signature).toBe('string');
     expect(pkg.manifest.signature.length).toBeGreaterThan(0);
@@ -264,16 +280,28 @@ describe('signed manifest (FR-056)', () => {
   });
 
   it('is STABLE for identical inputs (two builds ⇒ identical digest + signature)', () => {
-    const a = buildAuditExportPackage(makeRequest({ tenant: TENANT, references: refs }), SIGNING_KEY);
-    const b = buildAuditExportPackage(makeRequest({ tenant: TENANT, references: refs }), SIGNING_KEY);
+    const a = buildAuditExportPackage(
+      makeRequest({ tenant: TENANT, references: refs }),
+      SIGNING_KEY,
+    );
+    const b = buildAuditExportPackage(
+      makeRequest({ tenant: TENANT, references: refs }),
+      SIGNING_KEY,
+    );
     expect(a.manifest.bodyDigest).toBe(b.manifest.bodyDigest);
     expect(a.manifest.signature).toBe(b.manifest.signature);
   });
 
   it('is DIFFERENT when a reference is added or removed', () => {
-    const base = buildAuditExportPackage(makeRequest({ tenant: TENANT, references: refs }), SIGNING_KEY);
+    const base = buildAuditExportPackage(
+      makeRequest({ tenant: TENANT, references: refs }),
+      SIGNING_KEY,
+    );
     const withExtra = buildAuditExportPackage(
-      makeRequest({ tenant: TENANT, references: [...refs, makeRef(999, TENANT as unknown as string)] }),
+      makeRequest({
+        tenant: TENANT,
+        references: [...refs, makeRef(999, TENANT as unknown as string)],
+      }),
       SIGNING_KEY,
     );
     const withFewer = buildAuditExportPackage(
@@ -286,10 +314,16 @@ describe('signed manifest (FR-056)', () => {
   });
 
   it('verifyManifest returns FALSE for a mutated body or a wrong key (negative control)', () => {
-    const pkg = buildAuditExportPackage(makeRequest({ tenant: TENANT, references: refs }), SIGNING_KEY);
+    const pkg = buildAuditExportPackage(
+      makeRequest({ tenant: TENANT, references: refs }),
+      SIGNING_KEY,
+    );
 
     // Mutate a covered field (the reference count) — the body no longer matches its signed digest.
-    const mutated = { body: { ...pkg.body, referenceCount: pkg.body.referenceCount + 1 }, manifest: pkg.manifest };
+    const mutated = {
+      body: { ...pkg.body, referenceCount: pkg.body.referenceCount + 1 },
+      manifest: pkg.manifest,
+    };
     expect(verifyManifest(mutated, SIGNING_KEY)).toBe(false);
 
     // Tamper with the custody chain — the intactness check inside verify fails.
@@ -299,7 +333,10 @@ describe('signed manifest (FR-056)', () => {
       brokenCustody[0] = brokenCustody[1]!;
       brokenCustody[1] = first;
     }
-    const custodyMutated = { body: { ...pkg.body, custody: brokenCustody }, manifest: pkg.manifest };
+    const custodyMutated = {
+      body: { ...pkg.body, custody: brokenCustody },
+      manifest: pkg.manifest,
+    };
     expect(verifyManifest(custodyMutated, SIGNING_KEY)).toBe(false);
 
     // A different key never verifies a package signed with the real key.
@@ -316,7 +353,9 @@ describe('gap report (SC-022)', () => {
 
   it('surfaces a known uncovered obligation as a gap with its kind', () => {
     // UNMAPPED_INPUTS: an applicable obligation with no control mapping → unmapped_obligation gap.
-    const body = buildAuditExportBody(makeRequest({ tenant: TENANT, references: refs, inputs: UNMAPPED_INPUTS }));
+    const body = buildAuditExportBody(
+      makeRequest({ tenant: TENANT, references: refs, inputs: UNMAPPED_INPUTS }),
+    );
     expect(body.gaps.length).toBeGreaterThan(0);
     const kinds = body.gaps.map((g) => g.kind);
     expect(kinds).toContain('unmapped_obligation');
@@ -326,13 +365,17 @@ describe('gap report (SC-022)', () => {
 
   it('yields an EMPTY gap list for an all-covered scope', () => {
     // READY_INPUTS: a single fully-covered obligation, sufficient non-stale evidence → zero gaps.
-    const body = buildAuditExportBody(makeRequest({ tenant: TENANT, references: refs, inputs: READY_INPUTS }));
+    const body = buildAuditExportBody(
+      makeRequest({ tenant: TENANT, references: refs, inputs: READY_INPUTS }),
+    );
     expect(body.gaps).toEqual([]);
     expect(body.complete).toBe(true);
   });
 
   it('copies the engine gaps VERBATIM (same kinds, same order) into the package', () => {
-    const body = buildAuditExportBody(makeRequest({ tenant: TENANT, references: refs, inputs: REOPENED_INPUTS }));
+    const body = buildAuditExportBody(
+      makeRequest({ tenant: TENANT, references: refs, inputs: REOPENED_INPUTS }),
+    );
     // REOPENED_INPUTS: a stale not_applicable decision whose gap has reopened.
     expect(body.gaps.some((g) => g.kind === 'reopened_non_applicability')).toBe(true);
   });
@@ -345,7 +388,8 @@ describe('gap report (SC-022)', () => {
 describe('reproducible-at-instant (SC-013)', () => {
   it('two runs with identical inputs produce deep-equal packages', () => {
     const refs = Array.from({ length: 40 }, (_, i) => makeRef(i, TENANT as unknown as string));
-    const req = () => makeRequest({ tenant: TENANT, references: refs, reconstructedAt: NOW as number });
+    const req = () =>
+      makeRequest({ tenant: TENANT, references: refs, reconstructedAt: NOW as number });
     const a = buildAuditExportPackage(req(), SIGNING_KEY);
     const b = buildAuditExportPackage(req(), SIGNING_KEY);
     expect(a).toEqual(b);
@@ -366,7 +410,9 @@ describe('truthful claim boundary (FR-055)', () => {
   const refs = Array.from({ length: 3 }, (_, i) => makeRef(i, TENANT as unknown as string));
 
   it('keeps a ready readiness at "ready" and never promotes it to "certified"', () => {
-    const body = buildAuditExportBody(makeRequest({ tenant: TENANT, references: refs, inputs: READY_INPUTS }));
+    const body = buildAuditExportBody(
+      makeRequest({ tenant: TENANT, references: refs, inputs: READY_INPUTS }),
+    );
     expect(body.claimBoundary).toBe('ready');
     expect(isInternalReadinessBoundary(body.claimBoundary)).toBe(true);
     // The truthful external-claim disclaimer is always present.
@@ -374,7 +420,9 @@ describe('truthful claim boundary (FR-055)', () => {
   });
 
   it('caps at "ready" when only an EXPIRED certification is present (readiness ≠ certification, negative control)', () => {
-    const body = buildAuditExportBody(makeRequest({ tenant: TENANT, references: refs, inputs: EXPIRED_CERT_INPUTS }));
+    const body = buildAuditExportBody(
+      makeRequest({ tenant: TENANT, references: refs, inputs: EXPIRED_CERT_INPUTS }),
+    );
     expect(body.claimBoundary).not.toBe('certified');
     expect(isInternalReadinessBoundary(body.claimBoundary)).toBe(true);
   });
@@ -393,7 +441,9 @@ describe('truthful claim boundary (FR-055)', () => {
     // Construct a real certified body (with a cert), then forge a request that strips the certs but
     // reuses the certified body — buildAuditExportPackage re-derives the body from the request, so we
     // exercise the guard directly via a body/request mismatch.
-    const certifiedBody = buildAuditExportBody(makeRequest({ tenant: TENANT, references: refs, inputs: CERTIFIED_INPUTS }));
+    const certifiedBody = buildAuditExportBody(
+      makeRequest({ tenant: TENANT, references: refs, inputs: CERTIFIED_INPUTS }),
+    );
     expect(certifiedBody.claimBoundary).toBe('certified');
     const strippedRequest = makeRequest({ tenant: TENANT, references: refs, inputs: READY_INPUTS });
     expect(strippedRequest.coverageInputs.certifications.length).toBe(0);

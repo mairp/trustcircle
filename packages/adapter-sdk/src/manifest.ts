@@ -332,7 +332,10 @@ export function validateManifest(input: unknown): ManifestValidationResult {
     issues.push(Object.freeze({ path, message }));
   };
   if (input === null || typeof input !== 'object') {
-    return Object.freeze({ valid: false, issues: Object.freeze([{ path: '', message: 'not an object' }]) });
+    return Object.freeze({
+      valid: false,
+      issues: Object.freeze([{ path: '', message: 'not an object' }]),
+    });
   }
   const m = input as Record<string, unknown>;
 
@@ -340,7 +343,8 @@ export function validateManifest(input: unknown): ManifestValidationResult {
   if (typeof m['adapter_id'] !== 'string' || !ADAPTER_ID_RE.test(m['adapter_id'] as string))
     push('adapter_id', 'must match ^[a-z][a-z0-9.-]{2,127}$');
   for (const req of ['name', 'vendor'] as const) {
-    if (typeof m[req] !== 'string' || (m[req] as string).length < 1) push(req, 'required non-empty string');
+    if (typeof m[req] !== 'string' || (m[req] as string).length < 1)
+      push(req, 'required non-empty string');
   }
   if (!isSemver(m['adapter_version'])) push('adapter_version', 'must be semver');
 
@@ -358,13 +362,19 @@ export function validateManifest(input: unknown): ManifestValidationResult {
   if (!Array.isArray(caps) || caps.length < 1) {
     push('capabilities', 'must be a non-empty array');
   } else {
-    for (const c of caps) if (!isAdapterCapability(c)) push('capabilities', `unknown capability: ${String(c)}`);
+    for (const c of caps)
+      if (!isAdapterCapability(c)) push('capabilities', `unknown capability: ${String(c)}`);
     if (new Set(caps).size !== caps.length) push('capabilities', 'must be unique');
   }
 
   const auth = m['authority'] as Record<string, unknown> | undefined;
-  if (!auth || !Array.isArray(auth['authoritative_fields']) || !Array.isArray(auth['forbidden_inferences'])
-      || typeof auth['operation_risk'] !== 'object' || auth['operation_risk'] === null) {
+  if (
+    !auth ||
+    !Array.isArray(auth['authoritative_fields']) ||
+    !Array.isArray(auth['forbidden_inferences']) ||
+    typeof auth['operation_risk'] !== 'object' ||
+    auth['operation_risk'] === null
+  ) {
     push('authority', 'authoritative_fields, forbidden_inferences, operation_risk required');
   } else {
     for (const [op, risk] of Object.entries(auth['operation_risk'] as Record<string, unknown>)) {
@@ -377,12 +387,24 @@ export function validateManifest(input: unknown): ManifestValidationResult {
   if (!sec) push('security', 'required');
   else {
     if (sec['credential_reference_mode'] !== 'external_secret_reference')
-      push('security.credential_reference_mode', 'must be external_secret_reference (no inline secrets)');
-    if (!['mtls', 'oauth2_client_credentials', 'signed_workload', 'local_socket'].includes(sec['identity_mode'] as string))
+      push(
+        'security.credential_reference_mode',
+        'must be external_secret_reference (no inline secrets)',
+      );
+    if (
+      !['mtls', 'oauth2_client_credentials', 'signed_workload', 'local_socket'].includes(
+        sec['identity_mode'] as string,
+      )
+    )
       push('security.identity_mode', 'invalid identity_mode');
-    if (!['single_tenant_instance', 'tenant_context_per_request'].includes(sec['tenant_mode'] as string))
+    if (
+      !['single_tenant_instance', 'tenant_context_per_request'].includes(
+        sec['tenant_mode'] as string,
+      )
+    )
       push('security.tenant_mode', 'invalid tenant_mode');
-    if (!Array.isArray(sec['required_scopes'])) push('security.required_scopes', 'must be an array');
+    if (!Array.isArray(sec['required_scopes']))
+      push('security.required_scopes', 'must be an array');
   }
 
   const schemas = m['schemas'] as Record<string, unknown> | undefined;
@@ -390,70 +412,126 @@ export function validateManifest(input: unknown): ManifestValidationResult {
   else {
     for (const s of ['observation', 'command', 'result', 'health'] as const) {
       const ref = schemas[s] as Record<string, unknown> | undefined;
-      if (!ref || typeof ref['uri'] !== 'string' || !isSemver(ref['version']) || typeof ref['sha256'] !== 'string'
-          || !SHA256_RE.test(ref['sha256'] as string))
+      if (
+        !ref ||
+        typeof ref['uri'] !== 'string' ||
+        !isSemver(ref['version']) ||
+        typeof ref['sha256'] !== 'string' ||
+        !SHA256_RE.test(ref['sha256'] as string)
+      )
         push(`schemas.${s}`, 'must be a schemaRef (uri, semver version, sha256)');
     }
   }
 
   const delivery = m['delivery'] as Record<string, unknown> | undefined;
-  if (!delivery || !(ORDERING_MODELS as readonly string[]).includes(delivery['ordering'] as string)
-      || !(IDEMPOTENCY_MODES as readonly string[]).includes(delivery['idempotency'] as string)
-      || typeof delivery['supports_operation_lookup'] !== 'boolean'
-      || typeof delivery['supports_tombstones'] !== 'boolean') {
-    push('delivery', 'ordering, idempotency, supports_operation_lookup, supports_tombstones required');
+  if (
+    !delivery ||
+    !(ORDERING_MODELS as readonly string[]).includes(delivery['ordering'] as string) ||
+    !(IDEMPOTENCY_MODES as readonly string[]).includes(delivery['idempotency'] as string) ||
+    typeof delivery['supports_operation_lookup'] !== 'boolean' ||
+    typeof delivery['supports_tombstones'] !== 'boolean'
+  ) {
+    push(
+      'delivery',
+      'ordering, idempotency, supports_operation_lookup, supports_tombstones required',
+    );
   }
 
   const limits = m['limits'] as Record<string, unknown> | undefined;
   if (!limits) push('limits', 'required');
   else {
-    for (const k of ['requests_per_minute', 'maximum_concurrency', 'maximum_batch_size', 'operation_timeout_seconds'] as const) {
-      if (typeof limits[k] !== 'number' || (limits[k] as number) < 1) push(`limits.${k}`, 'must be a positive integer');
+    for (const k of [
+      'requests_per_minute',
+      'maximum_concurrency',
+      'maximum_batch_size',
+      'operation_timeout_seconds',
+    ] as const) {
+      if (typeof limits[k] !== 'number' || (limits[k] as number) < 1)
+        push(`limits.${k}`, 'must be a positive integer');
     }
   }
 
   const retry = m['retry'] as Record<string, unknown> | undefined;
-  if (!retry || !Array.isArray(retry['retryable_classes']) || !Array.isArray(retry['terminal_classes'])
-      || typeof retry['maximum_attempts'] !== 'number' || typeof retry['jitter'] !== 'boolean') {
+  if (
+    !retry ||
+    !Array.isArray(retry['retryable_classes']) ||
+    !Array.isArray(retry['terminal_classes']) ||
+    typeof retry['maximum_attempts'] !== 'number' ||
+    typeof retry['jitter'] !== 'boolean'
+  ) {
     push('retry', 'retryable_classes, terminal_classes, maximum_attempts, jitter required');
   } else {
     for (const c of retry['retryable_classes'] as unknown[])
-      if (!(RETRYABLE_CLASSES as readonly string[]).includes(c as string)) push('retry.retryable_classes', `invalid: ${String(c)}`);
+      if (!(RETRYABLE_CLASSES as readonly string[]).includes(c as string))
+        push('retry.retryable_classes', `invalid: ${String(c)}`);
     for (const c of retry['terminal_classes'] as unknown[])
-      if (!(TERMINAL_CLASSES as readonly string[]).includes(c as string)) push('retry.terminal_classes', `invalid: ${String(c)}`);
+      if (!(TERMINAL_CLASSES as readonly string[]).includes(c as string))
+        push('retry.terminal_classes', `invalid: ${String(c)}`);
   }
 
   const recon = m['reconciliation'] as Record<string, unknown> | undefined;
-  if (!recon || typeof recon['supported'] !== 'boolean' || !['item', 'collection', 'source', 'none'].includes(recon['scope'] as string)
-      || typeof recon['cursor_model'] !== 'string' || !Array.isArray(recon['drift_classes'])
-      || typeof recon['safe_during_source_degradation'] !== 'boolean') {
-    push('reconciliation', 'supported, scope, cursor_model, drift_classes, safe_during_source_degradation required');
+  if (
+    !recon ||
+    typeof recon['supported'] !== 'boolean' ||
+    !['item', 'collection', 'source', 'none'].includes(recon['scope'] as string) ||
+    typeof recon['cursor_model'] !== 'string' ||
+    !Array.isArray(recon['drift_classes']) ||
+    typeof recon['safe_during_source_degradation'] !== 'boolean'
+  ) {
+    push(
+      'reconciliation',
+      'supported, scope, cursor_model, drift_classes, safe_during_source_degradation required',
+    );
   } else {
     for (const d of recon['drift_classes'] as unknown[])
-      if (!(DRIFT_CLASSES as readonly string[]).includes(d as string)) push('reconciliation.drift_classes', `invalid: ${String(d)}`);
+      if (!(DRIFT_CLASSES as readonly string[]).includes(d as string))
+        push('reconciliation.drift_classes', `invalid: ${String(d)}`);
   }
 
   const ev = m['evidence'] as Record<string, unknown> | undefined;
-  if (!ev || ev['content_hash'] !== 'sha256' || typeof ev['original_capture'] !== 'boolean'
-      || typeof ev['result_capture'] !== 'boolean' || typeof ev['chain_of_custody'] !== 'boolean'
-      || typeof ev['redaction_supported'] !== 'boolean') {
-    push('evidence', 'original_capture, result_capture, content_hash=sha256, chain_of_custody, redaction_supported required');
+  if (
+    !ev ||
+    ev['content_hash'] !== 'sha256' ||
+    typeof ev['original_capture'] !== 'boolean' ||
+    typeof ev['result_capture'] !== 'boolean' ||
+    typeof ev['chain_of_custody'] !== 'boolean' ||
+    typeof ev['redaction_supported'] !== 'boolean'
+  ) {
+    push(
+      'evidence',
+      'original_capture, result_capture, content_hash=sha256, chain_of_custody, redaction_supported required',
+    );
   }
 
   const health = m['health'] as Record<string, unknown> | undefined;
-  if (!health || typeof health['endpoint'] !== 'string' || typeof health['readiness_endpoint'] !== 'string'
-      || health['non_mutating'] !== true || typeof health['freshness_seconds'] !== 'number'
-      || (health['freshness_seconds'] as number) < 1 || typeof health['owner_contact'] !== 'string') {
-    push('health', 'endpoint, readiness_endpoint, non_mutating=true, freshness_seconds>=1, owner_contact required');
+  if (
+    !health ||
+    typeof health['endpoint'] !== 'string' ||
+    typeof health['readiness_endpoint'] !== 'string' ||
+    health['non_mutating'] !== true ||
+    typeof health['freshness_seconds'] !== 'number' ||
+    (health['freshness_seconds'] as number) < 1 ||
+    typeof health['owner_contact'] !== 'string'
+  ) {
+    push(
+      'health',
+      'endpoint, readiness_endpoint, non_mutating=true, freshness_seconds>=1, owner_contact required',
+    );
   }
 
   const lc = m['lifecycle'] as Record<string, unknown> | undefined;
-  if (!lc || !(LIFECYCLE_STATUSES as readonly string[]).includes(lc['status'] as string)
-      || typeof lc['released_at'] !== 'string') {
+  if (
+    !lc ||
+    !(LIFECYCLE_STATUSES as readonly string[]).includes(lc['status'] as string) ||
+    typeof lc['released_at'] !== 'string'
+  ) {
     push('lifecycle', 'status and released_at required');
   }
 
-  if (m['manifest_digest'] !== undefined && (typeof m['manifest_digest'] !== 'string' || !SHA256_RE.test(m['manifest_digest'] as string)))
+  if (
+    m['manifest_digest'] !== undefined &&
+    (typeof m['manifest_digest'] !== 'string' || !SHA256_RE.test(m['manifest_digest'] as string))
+  )
     push('manifest_digest', 'must be a sha256 hex string');
 
   return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
@@ -503,16 +581,24 @@ export function signManifest(input: SignManifestInput): AdapterManifest {
 
 export type SignatureVerifyResult =
   | { readonly valid: true }
-  | { readonly valid: false; readonly reason: 'unsigned' | 'digest-mismatch' | 'signature-mismatch' };
+  | {
+      readonly valid: false;
+      readonly reason: 'unsigned' | 'digest-mismatch' | 'signature-mismatch';
+    };
 
 /** Verify a sealed manifest's digest and detached signature against the signing key. */
-export function verifyManifestSignature(manifest: AdapterManifest, signingKey: string): SignatureVerifyResult {
+export function verifyManifestSignature(
+  manifest: AdapterManifest,
+  signingKey: string,
+): SignatureVerifyResult {
   if (!manifest.signature || !manifest.manifest_digest) return { valid: false, reason: 'unsigned' };
   const preimage = canonicalJson(stripSealFields(manifest));
   const digest = createHash('sha256').update(preimage, 'utf8').digest('hex');
-  if (!constantTimeEqual(digest, manifest.manifest_digest)) return { valid: false, reason: 'digest-mismatch' };
+  if (!constantTimeEqual(digest, manifest.manifest_digest))
+    return { valid: false, reason: 'digest-mismatch' };
   const expected = signPreimage(preimage, signingKey);
-  if (!constantTimeEqual(expected, manifest.signature.value)) return { valid: false, reason: 'signature-mismatch' };
+  if (!constantTimeEqual(expected, manifest.signature.value))
+    return { valid: false, reason: 'signature-mismatch' };
   return { valid: true };
 }
 
@@ -529,7 +615,11 @@ function constantTimeEqual(a: string, b: string): boolean {
 
 export type CapabilityNegotiationResult =
   | { readonly ok: true; readonly enabled: readonly AdapterCapability[] }
-  | { readonly ok: false; readonly reason: 'not_declared'; readonly offending: readonly AdapterCapability[] };
+  | {
+      readonly ok: false;
+      readonly reason: 'not_declared';
+      readonly offending: readonly AdapterCapability[];
+    };
 
 /**
  * Negotiate an enabled capability SUBSET: the requested set must be a subset of what the manifest
@@ -541,7 +631,8 @@ export function negotiateCapabilities(
 ): CapabilityNegotiationResult {
   const declared = new Set(manifest.capabilities);
   const offending = requested.filter((c) => !declared.has(c));
-  if (offending.length > 0) return { ok: false, reason: 'not_declared', offending: Object.freeze([...offending]) };
+  if (offending.length > 0)
+    return { ok: false, reason: 'not_declared', offending: Object.freeze([...offending]) };
   // Preserve declared order, dedupe.
   const req = new Set(requested);
   const enabled = manifest.capabilities.filter((c) => req.has(c));
@@ -550,13 +641,20 @@ export function negotiateCapabilities(
 
 export type ContractNegotiationResult =
   | { readonly ok: true; readonly negotiated: Semver }
-  | { readonly ok: false; readonly reason: 'below_minimum' | 'above_maximum'; readonly range: ContractRange };
+  | {
+      readonly ok: false;
+      readonly reason: 'below_minimum' | 'above_maximum';
+      readonly range: ContractRange;
+    };
 
 /**
  * NS-005 version-drift refusal: the platform's requested protocol version MUST fall within the
  * manifest's inclusive contract range. Outside it, the adapter never activates.
  */
-export function negotiateContract(manifest: AdapterManifest, platformProtocol: Semver): ContractNegotiationResult {
+export function negotiateContract(
+  manifest: AdapterManifest,
+  platformProtocol: Semver,
+): ContractNegotiationResult {
   const { minimum, maximum } = manifest.contract_range;
   if (compareSemver(platformProtocol, minimum) < 0)
     return { ok: false, reason: 'below_minimum', range: manifest.contract_range };
@@ -606,13 +704,18 @@ export interface OperationEnvelope<TDesired = unknown> {
 }
 
 /** Deep-freeze + digest an observation, refusing to fabricate a tombstone as a closure. */
-export function sealObservation<T>(env: Omit<ObservationEnvelope<T>, 'payloadDigest'>): ObservationEnvelope<T> {
+export function sealObservation<T>(
+  env: Omit<ObservationEnvelope<T>, 'payloadDigest'>,
+): ObservationEnvelope<T> {
   const payloadDigest = canonicalDigest(env.payload);
   return Object.freeze({ ...env, payloadDigest }) as ObservationEnvelope<T>;
 }
 
 /** Assert an operation envelope carries a usable idempotency key (>= 8 chars) unless read-only. */
-export function assertOperationEnvelope(env: OperationEnvelope, idempotency: IdempotencyMode): void {
+export function assertOperationEnvelope(
+  env: OperationEnvelope,
+  idempotency: IdempotencyMode,
+): void {
   if (idempotency !== 'read_only_only' && idempotency !== 'unsupported') {
     if (typeof env.idempotencyKey !== 'string' || env.idempotencyKey.length < 8)
       throw new Error('operation envelope requires an idempotency key of at least 8 characters');

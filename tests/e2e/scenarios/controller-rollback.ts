@@ -19,10 +19,7 @@
 
 import { createHash } from 'node:crypto';
 
-import {
-  decideControllerRollback,
-  type ControllerRollbackContext,
-} from '@trustcircle/application';
+import { decideControllerRollback, type ControllerRollbackContext } from '@trustcircle/application';
 
 import { seedOperationDetailModel } from './_controller-inputs.ts';
 import type { ControllerInputs } from './_controller-inputs.ts';
@@ -98,7 +95,8 @@ export function runControllerRollbackScenario(inputs: ControllerInputs): Scenari
   const clean = decideControllerRollback(cleanCtx());
   criteria.push({
     ref: 'NS-011 (protect newer state)',
-    statement: 'A rollback whose observed revision drifted to a newer legitimate state is refused as a conflict — newer state protected, escalate.',
+    statement:
+      'A rollback whose observed revision drifted to a newer legitimate state is refused as a conflict — newer state protected, escalate.',
     satisfied:
       conflict.result === 'conflict' &&
       conflict.protectedNewerState === true &&
@@ -115,7 +113,8 @@ export function runControllerRollbackScenario(inputs: ControllerInputs): Scenari
   const unverified = decideControllerRollback(cleanCtx({ restorationVerified: false }));
   criteria.push({
     ref: 'FR-028 (verified restore only)',
-    statement: 'Only a restoration verified by a direct remote read clears an operation; an unverified restore stays degraded.',
+    statement:
+      'Only a restoration verified by a direct remote read clears an operation; an unverified restore stays degraded.',
     satisfied:
       clean.result === 'rolled_back' &&
       clean.operationCleared === true &&
@@ -124,13 +123,15 @@ export function runControllerRollbackScenario(inputs: ControllerInputs): Scenari
       unverified.remainsDegraded === true,
     evidence: `verified: cleared=${clean.operationCleared}, residual=${clean.residualDifferences}; unverified: cleared=${unverified.operationCleared}, degraded=${unverified.remainsDegraded}`,
     observedVia: 'decideControllerRollback({restorationVerified})',
-    negativeControl: 'an unverified restoration never clears the operation — restoration is observation-first, like every confirmation',
+    negativeControl:
+      'an unverified restoration never clears the operation — restoration is observation-first, like every confirmation',
   });
 
   // NS-011 (UI honesty) — the presenter surfaces the refusal as rollback_refused_newer_state, not success.
   criteria.push({
     ref: 'NS-011 (UI surfaces refusal)',
-    statement: 'The operation detail surfaces the rollback refusal as protecting newer state, never as a plain success.',
+    statement:
+      'The operation detail surfaces the rollback refusal as protecting newer state, never as a plain success.',
     satisfied:
       detail.rollback.result === 'rollback_refused_newer_state' &&
       detail.rollback.reason.length > 0 &&
@@ -142,10 +143,13 @@ export function runControllerRollbackScenario(inputs: ControllerInputs): Scenari
 
   // Fails-closed — no preimage / unauthorized rollback never silently succeeds.
   const noPreimage = decideControllerRollback(cleanCtx({ preimageEvidenceId: null }));
-  const unauthorized = decideControllerRollback(cleanCtx({ policyAuthorizesRollback: false, totalSteps: 3, compensatedSteps: 1 }));
+  const unauthorized = decideControllerRollback(
+    cleanCtx({ policyAuthorizesRollback: false, totalSteps: 3, compensatedSteps: 1 }),
+  );
   criteria.push({
     ref: 'NS-011 (fail closed)',
-    statement: 'A rollback with no preserved preimage is unavailable; an unauthorized rollback fails closed and escalates — never a silent success.',
+    statement:
+      'A rollback with no preserved preimage is unavailable; an unauthorized rollback fails closed and escalates — never a silent success.',
     satisfied:
       noPreimage.result === 'unavailable' &&
       noPreimage.reason === 'no_preserved_preimage_to_restore' &&
@@ -153,8 +157,10 @@ export function runControllerRollbackScenario(inputs: ControllerInputs): Scenari
       unauthorized.mustEscalate === true &&
       unauthorized.reason === 'rollback_not_policy_authorized',
     evidence: `noPreimage: result=${noPreimage.result} (${noPreimage.reason}); unauthorized: result=${unauthorized.result}, escalate=${unauthorized.mustEscalate}`,
-    observedVia: 'decideControllerRollback({preimageEvidenceId:null}) + ({policyAuthorizesRollback:false})',
-    negativeControl: 'the clean context succeeds — the unavailable/failed verdicts are driven by the missing preimage / missing authorization, not a blanket refusal',
+    observedVia:
+      'decideControllerRollback({preimageEvidenceId:null}) + ({policyAuthorizesRollback:false})',
+    negativeControl:
+      'the clean context succeeds — the unavailable/failed verdicts are driven by the missing preimage / missing authorization, not a blanket refusal',
   });
 
   return finish('controller-rollback', criteria);

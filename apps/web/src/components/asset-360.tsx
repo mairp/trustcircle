@@ -1,31 +1,11 @@
 import type { ConsoleSectionState } from '../lib/console-loader.ts';
 import type { ConsoleRecordDetail } from '../lib/console-presenter.ts';
-import { classifyRecordStatus } from '../lib/platform-workspaces.ts';
+import { classifyRecordStatus, relatedAssetRecords } from '../lib/platform-workspaces.ts';
 
 type AssetTab = 'overview' | 'relationships' | 'history';
 
 function field(record: ConsoleRecordDetail, label: string): string | undefined {
   return record.fields.find((candidate) => candidate.label === label)?.value;
-}
-
-function relatedRecords(
-  assetId: string,
-  sections: readonly ConsoleSectionState[],
-): readonly { readonly section: ConsoleSectionState; readonly record: ConsoleRecordDetail }[] {
-  const needle = assetId.toLowerCase();
-  return sections.flatMap((section) =>
-    section.id === 'inventory'
-      ? []
-      : section.records
-          .filter((record) =>
-            [record.title, record.subtitle, ...record.fields.map((item) => item.value)]
-              .filter(Boolean)
-              .join(' ')
-              .toLowerCase()
-              .includes(needle),
-          )
-          .map((record) => ({ section, record })),
-  );
 }
 
 export function Asset360({
@@ -42,7 +22,7 @@ export function Asset360({
   readonly tab: AssetTab;
 }) {
   const status = classifyRecordStatus(asset);
-  const related = relatedRecords(assetId, sections);
+  const related = relatedAssetRecords(assetId, sections);
   const owner = field(asset, 'Owner') ?? 'Unknown';
   const observed = field(asset, 'Observed') ?? inventory.observedAt;
   const confidence = field(asset, 'Confidence') ?? 'Unknown';

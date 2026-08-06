@@ -27,12 +27,14 @@ import {
   buildConformanceSuite,
   runConformance,
   sealConformanceResult,
+  authorGuidedConnectorDefinition,
   verifyConformanceResult,
   manifestDigest,
   CONFORMANCE_DIMENSIONS,
   type ConformanceProbe,
   type ConformanceCase,
   type AdapterManifest,
+  type GuidedConnectorDefinitionInput,
 } from '@trustcircle/adapter-sdk';
 
 import { NAMED_MANIFESTS } from '../fixtures/integrations.ts';
@@ -130,11 +132,127 @@ describe('adapter conformance matrix · signed result manifest is a verifiable a
     const sealed = sealConformanceResult({
       outcome,
       manifestDigest: manifestDigest(manifest),
+
       ranAt: 1_772_600_000_000,
       keyId: 'gate-key',
       signingKey: SIGNING_KEY,
     });
     expect(sealed.passed).toBe(false);
+    expect(verifyConformanceResult(sealed, SIGNING_KEY)).toEqual({ valid: true });
+  });
+});
+
+describe('Spec 004 guided connector authoring', () => {
+  const baseManifest = NAMED_MANIFESTS.kanban;
+  const unsignedManifest = {
+    ...baseManifest,
+    manifest_digest: undefined,
+    signature: undefined,
+  };
+  const validInput: GuidedConnectorDefinitionInput = {
+    id: '018f0000-0000-7000-8000-000000000801',
+    authorPrincipalId: '018f0000-0000-7000-8000-000000000802',
+    draftVersion: 1,
+    manifest: unsignedManifest,
+    mappingRefs: ['/connector-mappings/kanban-v1'],
+    credentialClassRefs: ['oauth-client'],
+    paginationPolicy: {
+      mode: 'cursor',
+      cursorField: 'next_cursor',
+      maximumPageSize: 100,
+    },
+    failurePolicy: {
+      correlation: 'required',
+      idempotency: 'required',
+      reconciliation: 'source_scoped',
+      retry: 'bounded',
+      replay: 'source_event_identity',
+      terminalFailure: 'retained_for_reconciliation',
+      revocation: 'block_new_work_reconcile_existing',
+      migration: 'version_overlap',
+      rollback: 'verified_preimage',
+    },
+    schemaVersion: 1,
+  };
+
+  it('generates the canonical existing manifest shape and binds guided policies into a digest', () => {
+    const definition = authorGuidedConnectorDefinition(validInput);
+    expect(definition.status).toBe('draft');
+    expect(definition.authorPrincipalId).toBe(validInput.authorPrincipalId);
+    expect(definition.manifest.adapter_id).toBe(baseManifest.adapter_id);
+    expect(definition.manifest.manifest_digest).toBeUndefined();
+    expect(definition.digest).toMatch(/^[a-f0-9]{64}$/);
+    expect(definition.failurePolicy.revocation).toBe('block_new_work_reconcile_existing');
+    expect(definition.credentialClassRefs).toEqual(['oauth-client']);
+  });
+
+  it('rejects missing failure semantics, inline secrets, and invalid pagination before a manifest can be certified', () => {
+    expect(() =>
+      authorGuidedConnectorDefinition({
+        ...validInput,
+        failurePolicy: {
+          ...validInput.failurePolicy,
+          terminalFailure: '',
+        },
+      }),
+    ).toThrow(/terminal.failure/i);
+    expect(() =>
+      authorGuidedConnectorDefinition({
+        ...validInput,
+        credentialSecret: 'must-never-enter-a-definition',
+      } as GuidedConnectorDefinitionInput),
+    ).toThrow(/secret|credential/i);
+    expect(() =>
+      authorGuidedConnectorDefinition({
+        ...validInput,
+        paginationPolicy: { ...validInput.paginationPolicy, maximumPageSize: 0 },
+      }),
+    ).toThrow(/page/i);
+  });
+});
+
+describe('Spec 004 expanded conformance evidence', () => {
+  it('covers every malformed, delayed, ordering, partial, authorization, rate, revocation, and terminal defect', () => {
+    const dimensions = new Set(
+      buildConformanceSuite(NAMED_MANIFESTS.kanban).map((kase) => kase.dimension),
+    );
+    for (const dimension of [
+      'malformed',
+      'delayed',
+      'out_of_order',
+      'partial_delivery',
+      'unauthorized',
+      'rate_limit',
+      'revocation',
+      'terminal_failure',
+    ]) {
+      expect(dimensions.has(dimension as never)).toBe(true);
+    }
+  });
+
+  it('binds environment, fixtures, tools, case evidence, and run times into the signed report', async () => {
+    const manifest = NAMED_MANIFESTS.kanban;
+    const outcome = await runConformance(manifest, honestProbe(), '2.0.0');
+    const sealed = sealConformanceResult({
+      outcome,
+      manifestDigest: manifestDigest(manifest),
+      environmentDigest: 'a'.repeat(64),
+      fixtureDigests: ['b'.repeat(64), 'c'.repeat(64)],
+      toolVersions: { runner: '2.0.0', node: '22.0.0' },
+      caseEvidenceRefs: outcome.verdicts.map((verdict) => ({
+        caseId: verdict.caseId,
+        evidenceRef: '/evidence/conformance/' + verdict.caseId,
+      })),
+      startedAt: 1_772_599_999_000,
+      completedAt: 1_772_600_000_000,
+      keyId: 'gate-key',
+      signingKey: SIGNING_KEY,
+    });
+    expect(sealed.environmentDigest).toBe('a'.repeat(64));
+    expect(sealed.fixtureDigests).toHaveLength(2);
+    expect(sealed.toolVersions['runner']).toBe('2.0.0');
+    expect(sealed.caseEvidenceRefs).toHaveLength(outcome.total);
+    expect(sealed.startedAt).toBeLessThan(sealed.completedAt);
     expect(verifyConformanceResult(sealed, SIGNING_KEY)).toEqual({ valid: true });
   });
 });

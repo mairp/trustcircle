@@ -152,7 +152,8 @@ export class AdapterClient {
       throw new TypeError('AdapterClient requires tenant credentials');
     }
     const t = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-    if (!Number.isInteger(t) || t <= 0) throw new RangeError('timeoutMs must be a positive integer');
+    if (!Number.isInteger(t) || t <= 0)
+      throw new RangeError('timeoutMs must be a positive integer');
     this.#transport = transport;
     this.#config = config;
     this.#timeoutMs = t;
@@ -189,7 +190,9 @@ export class AdapterClient {
    */
   async dispatch(req: DispatchRequest): Promise<DispatchResult> {
     if (typeof req.idempotencyKey !== 'string' || req.idempotencyKey.length < 8) {
-      throw new TypeError('dispatch requires an idempotencyKey of length >= 8 (FR-026 one identity)');
+      throw new TypeError(
+        'dispatch requires an idempotencyKey of length >= 8 (FR-026 one identity)',
+      );
     }
 
     const transportResult = await this.#transport({
@@ -208,10 +211,16 @@ export class AdapterClient {
 
     // FR-027 — a timeout/severed connection is UNCERTAIN, never a definite success or failure.
     if (transportResult.kind === 'timeout') {
-      return uncertain('timed_out', 'dispatch timed out before an acknowledgement; effect is unknown');
+      return uncertain(
+        'timed_out',
+        'dispatch timed out before an acknowledgement; effect is unknown',
+      );
     }
     if (transportResult.kind === 'network_error') {
-      return uncertain('uncertain', `dispatch severed without a known effect: ${transportResult.detail}`);
+      return uncertain(
+        'uncertain',
+        `dispatch severed without a known effect: ${transportResult.detail}`,
+      );
     }
 
     const { response } = transportResult;
@@ -230,7 +239,10 @@ export class AdapterClient {
           detail: `adapter refused (status ${response.status}) with no effect: ${body.detail ?? 'no detail'}`,
         };
       }
-      return uncertain('uncertain', `adapter returned status ${response.status}; effect state unknown`);
+      return uncertain(
+        'uncertain',
+        `adapter returned status ${response.status}; effect state unknown`,
+      );
     }
 
     if (!body) {
@@ -245,7 +257,8 @@ export class AdapterClient {
         observedRevision: body.observedRevision ?? null,
         retryableUnderSameKey: false,
         mustReconcile: true,
-        detail: 'adapter echoed a different protocol/version/source revision than pinned (version_drift, NS-005)',
+        detail:
+          'adapter echoed a different protocol/version/source revision than pinned (version_drift, NS-005)',
       };
     }
 
@@ -268,7 +281,8 @@ export class AdapterClient {
       observedRevision: body.observedRevision ?? null,
       retryableUnderSameKey: false,
       mustReconcile: true,
-      detail: 'dispatch acknowledged (2xx) but effect not directly observed; must reconcile (FR-027)',
+      detail:
+        'dispatch acknowledged (2xx) but effect not directly observed; must reconcile (FR-027)',
     };
   }
 
@@ -293,7 +307,10 @@ export class AdapterClient {
         observedRevision: null,
         observedEffectCount: 0,
         reachable: false,
-        detail: transportResult.kind === 'timeout' ? 'observe timed out; remote unreadable' : `observe severed: ${transportResult.detail}`,
+        detail:
+          transportResult.kind === 'timeout'
+            ? 'observe timed out; remote unreadable'
+            : `observe severed: ${transportResult.detail}`,
       };
     }
 
@@ -319,16 +336,24 @@ export class AdapterClient {
       };
     }
 
-    const count = typeof body.observedEffectCount === 'number' && Number.isInteger(body.observedEffectCount) && body.observedEffectCount >= 0
-      ? body.observedEffectCount
-      : body.remoteEffectObserved === true ? 1 : 0;
+    const count =
+      typeof body.observedEffectCount === 'number' &&
+      Number.isInteger(body.observedEffectCount) &&
+      body.observedEffectCount >= 0
+        ? body.observedEffectCount
+        : body.remoteEffectObserved === true
+          ? 1
+          : 0;
 
     return {
       remoteEffectObserved: body.remoteEffectObserved === true,
       observedRevision: typeof body.observedRevision === 'string' ? body.observedRevision : null,
       observedEffectCount: count,
       reachable: true,
-      detail: count > 1 ? `duplicate effect observed (${count}) for one idempotency identity (SC-011)` : 'authoritative remote state read',
+      detail:
+        count > 1
+          ? `duplicate effect observed (${count}) for one idempotency identity (SC-011)`
+          : 'authoritative remote state read',
     };
   }
 }

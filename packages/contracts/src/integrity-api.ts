@@ -60,10 +60,15 @@ import {
 function refResponseSchema(doc: GovernanceApiDocument, op: Json, status: string): Json {
   const responses = (op as Record<string, Json>)['responses'] as Record<string, Json> | undefined;
   const node = responses?.[status];
-  const refPtr = node && typeof node === 'object' && !Array.isArray(node) ? (node as Record<string, Json>)['$ref'] : undefined;
+  const refPtr =
+    node && typeof node === 'object' && !Array.isArray(node)
+      ? (node as Record<string, Json>)['$ref']
+      : undefined;
   const resolved = typeof refPtr === 'string' ? doc.ref(refPtr) : node;
   // Present the resolved response under the SAME status so responseSchema can read its content schema.
-  const synthetic = { responses: { [status]: resolved } } as unknown as Parameters<typeof responseSchema>[0];
+  const synthetic = { responses: { [status]: resolved } } as unknown as Parameters<
+    typeof responseSchema
+  >[0];
   return responseSchema(synthetic, status);
 }
 
@@ -144,10 +149,7 @@ export function validateVerificationRecord(doc: GovernanceApiDocument, body: Jso
 // ===========================================================================
 
 /** Validate the required headers a remediation request must carry (tenant/idempotency/corr/If-Match). */
-export function validateRemediationHeaders(
-  doc: GovernanceApiDocument,
-  headers: Headers,
-): string[] {
+export function validateRemediationHeaders(doc: GovernanceApiDocument, headers: Headers): string[] {
   return validateRequestHeaders(doc, doc.operation('post', REMEDIATION_PATH), headers);
 }
 

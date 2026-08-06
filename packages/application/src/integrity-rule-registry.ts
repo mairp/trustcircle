@@ -16,12 +16,7 @@
 // state and its content digest are. It grants NO governance authority: it records and keeps visible;
 // it never deletes — deprecated/retired versions stay queryable so rule history stays reconstructable.
 
-import {
-  isUuid,
-  type Uuid,
-  type TenantId,
-  type EpochMillis,
-} from '@trustcircle/domain';
+import { isUuid, type Uuid, type TenantId, type EpochMillis } from '@trustcircle/domain';
 import {
   makeIntegrityRuleVersion,
   integrityRuleVersionDigest,
@@ -175,7 +170,10 @@ export class IntegrityRuleRegistry {
     // Supersede the prior active version of the same rule (deprecate, retain history).
     for (const v of this.#versionsByRule.get(current.ruleId) ?? []) {
       if (v.id !== current.id && v.lifecycleState === 'active') {
-        const dep = this.#rebuild(v, { lifecycleState: 'deprecated', effectiveTo: input.effectiveFrom });
+        const dep = this.#rebuild(v, {
+          lifecycleState: 'deprecated',
+          effectiveTo: input.effectiveFrom,
+        });
         if (dep !== null) this.#store(dep);
       }
     }

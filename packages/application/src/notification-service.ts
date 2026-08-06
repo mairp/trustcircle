@@ -14,7 +14,8 @@
 // "who was told, when, and why" is itself auditable. Determinism: the emitted-at instant and the row
 // ids are injected; no wall clock, no id generation at module scope.
 
-import { type Uuid, type EpochMillis } from '@trustcircle/domain';
+import { governedDigest, type Uuid, type EpochMillis } from '@trustcircle/domain';
+import type { GovernedDeliveryChannel } from './governed-view-service.ts';
 
 export const DECISION_EVENT_TYPES = [
   'requested',
@@ -133,4 +134,147 @@ export function planNotifications(input: NotificationPlanInput): readonly Planne
     });
   }
   return Object.freeze(out);
+}
+
+export interface GovernedDeliveryAttemptPlan {
+  readonly channel: GovernedDeliveryChannel;
+  readonly idempotencyKey: string;
+  readonly correlationId: string;
+  readonly scheduledAt: number;
+}
+
+export interface GovernedDeliveryPlan {
+  readonly tenantId: string;
+  readonly subscriptionId: string;
+  readonly recipientPrincipalId: string;
+  readonly resourceRef: string;
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly allowedFields: readonly string[];
+  readonly sourceDigest: string;
+  readonly attempts: readonly GovernedDeliveryAttemptPlan[];
+}
+
+export interface PlanGovernedDeliveriesInput {
+  readonly tenantId: string;
+  readonly subscriptionId: string;
+  readonly recipientPrincipalId: string;
+  readonly resourceRef: string;
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly allowedFields: readonly string[];
+  readonly channels: readonly GovernedDeliveryChannel[];
+  readonly sourceDigest: string;
+  readonly correlationId: string;
+  readonly scheduledAt: number;
+}
+
+export interface GovernedDeliveryAuthorization {
+  readonly authorizeRecipient: (principalId: string, tenantId: string) => boolean;
+  readonly authorizeField: (principalId: string, field: string, resourceRef: string) => boolean;
+}
+
+export interface RenderedGovernedDelivery {
+  readonly status: 'rendered' | 'revoked';
+  readonly tenantId: string;
+  readonly subscriptionId: string;
+  readonly recipientPrincipalId: string;
+  readonly resourceRef: string;
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly sourceDigest: string;
+  readonly attempts: readonly GovernedDeliveryAttemptPlan[];
+}
+
+function requireGovernedText(value: string, field: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new TypeError(field + ' is required.');
+  }
+  return value.trim();
+}
+
+export function planGovernedDeliveries(input: PlanGovernedDeliveriesInput): GovernedDeliveryPlan {
+  const tenantId = requireGovernedText(input.tenantId, 'tenantId');
+  const subscriptionId = requireGovernedText(input.subscriptionId, 'subscriptionId');
+  const recipientPrincipalId = requireGovernedText(
+    input.recipientPrincipalId,
+    'recipientPrincipalId',
+  );
+  const resourceRef = requireGovernedText(input.resourceRef, 'resourceRef');
+  const correlationId = requireGovernedText(input.correlationId, 'correlationId');
+  if (!/^[a-f0-9]{64}$/.test(input.sourceDigest)) {
+    throw new TypeError('sourceDigest must be a SHA-256 digest.');
+  }
+  if (
+    !Number.isSafeInteger(input.scheduledAt) ||
+    input.scheduledAt < 0 ||
+    input.channels.length === 0
+  ) {
+    throw new TypeError('A scheduled instant and at least one channel are required.');
+  }
+  const channels = [...new Set(input.channels)].sort();
+  const allowedFields = Object.freeze([...new Set(input.allowedFields)].sort());
+  const attempts = Object.freeze(
+    channels.map((channel) =>
+      Object.freeze({
+        channel,
+        idempotencyKey:
+          'governed-delivery:' +
+          governedDigest({
+            tenantId,
+            subscriptionId,
+            recipientPrincipalId,
+            channel,
+            sourceDigest: input.sourceDigest,
+          }),
+        correlationId,
+        scheduledAt: input.scheduledAt,
+      }),
+    ),
+  );
+  return Object.freeze({
+    tenantId,
+    subscriptionId,
+    recipientPrincipalId,
+    resourceRef,
+    payload: Object.freeze({ ...input.payload }),
+    allowedFields,
+    sourceDigest: input.sourceDigest,
+    attempts,
+  });
+}
+
+export function renderGovernedDelivery(
+  plan: GovernedDeliveryPlan,
+  authorization: GovernedDeliveryAuthorization,
+): RenderedGovernedDelivery {
+  const authorized = authorization.authorizeRecipient(plan.recipientPrincipalId, plan.tenantId);
+  if (!authorized) {
+    return Object.freeze({
+      status: 'revoked',
+      tenantId: plan.tenantId,
+      subscriptionId: plan.subscriptionId,
+      recipientPrincipalId: plan.recipientPrincipalId,
+      resourceRef: plan.resourceRef,
+      payload: Object.freeze({}),
+      sourceDigest: plan.sourceDigest,
+      attempts: plan.attempts,
+    });
+  }
+  const payload: Record<string, unknown> = {};
+  for (const field of plan.allowedFields) {
+    if (
+      field in plan.payload &&
+      authorization.authorizeField(plan.recipientPrincipalId, field, plan.resourceRef)
+    ) {
+      payload[field] = plan.payload[field];
+    }
+  }
+  return Object.freeze({
+    status: 'rendered',
+    tenantId: plan.tenantId,
+    subscriptionId: plan.subscriptionId,
+    recipientPrincipalId: plan.recipientPrincipalId,
+    resourceRef: plan.resourceRef,
+    payload: Object.freeze(payload),
+    sourceDigest: plan.sourceDigest,
+    attempts: plan.attempts,
+  });
 }

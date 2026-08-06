@@ -62,13 +62,23 @@ function componentInput(
 describe('component profiles · proof-before-active gate (NFR-010)', () => {
   it('preflightPassed requires ALL four prerequisites', () => {
     expect(preflightPassed(ALL_PROVEN)).toBe(true);
-    for (const missing of ['identityVerified', 'contractVerified', 'authorityVerified', 'backlogReconciled'] as const) {
+    for (const missing of [
+      'identityVerified',
+      'contractVerified',
+      'authorityVerified',
+      'backlogReconciled',
+    ] as const) {
       expect(preflightPassed({ ...ALL_PROVEN, [missing]: false })).toBe(false);
     }
   });
 
   it('activate REFUSES to reach active when any prerequisite is unmet — no mutation before proof', () => {
-    for (const missing of ['identityVerified', 'contractVerified', 'authorityVerified', 'backlogReconciled'] as const) {
+    for (const missing of [
+      'identityVerified',
+      'contractVerified',
+      'authorityVerified',
+      'backlogReconciled',
+    ] as const) {
       const unmet = { ...ALL_PROVEN, [missing]: false };
       expect(() => activate(componentInput('core', unmet))).toThrow(/refused: unmet prerequisites/);
     }
@@ -87,17 +97,21 @@ describe('component profiles · proof-before-active gate (NFR-010)', () => {
 describe('component profiles · availability class drives the continuously-expected runtime', () => {
   it('CORE-required inspect is active only once proven; unproven core is intentionally_inactive', () => {
     expect(inspect(componentInput('core', ALL_PROVEN)).runtimeState).toBe('active');
-    expect(inspect(componentInput('core', { ...ALL_PROVEN, authorityVerified: false })).runtimeState).toBe(
-      'intentionally_inactive',
-    );
+    expect(
+      inspect(componentInput('core', { ...ALL_PROVEN, authorityVerified: false })).runtimeState,
+    ).toBe('intentionally_inactive');
     // inspect NEVER activates — activation_state stays inactive regardless.
     expect(inspect(componentInput('core', ALL_PROVEN)).activationState).toBe('inactive');
   });
 
   it('OPTIONAL and ON-DEMAND inspect are intentionally_inactive even when fully proven', () => {
     // Availability is separate from authority: an optional/on-demand component does not run continuously.
-    expect(inspect(componentInput('optional', ALL_PROVEN)).runtimeState).toBe('intentionally_inactive');
-    expect(inspect(componentInput('on-demand', ALL_PROVEN)).runtimeState).toBe('intentionally_inactive');
+    expect(inspect(componentInput('optional', ALL_PROVEN)).runtimeState).toBe(
+      'intentionally_inactive',
+    );
+    expect(inspect(componentInput('on-demand', ALL_PROVEN)).runtimeState).toBe(
+      'intentionally_inactive',
+    );
   });
 
   it('deactivate always returns to intentionally_inactive with no active activation state', () => {
@@ -116,7 +130,9 @@ describe('component profiles · availability class drives the continuously-expec
     expect(lapsed.activationState).toBe('inactive'); // reconcile observes, never activates
 
     // A non-core component reconciles to intentionally_inactive regardless of proof.
-    expect(reconcile(componentInput('optional', ALL_PROVEN)).runtimeState).toBe('intentionally_inactive');
+    expect(reconcile(componentInput('optional', ALL_PROVEN)).runtimeState).toBe(
+      'intentionally_inactive',
+    );
   });
 
   it('the runtime-state vocabulary is the frozen component_activation set', () => {
@@ -145,19 +161,33 @@ describe('component profiles · readiness is core-only and independent of option
           runtimeState: 'intentionally_inactive',
           activationCondition: 'owner-approved activation of the kanban connector',
         },
-        { componentKey: 'agentctl-on-demand', availabilityClass: 'on-demand', runtimeState: 'intentionally_inactive' },
+        {
+          componentKey: 'agentctl-on-demand',
+          availabilityClass: 'on-demand',
+          runtimeState: 'intentionally_inactive',
+        },
       ],
     });
     expect(result.coreHealthy).toBe(true);
     expect(result.verdict).toBe('ready');
     // Optional inactivity is VISIBLE, not hidden as "everything is fine".
-    expect(result.optionalUnavailable.map((f) => f.componentKey)).toEqual(['agentctl-on-demand', 'kanban-optional']);
+    expect(result.optionalUnavailable.map((f) => f.componentKey)).toEqual([
+      'agentctl-on-demand',
+      'kanban-optional',
+    ]);
     expect(result.unhealthyCore).toEqual([]);
     expect(result.coreComponentCount).toBe(1);
   });
 
   it('one unhealthy CORE component ⇒ not_ready — NO optional state can rescue it', () => {
-    for (const badState of ['intentionally_inactive', 'maintenance', 'unavailable', 'degraded', 'stale', 'failed'] as const) {
+    for (const badState of [
+      'intentionally_inactive',
+      'maintenance',
+      'unavailable',
+      'degraded',
+      'stale',
+      'failed',
+    ] as const) {
       const result = evaluateReadiness({
         at: NOW as number,
         activations: [
@@ -186,8 +216,16 @@ describe('component profiles · readiness is core-only and independent of option
 
   it('readiness is deterministic — identical activations + at ⇒ identical digest', () => {
     const activations = [
-      { componentKey: 'core-control-plane', availabilityClass: 'core' as const, runtimeState: 'active' as const },
-      { componentKey: 'opt-off', availabilityClass: 'optional' as const, runtimeState: 'unavailable' as const },
+      {
+        componentKey: 'core-control-plane',
+        availabilityClass: 'core' as const,
+        runtimeState: 'active' as const,
+      },
+      {
+        componentKey: 'opt-off',
+        availabilityClass: 'optional' as const,
+        runtimeState: 'unavailable' as const,
+      },
     ];
     const a = evaluateReadiness({ at: NOW as number, activations });
     const b = evaluateReadiness({ at: NOW as number, activations: [...activations].reverse() });

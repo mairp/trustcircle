@@ -73,9 +73,7 @@ export type AgentSystemClassification = (typeof AGENT_SYSTEM_CLASSIFICATIONS)[nu
 export const UNKNOWN_AGENT = 'unknown' as const;
 
 export function isAgentSystemClassification(s: unknown): s is AgentSystemClassification {
-  return (
-    typeof s === 'string' && (AGENT_SYSTEM_CLASSIFICATIONS as readonly string[]).includes(s)
-  );
+  return typeof s === 'string' && (AGENT_SYSTEM_CLASSIFICATIONS as readonly string[]).includes(s);
 }
 
 /**
@@ -140,58 +138,61 @@ export interface AgentPlacement {
   readonly template: OnboardingTemplate;
 }
 
-const PLACEMENTS: Readonly<Record<Exclude<AgentSystemClassification, 'unknown'>, AgentPlacement>> = {
-  openclaw: {
-    role: 'connector',
-    availability: 'on-demand',
-    rationale:
-      'on-demand connector: OpenClaw is an external agent source observed via metadata when activated',
-    template: {
-      proposedContract: 'mcp-agent-observation/v1',
-      proposedCapabilities: ['observe-agent-state', 'read-agent-tasks'],
-      authorityGrantable: false,
-      ownerAction: 'approve architecture-role=connector + availability=on-demand; assign accountable owner',
+const PLACEMENTS: Readonly<Record<Exclude<AgentSystemClassification, 'unknown'>, AgentPlacement>> =
+  {
+    openclaw: {
+      role: 'connector',
+      availability: 'on-demand',
+      rationale:
+        'on-demand connector: OpenClaw is an external agent source observed via metadata when activated',
+      template: {
+        proposedContract: 'mcp-agent-observation/v1',
+        proposedCapabilities: ['observe-agent-state', 'read-agent-tasks'],
+        authorityGrantable: false,
+        ownerAction:
+          'approve architecture-role=connector + availability=on-demand; assign accountable owner',
+      },
     },
-  },
-  agentes: {
-    role: 'connector',
-    availability: 'on-demand',
-    rationale:
-      'on-demand connector: AgentEs is an external agent source observed via metadata when activated',
-    template: {
-      proposedContract: 'mcp-agent-observation/v1',
-      proposedCapabilities: ['observe-agent-state', 'read-agent-tasks'],
-      authorityGrantable: false,
-      ownerAction: 'approve architecture-role=connector + availability=on-demand; assign accountable owner',
+    agentes: {
+      role: 'connector',
+      availability: 'on-demand',
+      rationale:
+        'on-demand connector: AgentEs is an external agent source observed via metadata when activated',
+      template: {
+        proposedContract: 'mcp-agent-observation/v1',
+        proposedCapabilities: ['observe-agent-state', 'read-agent-tasks'],
+        authorityGrantable: false,
+        ownerAction:
+          'approve architecture-role=connector + availability=on-demand; assign accountable owner',
+      },
     },
-  },
-  'agentes-oilgas': {
-    role: 'connector',
-    availability: 'on-demand',
-    rationale:
-      'on-demand connector: AgentES-OilGas is a domain-specific external agent source observed on demand',
-    template: {
-      proposedContract: 'mcp-agent-observation/v1',
-      proposedCapabilities: ['observe-agent-state', 'read-agent-tasks', 'read-domain-context'],
-      authorityGrantable: false,
-      ownerAction:
-        'approve architecture-role=connector + availability=on-demand; assign domain owner; confirm data-residency scope',
+    'agentes-oilgas': {
+      role: 'connector',
+      availability: 'on-demand',
+      rationale:
+        'on-demand connector: AgentES-OilGas is a domain-specific external agent source observed on demand',
+      template: {
+        proposedContract: 'mcp-agent-observation/v1',
+        proposedCapabilities: ['observe-agent-state', 'read-agent-tasks', 'read-domain-context'],
+        authorityGrantable: false,
+        ownerAction:
+          'approve architecture-role=connector + availability=on-demand; assign domain owner; confirm data-residency scope',
+      },
     },
-  },
-  'mpls-report-agent': {
-    role: 'connector',
-    availability: 'on-demand',
-    rationale:
-      'on-demand connector: the MPLS report agent emits read-only reports observed via metadata when activated',
-    template: {
-      proposedContract: 'report-observation/v1',
-      proposedCapabilities: ['observe-report-runs', 'read-report-metadata'],
-      authorityGrantable: false,
-      ownerAction:
-        'approve architecture-role=connector + availability=on-demand; assign report owner',
+    'mpls-report-agent': {
+      role: 'connector',
+      availability: 'on-demand',
+      rationale:
+        'on-demand connector: the MPLS report agent emits read-only reports observed via metadata when activated',
+      template: {
+        proposedContract: 'report-observation/v1',
+        proposedCapabilities: ['observe-report-runs', 'read-report-metadata'],
+        authorityGrantable: false,
+        ownerAction:
+          'approve architecture-role=connector + availability=on-demand; assign report owner',
+      },
     },
-  },
-} as const;
+  } as const;
 
 // Defensive: every placement must reference a VALID domain role / availability class. Runs once at
 // module load, turning a typo into an immediate hard failure rather than silent bad advice.
@@ -312,14 +313,23 @@ export function safeAgentId(id: string): string {
   return looksLikeSecretValue(rejoined) ? REDACTED_PLACEHOLDER : rejoined;
 }
 
-function freshnessOf(lastObservedAt: EpochMillis, now: EpochMillis, horizon: number): AgentFreshness {
+function freshnessOf(
+  lastObservedAt: EpochMillis,
+  now: EpochMillis,
+  horizon: number,
+): AgentFreshness {
   if (!Number.isFinite(lastObservedAt)) return 'unknown';
   return now - lastObservedAt <= horizon ? 'fresh' : 'stale';
 }
 
 function metadataFor(
   scope: ScanScope,
-  input: { location: string; classification: string; onboarding: OnboardingState | 'gap'; evidence: unknown },
+  input: {
+    location: string;
+    classification: string;
+    onboarding: OnboardingState | 'gap';
+    evidence: unknown;
+  },
 ): MetadataOnlyRecord {
   const record = toMetadataOnlyRecord({
     scope,
@@ -332,7 +342,9 @@ function metadataFor(
     evidence: input.evidence,
   });
   if (!isMetadataOnly(record)) {
-    throw new Error(`agent-systems classifier produced a non-metadata record for ${input.location}`);
+    throw new Error(
+      `agent-systems classifier produced a non-metadata record for ${input.location}`,
+    );
   }
   return record;
 }
@@ -368,7 +380,9 @@ export function classifyAgentSystem(
   else if (freshness === 'stale' || freshness === 'unknown') gapReason = 'stale';
 
   if (gapReason) {
-    const firstObserved = Number.isFinite(discovered.lastObservedAt) ? discovered.lastObservedAt : now;
+    const firstObserved = Number.isFinite(discovered.lastObservedAt)
+      ? discovered.lastObservedAt
+      : now;
     const ageMs = Math.max(0, now - firstObserved);
     const gap: AgentSystemGap = Object.freeze({
       candidateId: identity,

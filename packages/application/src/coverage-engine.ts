@@ -153,11 +153,7 @@ export function reconstructCoverage(inputs: CoverageInputs): CoverageResult {
       });
     }
     // An ACTIVE, applicable decision past its review instant is an expired-applicability gap.
-    if (
-      applicabilityIsActive(d) &&
-      d.proposedResult !== 'not_applicable' &&
-      at >= d.reviewAt
-    ) {
+    if (applicabilityIsActive(d) && d.proposedResult !== 'not_applicable' && at >= d.reviewAt) {
       gaps.push({
         kind: 'expired_applicability',
         decisionId: d.id,
@@ -216,7 +212,11 @@ export function reconstructCoverage(inputs: CoverageInputs): CoverageResult {
           detail: `evidence stale as of ${at}; current state not inferred`,
         });
       }
-      if (e.designState === 'deficient' || e.operatingState === 'not_operating' || e.operatingState === 'ineffective') {
+      if (
+        e.designState === 'deficient' ||
+        e.operatingState === 'not_operating' ||
+        e.operatingState === 'ineffective'
+      ) {
         gaps.push({
           kind: 'deficient_control',
           obligationId: o.id,
@@ -258,7 +258,8 @@ export function reconstructCoverage(inputs: CoverageInputs): CoverageResult {
     claimBoundary = overall;
   }
 
-  const complete = obligations.length > 0 && coveredCount === obligations.length && gaps.length === 0;
+  const complete =
+    obligations.length > 0 && coveredCount === obligations.length && gaps.length === 0;
 
   return Object.freeze({
     scope,

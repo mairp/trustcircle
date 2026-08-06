@@ -140,13 +140,16 @@ export class LastKnownStateProjector {
       }
       if (input.observation.retentionMs !== undefined) {
         const r = input.observation.retentionMs;
-        if (!Number.isInteger(r) || r < 0) throw new RangeError('observation.retentionMs must be a non-negative integer');
+        if (!Number.isInteger(r) || r < 0)
+          throw new RangeError('observation.retentionMs must be a non-negative integer');
       }
     }
     const aging = input.agingHorizonMs ?? DAY;
     const stale = input.staleHorizonMs ?? 7 * DAY;
-    if (!Number.isInteger(aging) || aging <= 0) throw new RangeError('agingHorizonMs must be positive');
-    if (!Number.isInteger(stale) || stale <= aging) throw new RangeError('staleHorizonMs must exceed aging');
+    if (!Number.isInteger(aging) || aging <= 0)
+      throw new RangeError('agingHorizonMs must be positive');
+    if (!Number.isInteger(stale) || stale <= aging)
+      throw new RangeError('staleHorizonMs must exceed aging');
     this.#observation = input.observation;
     this.#aging = aging;
     this.#stale = stale;

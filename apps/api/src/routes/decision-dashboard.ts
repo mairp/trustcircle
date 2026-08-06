@@ -159,7 +159,13 @@ function getDashboard(deps: DecisionDashboardRouteDeps): RouteHandler {
   return (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const view = c.req.param('view');
     if (view === undefined || !DASHBOARD_VIEWS.includes(view as DashboardView)) {
@@ -213,7 +219,13 @@ function getDashboard(deps: DecisionDashboardRouteDeps): RouteHandler {
       at,
     );
     if (foreign === undefined) {
-      return problem(c, 404, 'view_unavailable', 'Not Found', `No ${view} dashboard for this scope.`);
+      return problem(
+        c,
+        404,
+        'view_unavailable',
+        'Not Found',
+        `No ${view} dashboard for this scope.`,
+      );
     }
     const body: GovernanceApiDashboardResponse = {
       view,
@@ -300,10 +312,7 @@ function emptyDecisionQueueResponse(at: EpochMillis | undefined): GovernanceApiD
  * Registered WITHOUT the version prefix — `App.get` prepends `API_PREFIX` (`/v1`), serving at
  * `/v1/dashboards/{view}`.
  */
-export function registerDecisionDashboardRoutes(
-  app: App,
-  deps: DecisionDashboardRouteDeps,
-): App {
+export function registerDecisionDashboardRoutes(app: App, deps: DecisionDashboardRouteDeps): App {
   app.get('/dashboards/:view', getDashboard(deps));
   return app;
 }

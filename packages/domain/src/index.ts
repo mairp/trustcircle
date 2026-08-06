@@ -51,3 +51,4 @@ export * from './compliance.ts';
 // boundary, not only via the wildcard `export *` above.
 export { UNKNOWN_SOURCE_CLASS } from './inventory.ts';
 export type { SupportLevel } from './inventory.ts';
+export * from './governed-platform.ts';

@@ -76,13 +76,7 @@ export interface CoverageView {
   readonly gaps: readonly Readonly<Record<string, unknown>>[];
   /** The claim boundary the coverage engine reconstructed — copied verbatim, never re-derived. */
   readonly claimBoundary:
-    | 'design'
-    | 'implemented'
-    | 'operating'
-    | 'ready'
-    | 'assessed'
-    | 'certified'
-    | 'incomplete';
+    'design' | 'implemented' | 'operating' | 'ready' | 'assessed' | 'certified' | 'incomplete';
   readonly metadata: CoverageMetadataView;
 }
 
@@ -99,6 +93,56 @@ export interface CoverageQuery {
 export type CoverageProvider = (
   query: CoverageQuery,
 ) => CoverageView | undefined | Promise<CoverageView | undefined>;
+
+export interface FrameworkMatrixRowView {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly sourcePublicationId: string;
+  readonly sourceClauseRef: string;
+  readonly requirementType: string;
+  readonly applicability: string;
+  readonly duty: string;
+  readonly targetType: string;
+  readonly targetRef: string;
+  readonly mappingType: string;
+  readonly mappingStatus: string;
+  readonly coverageExtent: string;
+  readonly conditions: readonly string[];
+  readonly controlCoverage: string;
+  readonly evidenceSufficiency: string;
+  readonly readiness: string;
+  readonly assessment: string;
+  readonly certification: string;
+  readonly evidenceRefs: readonly string[];
+  readonly mappingOwnerPrincipalId: string;
+  readonly obligationOwnerPrincipalId?: string;
+  readonly rationale: string;
+  readonly confidenceBand: string;
+  readonly mappingVersion: number;
+  readonly supersedesMappingId?: string;
+  readonly supersededByMappingId?: string;
+  readonly reviewedByPrincipalId?: string;
+  readonly reviewedAt?: EpochMillis;
+}
+
+export interface FrameworkMatrixView {
+  readonly tenantId: TenantId;
+  readonly publicationId?: Uuid;
+  readonly at: EpochMillis;
+  readonly rows: readonly FrameworkMatrixRowView[];
+  readonly metadata: CoverageMetadataView;
+  readonly digest: string;
+}
+
+export interface FrameworkMatrixQuery {
+  readonly tenantId: TenantId;
+  readonly publicationId?: Uuid;
+  readonly at?: EpochMillis;
+}
+
+export type FrameworkMatrixProvider = (
+  query: FrameworkMatrixQuery,
+) => FrameworkMatrixView | undefined | Promise<FrameworkMatrixView | undefined>;
 
 /** Evidence metadata as the injected surface hands it to the route (an already-shaped envelope). */
 export type EvidenceEnvelopeView = Readonly<Record<string, unknown>>;
@@ -136,6 +180,7 @@ export type AuditExportEnqueue = (
 
 export interface ComplianceRouteDeps {
   readonly coverage: CoverageProvider;
+  readonly frameworkMatrix?: FrameworkMatrixProvider;
   readonly readEvidence: EvidenceMetadataReader;
   readonly enqueueExport: AuditExportEnqueue;
 }
@@ -229,6 +274,46 @@ function coverageToWire(v: CoverageView): GovernanceApiComplianceCoverage {
   };
 }
 
+function frameworkMatrixToWire(view: FrameworkMatrixView): Readonly<Record<string, unknown>> {
+  return {
+    tenant_id: String(view.tenantId),
+    publication_id: view.publicationId === undefined ? null : String(view.publicationId),
+    at: iso(view.at),
+    rows: view.rows.map((row) => ({
+      id: row.id,
+      tenant_id: row.tenantId,
+      source_publication_id: row.sourcePublicationId,
+      source_clause_ref: row.sourceClauseRef,
+      requirement_type: row.requirementType,
+      applicability: row.applicability,
+      duty: row.duty,
+      target_type: row.targetType,
+      target_ref: row.targetRef,
+      mapping_type: row.mappingType,
+      mapping_status: row.mappingStatus,
+      coverage_extent: row.coverageExtent,
+      conditions: row.conditions,
+      control_coverage: row.controlCoverage,
+      evidence_sufficiency: row.evidenceSufficiency,
+      readiness: row.readiness,
+      assessment: row.assessment,
+      certification: row.certification,
+      evidence_refs: row.evidenceRefs,
+      mapping_owner_principal_id: row.mappingOwnerPrincipalId,
+      obligation_owner_principal_id: row.obligationOwnerPrincipalId ?? null,
+      rationale: row.rationale,
+      confidence_band: row.confidenceBand,
+      mapping_version: row.mappingVersion,
+      supersedes_mapping_id: row.supersedesMappingId ?? null,
+      superseded_by_mapping_id: row.supersededByMappingId ?? null,
+      reviewed_by_principal_id: row.reviewedByPrincipalId ?? null,
+      reviewed_at: row.reviewedAt === undefined ? null : iso(row.reviewedAt),
+    })),
+    metadata: metadataToWire(view.metadata),
+    digest: view.digest,
+  };
+}
+
 // ===========================================================================
 // 3. Request validation helpers.
 // ===========================================================================
@@ -251,9 +336,17 @@ function validateReason(raw: unknown): GovernanceApiReason {
   const code = rec['code'];
   const text = rec['text'];
   if (typeof code !== 'string' || !REASON_CODE_RE.test(code)) {
-    throw new BodyError('invalid_reason', 'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.', 422);
+    throw new BodyError(
+      'invalid_reason',
+      'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.',
+      422,
+    );
   }
-  if (typeof text !== 'string' || text.trim().length < REASON_TEXT_MIN || text.length > REASON_TEXT_MAX) {
+  if (
+    typeof text !== 'string' ||
+    text.trim().length < REASON_TEXT_MIN ||
+    text.length > REASON_TEXT_MAX
+  ) {
     throw new BodyError(
       'invalid_reason',
       `reason.text must be ${REASON_TEXT_MIN}..${REASON_TEXT_MAX} non-blank characters.`,
@@ -321,7 +414,13 @@ function getComplianceCoverage(deps: ComplianceRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const url = new URL(c.req.url, 'http://internal');
 
@@ -331,7 +430,13 @@ function getComplianceCoverage(deps: ComplianceRouteDeps): RouteHandler {
     }
     const publicationIdRaw = url.searchParams.get('publication_id');
     if (publicationIdRaw !== null && publicationIdRaw !== '' && !isUuid(publicationIdRaw)) {
-      return problem(c, 400, 'invalid_publication_id', 'Bad Request', 'publication_id must be a uuid.');
+      return problem(
+        c,
+        400,
+        'invalid_publication_id',
+        'Bad Request',
+        'publication_id must be a uuid.',
+      );
     }
     const atRaw = url.searchParams.get('at');
     let at: EpochMillis | undefined;
@@ -346,7 +451,9 @@ function getComplianceCoverage(deps: ComplianceRouteDeps): RouteHandler {
     const query: CoverageQuery = {
       tenantId,
       ...(systemIdRaw !== null && systemIdRaw !== '' ? { systemId: systemIdRaw as Uuid } : {}),
-      ...(publicationIdRaw !== null && publicationIdRaw !== '' ? { publicationId: publicationIdRaw as Uuid } : {}),
+      ...(publicationIdRaw !== null && publicationIdRaw !== ''
+        ? { publicationId: publicationIdRaw as Uuid }
+        : {}),
       ...(at !== undefined ? { at } : {}),
     };
 
@@ -365,7 +472,13 @@ function getComplianceCoverage(deps: ComplianceRouteDeps): RouteHandler {
     }
 
     if (view === undefined) {
-      return problem(c, 404, 'coverage_not_found', 'Not Found', 'No coverage in this tenant scope for the requested scope.');
+      return problem(
+        c,
+        404,
+        'coverage_not_found',
+        'Not Found',
+        'No coverage in this tenant scope for the requested scope.',
+      );
     }
 
     return c.json(coverageToWire(view), 200);
@@ -373,15 +486,103 @@ function getComplianceCoverage(deps: ComplianceRouteDeps): RouteHandler {
 }
 
 /** GET /evidence/{evidenceId} — the authorized evidence envelope metadata (FR-053). */
+
+function getFrameworkMatrix(deps: ComplianceRouteDeps): RouteHandler {
+  return async (c) => {
+    const tenantId = requireTenant(c);
+    if (tenantId === undefined) {
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
+    }
+    if (deps.frameworkMatrix === undefined) {
+      return problem(
+        c,
+        503,
+        'framework_matrix_unavailable',
+        'Framework matrix unavailable',
+        'The truthful framework-matrix projection is not configured.',
+        ['restore the framework mapping projection before making compliance claims'],
+      );
+    }
+    const url = new URL(c.req.url, 'http://internal');
+    const publicationIdRaw = url.searchParams.get('publication_id');
+    if (publicationIdRaw !== null && publicationIdRaw !== '' && !isUuid(publicationIdRaw)) {
+      return problem(
+        c,
+        400,
+        'invalid_publication_id',
+        'Bad Request',
+        'publication_id must be a uuid.',
+      );
+    }
+    const atRaw = url.searchParams.get('at');
+    let at: EpochMillis | undefined;
+    if (atRaw !== null && atRaw !== '') {
+      const parsed = Date.parse(atRaw);
+      if (Number.isNaN(parsed)) {
+        return problem(c, 400, 'invalid_at', 'Bad Request', 'at must be an RFC3339 date-time.');
+      }
+      at = parsed as EpochMillis;
+    }
+    const query: FrameworkMatrixQuery = {
+      tenantId,
+      ...(publicationIdRaw !== null && publicationIdRaw !== ''
+        ? { publicationId: publicationIdRaw as Uuid }
+        : {}),
+      ...(at === undefined ? {} : { at }),
+    };
+    let view: FrameworkMatrixView | undefined;
+    try {
+      view = await deps.frameworkMatrix(query);
+    } catch {
+      return problem(
+        c,
+        500,
+        'framework_matrix_failed',
+        'Framework matrix unavailable',
+        'The framework matrix could not be reconstructed.',
+        ['retry after the framework projection is reachable'],
+      );
+    }
+    if (view === undefined || view.tenantId !== tenantId) {
+      return problem(
+        c,
+        404,
+        'framework_matrix_not_found',
+        'Not Found',
+        'No framework matrix exists in this tenant scope.',
+      );
+    }
+    const tenantRows = view.rows.filter((row) => row.tenantId === tenantId);
+    return c.json(frameworkMatrixToWire({ ...view, rows: tenantRows }), 200);
+  };
+}
 function getEvidenceMetadata(deps: ComplianceRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const evidenceId = evidenceIdOf(c);
     if (evidenceId === undefined) {
-      return problem(c, 400, 'invalid_evidence_id', 'Bad Request', 'The evidence id path segment must be a uuid.');
+      return problem(
+        c,
+        400,
+        'invalid_evidence_id',
+        'Bad Request',
+        'The evidence id path segment must be a uuid.',
+      );
     }
 
     let envelope: EvidenceEnvelopeView | undefined;
@@ -399,7 +600,13 @@ function getEvidenceMetadata(deps: ComplianceRouteDeps): RouteHandler {
     }
 
     if (envelope === undefined) {
-      return problem(c, 404, 'evidence_not_found', 'Not Found', 'No such evidence in this tenant scope.');
+      return problem(
+        c,
+        404,
+        'evidence_not_found',
+        'Not Found',
+        'No such evidence in this tenant scope.',
+      );
     }
 
     return c.json({ ...envelope }, 200);
@@ -411,7 +618,13 @@ function requestAuditExport(deps: ComplianceRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     let raw: unknown;
@@ -426,7 +639,13 @@ function requestAuditExport(deps: ComplianceRouteDeps): RouteHandler {
       parsed = parseExportRequest(raw);
     } catch (e) {
       if (e instanceof BodyError) {
-        return problem(c, e.httpStatus, e.code, e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request', e.message);
+        return problem(
+          c,
+          e.httpStatus,
+          e.code,
+          e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request',
+          e.message,
+        );
       }
       throw e;
     }
@@ -490,6 +709,7 @@ function evidenceIdOf(c: AppContext): Uuid | undefined {
  */
 export function registerComplianceRoutes(app: App, deps: ComplianceRouteDeps): App {
   app.get('/compliance/coverage', getComplianceCoverage(deps));
+  app.get('/framework-matrix', getFrameworkMatrix(deps));
   app.get('/evidence/:evidenceId', getEvidenceMetadata(deps));
   app.post('/audit/exports', requestAuditExport(deps));
   return app;

@@ -9,14 +9,7 @@
     "maximum": "1.0.0"
   },
   "source_classes": ["wiggum"],
-  "capabilities": [
-    "discover",
-    "inspect",
-    "snapshot",
-    "subscribe",
-    "reconcile",
-    "collect_evidence"
-  ],
+  "capabilities": ["discover", "inspect", "snapshot", "subscribe", "reconcile", "collect_evidence"],
   "authority": {
     "authoritative_fields": [
       "wiggum.installation_identity",
@@ -103,7 +96,12 @@
   },
   "retry": {
     "retryable_classes": ["rate_limited", "transient", "dependency_unavailable"],
-    "terminal_classes": ["unauthenticated", "unauthorized", "invalid_request", "unsupported_contract"],
+    "terminal_classes": [
+      "unauthenticated",
+      "unauthorized",
+      "invalid_request",
+      "unsupported_contract"
+    ],
     "maximum_attempts": 5,
     "initial_backoff_ms": 250,
     "maximum_backoff_ms": 30000,

@@ -312,8 +312,18 @@ function mixedAccessEvidence(): EvidenceExplorerModel {
           method: 'automated-export',
         },
         custody: [
-          { atIso: '2026-07-10T00:00:00.000Z', actorPrincipalId: 'usr-collector', action: 'collected', note: 'Exported from GRC.' },
-          { atIso: '2026-07-11T00:00:00.000Z', actorPrincipalId: 'usr-officer', action: 'reviewed', note: 'Reviewed for the audit.' },
+          {
+            atIso: '2026-07-10T00:00:00.000Z',
+            actorPrincipalId: 'usr-collector',
+            action: 'collected',
+            note: 'Exported from GRC.',
+          },
+          {
+            atIso: '2026-07-11T00:00:00.000Z',
+            actorPrincipalId: 'usr-officer',
+            action: 'reviewed',
+            note: 'Reviewed for the audit.',
+          },
         ],
         retentionUntilIso: '2033-07-10T00:00:00.000Z',
         legalHold: false,
@@ -334,7 +344,12 @@ function mixedAccessEvidence(): EvidenceExplorerModel {
           method: 'manual-capture',
         },
         custody: [
-          { atIso: '2026-07-12T00:00:00.000Z', actorPrincipalId: 'usr-collector', action: 'collected', note: 'Captured from SIEM.' },
+          {
+            atIso: '2026-07-12T00:00:00.000Z',
+            actorPrincipalId: 'usr-collector',
+            action: 'collected',
+            note: 'Captured from SIEM.',
+          },
         ],
         retentionUntilIso: '2033-07-12T00:00:00.000Z',
         legalHold: false,
@@ -365,9 +380,24 @@ function tamperedHeldEvidence(): EvidenceExplorerModel {
           method: 'automated-export',
         },
         custody: [
-          { atIso: '2026-07-05T00:00:00.000Z', actorPrincipalId: 'usr-collector', action: 'collected', note: 'Archived logs.' },
-          { atIso: '2026-07-06T00:00:00.000Z', actorPrincipalId: 'usr-custodian', action: 'transferred', note: 'Moved to hold storage.' },
-          { atIso: '2026-07-07T00:00:00.000Z', actorPrincipalId: 'usr-auditor', action: 'inspected', note: 'Digest mismatch noted.' },
+          {
+            atIso: '2026-07-05T00:00:00.000Z',
+            actorPrincipalId: 'usr-collector',
+            action: 'collected',
+            note: 'Archived logs.',
+          },
+          {
+            atIso: '2026-07-06T00:00:00.000Z',
+            actorPrincipalId: 'usr-custodian',
+            action: 'transferred',
+            note: 'Moved to hold storage.',
+          },
+          {
+            atIso: '2026-07-07T00:00:00.000Z',
+            actorPrincipalId: 'usr-auditor',
+            action: 'inspected',
+            note: 'Digest mismatch noted.',
+          },
         ],
         retentionUntilIso: '2035-07-05T00:00:00.000Z',
         legalHold: true,
@@ -389,20 +419,39 @@ function populatedAudit(): AuditExplorerModel {
       fromIso: '2026-01-01T00:00:00.000Z',
       toIso: '2026-06-30T23:59:59.000Z',
       reconstructedAtIso: '2026-07-01T00:00:00.000Z',
-      ledgerCheckpointDigest: 'sha256:ledger0000111122223333444455556666777788889999aaaabbbbccccdddd',
+      ledgerCheckpointDigest:
+        'sha256:ledger0000111122223333444455556666777788889999aaaabbbbccccdddd',
       referenceCount: 42,
     },
     decisions: [
-      { decisionId: 'dec-1', clauseRef: 'A.5.1', result: 'applicable', state: 'active', atIso: '2026-02-01T00:00:00.000Z' },
+      {
+        decisionId: 'dec-1',
+        clauseRef: 'A.5.1',
+        result: 'applicable',
+        state: 'active',
+        atIso: '2026-02-01T00:00:00.000Z',
+      },
     ],
     mappings: [
       { mappingId: 'map-1', obligationId: 'ob-1', controlId: 'ctl-1', responsibility: 'provider' },
     ],
     findings: [
-      { findingId: 'fnd-1', severity: 'major', statement: 'Vulnerability management control unmapped.', gapKind: 'unmapped', openedAtIso: '2026-03-01T00:00:00.000Z' },
+      {
+        findingId: 'fnd-1',
+        severity: 'major',
+        statement: 'Vulnerability management control unmapped.',
+        gapKind: 'unmapped',
+        openedAtIso: '2026-03-01T00:00:00.000Z',
+      },
     ],
     remediations: [
-      { remediationId: 'rem-1', findingId: 'fnd-1', status: 'in_progress', ownerPrincipalId: 'usr-owner', dueIso: '2026-09-01T00:00:00.000Z' },
+      {
+        remediationId: 'rem-1',
+        findingId: 'fnd-1',
+        status: 'in_progress',
+        ownerPrincipalId: 'usr-owner',
+        dueIso: '2026-09-01T00:00:00.000Z',
+      },
     ],
     exports: [
       {
@@ -425,7 +474,11 @@ function populatedAudit(): AuditExplorerModel {
       },
     ],
     gaps: [
-      { obligationId: 'ob-2', gapKind: 'unmapped', detail: 'No control is mapped to this obligation.' },
+      {
+        obligationId: 'ob-2',
+        gapKind: 'unmapped',
+        detail: 'No control is mapped to this obligation.',
+      },
     ],
     generatedAtIso: '2026-08-02T00:00:00.000Z',
     snapshotDigest: 'sha256:auditpopulated0000000000000000000000000000000000000000000000000000',
@@ -440,15 +493,20 @@ test.describe('standards registry & applicability — independent review, exact 
   test('an active, independently-reviewed decision states its independent review, exact actions, and a live summary (FR-031/032)', async ({
     page,
   }) => {
-    await page.setContent(renderApplicabilityReview({ tenant: TENANT, model: activeIndependentReview() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderApplicabilityReview({ tenant: TENANT, model: activeIndependentReview() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.locator('main#main')).toBeVisible();
 
     // Independent review is PRESENT and marked independent.
     const review = page.getByTestId('independent-review');
     await expect(review).toHaveAttribute('data-independent-review', 'true');
-    await expect(page.getByTestId('independent-review-text')).toContainText('Reviewed independently');
+    await expect(page.getByTestId('independent-review-text')).toContainText(
+      'Reviewed independently',
+    );
 
     // Permitted actions are EXACTLY the state's actions, verbatim, and no more.
     const actions = page.getByTestId('applicability-action');
@@ -476,27 +534,39 @@ test.describe('applicability violation — a non-independent active review is su
   test('a self-reviewed active decision raises a `role="alert"` independent-review violation (FR-032 / FR-053)', async ({
     page,
   }) => {
-    await page.setContent(renderApplicabilityReview({ tenant: TENANT, model: selfReviewedViolation() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderApplicabilityReview({ tenant: TENANT, model: selfReviewedViolation() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.locator('main#main')).toBeVisible();
 
     const violation = page.getByTestId('independent-review-violation');
     await expect(violation).toHaveCount(1);
     await expect(violation).toHaveAttribute('role', 'alert');
     await expect(violation).toContainText('NOT independent');
-    await expect(page.getByTestId('independent-review')).toHaveAttribute('data-independent-review', 'false');
+    await expect(page.getByTestId('independent-review')).toHaveAttribute(
+      'data-independent-review',
+      'false',
+    );
 
     // NEGATIVE control: the compliant fixture would NOT raise this alert.
-    await page.setContent(renderApplicabilityReview({ tenant: TENANT, model: activeIndependentReview() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderApplicabilityReview({ tenant: TENANT, model: activeIndependentReview() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.getByTestId('independent-review-violation')).toHaveCount(0);
 
     // Re-mount the violation model for the axe scan.
-    await page.setContent(renderApplicabilityReview({ tenant: TENANT, model: selfReviewedViolation() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderApplicabilityReview({ tenant: TENANT, model: selfReviewedViolation() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expectNoAxe(page);
   });
 });
@@ -506,10 +576,15 @@ test.describe('applicability violation — a non-independent active review is su
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 
 test.describe('reopened non-applicability — the stale determination reopens as a coverage gap', () => {
-  test('the reopened-gap `role="alert"` carries the mandated sentence (FR-033)', async ({ page }) => {
-    await page.setContent(renderApplicabilityReview({ tenant: TENANT, model: reopenedNonApplicability() }), {
-      waitUntil: 'domcontentloaded',
-    });
+  test('the reopened-gap `role="alert"` carries the mandated sentence (FR-033)', async ({
+    page,
+  }) => {
+    await page.setContent(
+      renderApplicabilityReview({ tenant: TENANT, model: reopenedNonApplicability() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.locator('main#main')).toBeVisible();
 
     const reopened = page.getByTestId('reopened-gap');
@@ -525,14 +600,20 @@ test.describe('reopened non-applicability — the stale determination reopens as
     await expect(decision).toHaveAttribute('data-expired', 'true');
 
     // NEGATIVE control: a non-reopened decision shows no reopened-gap alert.
-    await page.setContent(renderApplicabilityReview({ tenant: TENANT, model: activeIndependentReview() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderApplicabilityReview({ tenant: TENANT, model: activeIndependentReview() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.getByTestId('reopened-gap')).toHaveCount(0);
 
-    await page.setContent(renderApplicabilityReview({ tenant: TENANT, model: reopenedNonApplicability() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderApplicabilityReview({ tenant: TENANT, model: reopenedNonApplicability() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expectNoAxe(page);
   });
 });
@@ -559,7 +640,9 @@ test.describe('truthful claim boundary — internal readiness is never external 
     // The CARDINAL anti-lie note is PRESENT and verbatim.
     const note = page.getByTestId('not-certified-note');
     await expect(note).toHaveCount(1);
-    await expect(note).toContainText('Internal readiness is not represented as external certification.');
+    await expect(note).toContainText(
+      'Internal readiness is not represented as external certification.',
+    );
 
     // No external certification block; the absence is stated honestly.
     await expect(page.getByTestId('no-certification')).toHaveCount(1);
@@ -567,7 +650,10 @@ test.describe('truthful claim boundary — internal readiness is never external 
 
     // An uncovered obligation surfaces its exact gap (never hidden).
     await expect(page.getByTestId('coverage-gap')).toHaveCount(1);
-    await expect(page.getByTestId('coverage-gap').first()).toHaveAttribute('data-gap-kind', 'unmapped');
+    await expect(page.getByTestId('coverage-gap').first()).toHaveAttribute(
+      'data-gap-kind',
+      'unmapped',
+    );
 
     await expectNoAxe(page);
   });
@@ -607,13 +693,20 @@ test.describe('evidence trace & access filtering — the unauthorized body refer
   test('an authorized envelope shows a body link; an unauthorized one withholds it and NEVER emits the bodyRef (FR-053)', async ({
     page,
   }) => {
-    await page.setContent(renderEvidenceExplorer({ tenant: TENANT, model: mixedAccessEvidence() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderEvidenceExplorer({ tenant: TENANT, model: mixedAccessEvidence() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.locator('main#main')).toBeVisible();
 
-    const authorized = page.locator('[data-testid="evidence-envelope"][data-evidence-id="ev-auth"]');
-    const unauthorized = page.locator('[data-testid="evidence-envelope"][data-evidence-id="ev-secret"]');
+    const authorized = page.locator(
+      '[data-testid="evidence-envelope"][data-evidence-id="ev-auth"]',
+    );
+    const unauthorized = page.locator(
+      '[data-testid="evidence-envelope"][data-evidence-id="ev-secret"]',
+    );
 
     // Authorized: a body link is present.
     await expect(authorized).toHaveAttribute('data-access-authorized', 'true');
@@ -649,9 +742,12 @@ test.describe('evidence integrity alert — an unverified digest is surfaced as 
   test('an unverified envelope raises `role="alert"`, preserves custody order, and shows the legal-hold badge (FR-052)', async ({
     page,
   }) => {
-    await page.setContent(renderEvidenceExplorer({ tenant: TENANT, model: tamperedHeldEvidence() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderEvidenceExplorer({ tenant: TENANT, model: tamperedHeldEvidence() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.locator('main#main')).toBeVisible();
 
     const integrity = page.getByTestId('integrity-status');
@@ -674,15 +770,21 @@ test.describe('evidence integrity alert — an unverified digest is surfaced as 
     await expect(page.getByTestId('retention-until')).toHaveCount(1);
 
     // NEGATIVE control: a verified, not-held envelope raises no alert and shows no legal-hold badge.
-    await page.setContent(renderEvidenceExplorer({ tenant: TENANT, model: mixedAccessEvidence() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderEvidenceExplorer({ tenant: TENANT, model: mixedAccessEvidence() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expect(page.locator('[role="alert"]')).toHaveCount(0);
     await expect(page.getByTestId('legal-hold')).toHaveCount(0);
 
-    await page.setContent(renderEvidenceExplorer({ tenant: TENANT, model: tamperedHeldEvidence() }), {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.setContent(
+      renderEvidenceExplorer({ tenant: TENANT, model: tamperedHeldEvidence() }),
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await expectNoAxe(page);
   });
 });
@@ -705,7 +807,10 @@ test.describe('audit reconstruct-at-instant — the trace pins the exact scope, 
     await expect(trace).toHaveAttribute('data-from', model.trace.fromIso);
     await expect(trace).toHaveAttribute('data-to', model.trace.toIso);
     await expect(trace).toHaveAttribute('data-reconstructed-at', model.trace.reconstructedAtIso);
-    await expect(trace).toHaveAttribute('data-ledger-checkpoint', model.trace.ledgerCheckpointDigest);
+    await expect(trace).toHaveAttribute(
+      'data-ledger-checkpoint',
+      model.trace.ledgerCheckpointDigest,
+    );
     await expect(trace).toHaveAttribute('data-reference-count', String(model.trace.referenceCount));
 
     // The two period `<time>`s + the reconstruction `<time>`.

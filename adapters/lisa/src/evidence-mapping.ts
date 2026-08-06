@@ -137,9 +137,16 @@ export function mapEvidence(
 
   for (const obs of observations) {
     if (obs.contentHash === null) {
-      gaps.push(makeGap(obs.surface, obs.jobId, obs.externalId, 'missing_content_hash',
-        `Surface ${obs.surface}:${obs.externalId} was observed without an integrity anchor; ` +
-          'emitted as a gap rather than a trusted record.'));
+      gaps.push(
+        makeGap(
+          obs.surface,
+          obs.jobId,
+          obs.externalId,
+          'missing_content_hash',
+          `Surface ${obs.surface}:${obs.externalId} was observed without an integrity anchor; ` +
+            'emitted as a gap rather than a trusted record.',
+        ),
+      );
       continue;
     }
 
@@ -151,18 +158,20 @@ export function mapEvidence(
       payload: obs.payload,
     });
 
-    records.push(Object.freeze({
-      surface: obs.surface,
-      jobId: obs.jobId,
-      externalId: obs.externalId,
-      evidenceDigest,
-      sourceContentHash: obs.contentHash,
-      cost: obs.cost === null ? null : Object.freeze({ ...obs.cost }),
-      egress: Object.freeze(obs.egress.map((e) => Object.freeze({ ...e }))),
-      retention: Object.freeze({ ...obs.retention }),
-      observedAt: obs.observedAt,
-      authorityNote: AUTHORITY_NOTE,
-    }));
+    records.push(
+      Object.freeze({
+        surface: obs.surface,
+        jobId: obs.jobId,
+        externalId: obs.externalId,
+        evidenceDigest,
+        sourceContentHash: obs.contentHash,
+        cost: obs.cost === null ? null : Object.freeze({ ...obs.cost }),
+        egress: Object.freeze(obs.egress.map((e) => Object.freeze({ ...e }))),
+        retention: Object.freeze({ ...obs.retention }),
+        observedAt: obs.observedAt,
+        authorityNote: AUTHORITY_NOTE,
+      }),
+    );
   }
 
   // Expected-but-absent surfaces are explicit gaps.
@@ -170,8 +179,15 @@ export function mapEvidence(
   for (const surface of expectedSurfaces) {
     if (!observedSurfaces.has(surface)) {
       const jobId = observations[0]?.jobId ?? 'unknown';
-      gaps.push(makeGap(surface, jobId, null, 'surface_not_observed',
-        `Expected surface ${surface} was not observed for job ${jobId}.`));
+      gaps.push(
+        makeGap(
+          surface,
+          jobId,
+          null,
+          'surface_not_observed',
+          `Expected surface ${surface} was not observed for job ${jobId}.`,
+        ),
+      );
     }
   }
 

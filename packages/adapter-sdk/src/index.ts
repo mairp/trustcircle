@@ -12,3 +12,5 @@ export * from './manifest.ts';
 // Phase 8 / User Story 6 / T229 — the language-neutral conformance runner and signed result manifest
 // format that gates an adapter version's activation. Additive, backward-compatible.
 export * from './conformance.ts';
+
+export * from './guided-authoring.ts';

@@ -134,8 +134,7 @@ export function mapGovernanceEvidence(
       'A Wiggum gate marker is machine evidence that a gate was reached; it never equals human approval.';
   } else if (observation.kind === 'critic_verdict') {
     authority = 'machine_evidence';
-    rationale =
-      'A Wiggum critic verdict is machine evidence and never constitutes human approval.';
+    rationale = 'A Wiggum critic verdict is machine evidence and never constitutes human approval.';
   } else {
     // human_approval kind without a human principal is not a human approval act.
     authority = 'machine_evidence';
@@ -235,8 +234,7 @@ export function mapVerificationPlan(
 
   const staleObligations = obligations.filter((o) => o.stale);
   const allObligationsPassed =
-    obligations.length > 0 &&
-    obligations.every((o) => !o.stale && o.criticVerdict === 'pass');
+    obligations.length > 0 && obligations.every((o) => !o.stale && o.criticVerdict === 'pass');
 
   const sorted = [...obligations].sort((a, b) =>
     a.obligationId < b.obligationId ? -1 : a.obligationId > b.obligationId ? 1 : 0,

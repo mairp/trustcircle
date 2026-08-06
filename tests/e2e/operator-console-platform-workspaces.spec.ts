@@ -1,11 +1,21 @@
 import { expect, test } from '@playwright/test';
 
+import { expectNoTwoDimensionalScroll } from './support/reflow.ts';
+
 const trustedHeaders = {
   'x-trustcircle-principal': 'operator-roadmap-e2e',
   'x-trustcircle-tenant-id': '00000000-0000-4000-8000-000000000001',
   'x-trustcircle-tenant-name': 'Roadmap tenant',
   'x-trustcircle-roles': 'operator',
 };
+
+const responsiveRoutes = [
+  '/',
+  '/inventory',
+  '/search',
+  '/trends',
+  '/copilot?question=Which%20records%20need%20attention%3F',
+] as const;
 
 test.beforeEach(async ({ page }) => {
   await page.setExtraHTTPHeaders(trustedHeaders);
@@ -58,21 +68,99 @@ test('global search, governed presets, and copilot remain role-scoped and explic
   await expect(page.getByText(/cannot approve, attest, verify, close, or execute/)).toBeVisible();
 });
 
-test('mobile navigation uses a compact disclosure without horizontal scrolling', async ({
-  page,
-}) => {
+test('Asset 360 stable links remain explicit when inventory is degraded', async ({ page }) => {
+  await page.goto('/assets/unavailable-asset?tab=relationships');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Asset detail unavailable' }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Asset could not be verified' })).toBeVisible();
+  await expect(page.getByText(/missing record is not treated as absent/i)).toBeVisible();
+});
+
+test('mobile navigation and platform routes do not overflow at 390px', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/trends');
-  const mobileNavigation = page.locator('.mobile-workspace-navigation');
-  await expect(mobileNavigation).toBeVisible();
-  await expect(page.locator('.workspace-sidebar')).toBeHidden();
-  await mobileNavigation.getByText('Navigate workspaces').click();
-  await expect(mobileNavigation.getByRole('link', { name: 'Inventory' })).toBeVisible();
-  const dimensions = await page.evaluate(() => ({
-    viewport: window.innerWidth,
-    document: document.documentElement.scrollWidth,
-  }));
-  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+  for (const route of responsiveRoutes) {
+    await page.goto(route);
+    const mobileNavigation = page.locator('.mobile-workspace-navigation');
+    await expect(mobileNavigation).toBeVisible();
+    await expect(page.locator('.workspace-sidebar')).toBeHidden();
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.document, route + ': ' + JSON.stringify(dimensions)).toBeLessThanOrEqual(
+      dimensions.viewport + 1,
+    );
+  }
+});
+
+test('platform routes reflow at 400 percent without horizontal scrolling', async ({ page }) => {
+  for (const route of responsiveRoutes) {
+    await page.goto(route);
+    await expectNoTwoDimensionalScroll(page);
+  }
+});
+
+test('role dashboards preserve role-specific entry points and authority copy', async ({ page }) => {
+  const roles = [
+    {
+      role: 'governance_officer',
+      heading: 'Governance officer workbench',
+      authority: 'Policy gated',
+    },
+    {
+      role: 'control_owner',
+      heading: 'Control owner workspace',
+      authority: 'Policy gated',
+    },
+    {
+      role: 'auditor',
+      heading: 'Auditor assurance workspace',
+      authority: 'Read only',
+    },
+    {
+      role: 'authorized_approver',
+      heading: 'Approval workspace',
+      authority: 'Policy gated',
+    },
+    {
+      role: 'tenant_compliance_owner',
+      heading: 'Compliance owner workbench',
+      authority: 'Policy gated',
+    },
+    {
+      role: 'platform_admin',
+      heading: 'Platform support diagnostics',
+      authority: 'Read only',
+    },
+    {
+      role: 'operator',
+      heading: 'Operator command center',
+      authority: 'Policy gated',
+    },
+  ] as const;
+  for (const roleCase of roles) {
+    await page.setExtraHTTPHeaders({
+      ...trustedHeaders,
+      'x-trustcircle-roles': roleCase.role,
+    });
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: roleCase.heading })).toBeVisible();
+    await expect(
+      page.getByRole('definition').filter({ hasText: roleCase.authority }).first(),
+    ).toBeVisible();
+  }
+
+  await page.setExtraHTTPHeaders({
+    ...trustedHeaders,
+    'x-trustcircle-roles': 'platform_admin',
+  });
+  await page.goto('/');
+  await expect(
+    page.getByRole('navigation', { name: 'Workspace navigation' }).first().getByRole('link', {
+      name: 'Inventory',
+    }),
+  ).toHaveCount(0);
 });
 
 test('workspace routes fail closed without a verified identity', async ({ browser }) => {

@@ -135,13 +135,15 @@ export function evaluateAutomaticRepair(ctx: AutoRepairContext): AutoRepairVerdi
   const maxItems = numBound(bounds, 'maxAffectedItems');
   if (maxItems !== undefined && ctx.requestedAffectedItems > maxItems) return deny('OUT_OF_SCOPE');
   const maxAttempts = numBound(bounds, 'maxAttemptsPerWindow');
-  if (maxAttempts !== undefined && ctx.attemptsInWindow >= maxAttempts) return deny('RATE_LIMIT_EXCEEDED');
+  if (maxAttempts !== undefined && ctx.attemptsInWindow >= maxAttempts)
+    return deny('RATE_LIMIT_EXCEEDED');
   const windowStart = numBound(bounds, 'windowStart');
   const windowEnd = numBound(bounds, 'windowEnd');
   if (windowStart !== undefined && ctx.now < windowStart) return deny('OUTSIDE_TIME_WINDOW');
   if (windowEnd !== undefined && ctx.now >= windowEnd) return deny('OUTSIDE_TIME_WINDOW');
   const maxBlast = numBound(bounds, 'maxBlastRadius');
-  if (maxBlast !== undefined && ctx.requestedBlastRadius > maxBlast) return deny('BLAST_RADIUS_EXCEEDED');
+  if (maxBlast !== undefined && ctx.requestedBlastRadius > maxBlast)
+    return deny('BLAST_RADIUS_EXCEEDED');
 
   // 8. Kill switch / cancellation.
   if (ctx.killSwitchEngaged) return deny('KILL_SWITCH_ENGAGED');

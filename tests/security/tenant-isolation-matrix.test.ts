@@ -74,8 +74,18 @@ describe('T275 · object layer — evidence blobs are tenant-scoped', () => {
   const bContent = bytes('tenant-B evidence original');
   const aDigest = contentAddress(aContent);
   const bDigest = contentAddress(bContent);
-  store.put({ content: aContent, metadata: objectMetadata(TENANT_A), by: { principalId: PRINCIPAL_A, grantId: GRANT_A }, now: NOW });
-  store.put({ content: bContent, metadata: objectMetadata(TENANT_B), by: { principalId: PRINCIPAL_A, grantId: GRANT_A }, now: NOW });
+  store.put({
+    content: aContent,
+    metadata: objectMetadata(TENANT_A),
+    by: { principalId: PRINCIPAL_A, grantId: GRANT_A },
+    now: NOW,
+  });
+  store.put({
+    content: bContent,
+    metadata: objectMetadata(TENANT_B),
+    by: { principalId: PRINCIPAL_A, grantId: GRANT_A },
+    now: NOW,
+  });
 
   it('ALLOW: a tenant lists only its own objects (positive control)', () => {
     const a = store.list(TENANT_A);
@@ -105,8 +115,12 @@ const RLS_SQL = readFileSync(join(ROOT, 'db', 'migrations', '0002_tenant_rls.sql
  * `current_setting` predicate so the model tracks the migration's real predicate.
  */
 function rlsPredicateIsTenantScoped(): boolean {
-  const helperDefinesTenant = /current_tenant\s*\(\s*\)/i.test(RLS_SQL) && /current_setting\(\s*'app\.tenant_id'/i.test(RLS_SQL);
-  const predicateGate = /tenant_id\s*=\s*current_tenant\s*\(\s*\)/i.test(RLS_SQL) || /tenant_id\s*=\s*[^;]*current_setting\(\s*'app\.tenant_id'/i.test(RLS_SQL);
+  const helperDefinesTenant =
+    /current_tenant\s*\(\s*\)/i.test(RLS_SQL) &&
+    /current_setting\(\s*'app\.tenant_id'/i.test(RLS_SQL);
+  const predicateGate =
+    /tenant_id\s*=\s*current_tenant\s*\(\s*\)/i.test(RLS_SQL) ||
+    /tenant_id\s*=\s*[^;]*current_setting\(\s*'app\.tenant_id'/i.test(RLS_SQL);
   return helperDefinesTenant && predicateGate;
 }
 /** Are application roles NOBYPASSRLS + NOSUPERUSER, and is FORCE ROW LEVEL SECURITY declared? */
@@ -179,10 +193,14 @@ describe('T275 · event layer — tenant-scoped subjects isolate subscriptions',
     expect(String(conv.subjectTemplate)).toContain('{tenantId}');
   });
   it("ALLOW: tenant A's filter matches tenant A's subject (positive control)", () => {
-    expect(natsMatch(tenantFilter(TENANT_A), subjectFor(TENANT_A, 'decisions', 'approved'))).toBe(true);
+    expect(natsMatch(tenantFilter(TENANT_A), subjectFor(TENANT_A, 'decisions', 'approved'))).toBe(
+      true,
+    );
   });
   it("DENY: tenant A's filter never matches tenant B's subject", () => {
-    expect(natsMatch(tenantFilter(TENANT_A), subjectFor(TENANT_B, 'decisions', 'approved'))).toBe(false);
+    expect(natsMatch(tenantFilter(TENANT_A), subjectFor(TENANT_B, 'decisions', 'approved'))).toBe(
+      false,
+    );
   });
 });
 
@@ -230,7 +248,10 @@ for (const { name, layer } of NAMESPACE_LAYERS) {
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 describe('T275 · key & credential layer — per-tenant references, never shared inline material', () => {
   it('ALLOW: a per-tenant vault reference parses (positive control)', () => {
-    const r = parseSecretReference('EVIDENCE_SIGNING_KEY_SECRET_REF', `vault:tenants/${TENANT_A}/signing#key`);
+    const r = parseSecretReference(
+      'EVIDENCE_SIGNING_KEY_SECRET_REF',
+      `vault:tenants/${TENANT_A}/signing#key`,
+    );
     expect('ref' in r).toBe(true);
     if ('ref' in r) expect(r.ref.locator).toContain(TENANT_A);
   });
@@ -244,8 +265,14 @@ describe('T275 · key & credential layer — per-tenant references, never shared
     if ('issue' in r) expect(r.issue.code).toBe('inline_secret_forbidden');
   });
   it('DENY: two tenants resolve to distinct key references (no cross-tenant key reuse)', () => {
-    const a = parseSecretReference('EVIDENCE_SIGNING_KEY_SECRET_REF', `vault:tenants/${TENANT_A}/signing#key`);
-    const b = parseSecretReference('EVIDENCE_SIGNING_KEY_SECRET_REF', `vault:tenants/${TENANT_B}/signing#key`);
+    const a = parseSecretReference(
+      'EVIDENCE_SIGNING_KEY_SECRET_REF',
+      `vault:tenants/${TENANT_A}/signing#key`,
+    );
+    const b = parseSecretReference(
+      'EVIDENCE_SIGNING_KEY_SECRET_REF',
+      `vault:tenants/${TENANT_B}/signing#key`,
+    );
     expect('ref' in a && 'ref' in b).toBe(true);
     if ('ref' in a && 'ref' in b) expect(a.ref.raw).not.toBe(b.ref.raw);
   });

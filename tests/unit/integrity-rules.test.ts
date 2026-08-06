@@ -86,9 +86,7 @@ describe('FR-017 — preserved original is mandatory', () => {
   });
 
   it('NEGATIVE — refuses a case with no/invalid original evidence id', () => {
-    expect(() =>
-      makeIntegrityCase(baseCaseInput({ originalEvidenceId: 'not-a-uuid' })),
-    ).toThrow();
+    expect(() => makeIntegrityCase(baseCaseInput({ originalEvidenceId: 'not-a-uuid' }))).toThrow();
   });
 });
 
@@ -109,7 +107,9 @@ describe('FR-018 — ownership honesty', () => {
 
   it('NEGATIVE — refuses a fabricated owner alongside an asserted gap', () => {
     expect(() =>
-      makeIntegrityCase(baseCaseInput({ ownershipGap: true, ownerPrincipalId: uuidFromSlug('owner') })),
+      makeIntegrityCase(
+        baseCaseInput({ ownershipGap: true, ownerPrincipalId: uuidFromSlug('owner') }),
+      ),
     ).toThrow(/ownershipGap/);
   });
 });
@@ -150,7 +150,9 @@ describe('FR-019 — quarantine containment', () => {
   });
 
   it('NEGATIVE — a released quarantine must name its release decision', () => {
-    expect(() => makeQuarantine(quarantineInput({ status: 'released' }))).toThrow(/releaseDecisionId/);
+    expect(() => makeQuarantine(quarantineInput({ status: 'released' }))).toThrow(
+      /releaseDecisionId/,
+    );
   });
 });
 
@@ -229,18 +231,22 @@ describe('FR-022 — verified closure gate', () => {
 
   it('passes ONLY when every one of the nine gates passes and the verifier is independent', () => {
     expect(CLOSURE_GATES.length).toBe(9); // the gate count is load-bearing
-    expect(verifiedClosureResult({ gateResults: allPassing, verifierIndependent: true })).toBe('passed');
+    expect(verifiedClosureResult({ gateResults: allPassing, verifierIndependent: true })).toBe(
+      'passed',
+    );
   });
 
   it('NEGATIVE — a dependent verifier can never yield a pass, even with all gates green', () => {
-    expect(verifiedClosureResult({ gateResults: allPassing, verifierIndependent: false })).toBe('failed');
+    expect(verifiedClosureResult({ gateResults: allPassing, verifierIndependent: false })).toBe(
+      'failed',
+    );
   });
 
   it('NEGATIVE — any single failed gate fails closure', () => {
-    const oneFailed = allPassing.map((g, i) =>
-      i === 3 ? { ...g, result: 'failed' as const } : g,
+    const oneFailed = allPassing.map((g, i) => (i === 3 ? { ...g, result: 'failed' as const } : g));
+    expect(verifiedClosureResult({ gateResults: oneFailed, verifierIndependent: true })).toBe(
+      'failed',
     );
-    expect(verifiedClosureResult({ gateResults: oneFailed, verifierIndependent: true })).toBe('failed');
   });
 
   it('NEGATIVE — a missing gate yields indeterminate, never a pass (no source-reported "done")', () => {
@@ -291,9 +297,9 @@ describe('FR-022 — verified closure gate', () => {
   });
 
   it('NEGATIVE — a case cannot enter a closed/repaired state without a resolution verification', () => {
-    expect(() =>
-      makeIntegrityCase(baseCaseInput({ state: 'closed' })),
-    ).toThrow(/resolutionVerificationId/);
+    expect(() => makeIntegrityCase(baseCaseInput({ state: 'closed' }))).toThrow(
+      /resolutionVerificationId/,
+    );
   });
 });
 

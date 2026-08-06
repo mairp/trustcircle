@@ -87,11 +87,39 @@ export function guardExecution(input: ExecutionGuardInput): ExecutionGuardVerdic
   const readOnly = isReadOnlyOperation(operation.operationKind);
 
   // Authority / policy / ownership are re-resolved at the instant of effect for ALL operations.
-  add('authority', input.authorityStillValid, input.authorityStillValid ? 'requester still holds required authority' : 'authority lapsed since approval');
-  add('policy', input.policyStillAuthorizes, input.policyStillAuthorizes ? 'policy still authorizes this action' : 'policy no longer authorizes this action');
-  add('ownership', input.ownershipStillValid, input.ownershipStillValid ? 'operation ownership unchanged' : 'operation ownership changed/invalid');
-  add('evidence', input.evidenceReady, input.evidenceReady ? 'evidence plan satisfiable' : 'required evidence cannot be recorded');
-  add('preconditions', input.preconditionsSatisfied, input.preconditionsSatisfied ? 'live preconditions satisfied' : 'a live precondition is unsatisfied');
+  add(
+    'authority',
+    input.authorityStillValid,
+    input.authorityStillValid
+      ? 'requester still holds required authority'
+      : 'authority lapsed since approval',
+  );
+  add(
+    'policy',
+    input.policyStillAuthorizes,
+    input.policyStillAuthorizes
+      ? 'policy still authorizes this action'
+      : 'policy no longer authorizes this action',
+  );
+  add(
+    'ownership',
+    input.ownershipStillValid,
+    input.ownershipStillValid
+      ? 'operation ownership unchanged'
+      : 'operation ownership changed/invalid',
+  );
+  add(
+    'evidence',
+    input.evidenceReady,
+    input.evidenceReady ? 'evidence plan satisfiable' : 'required evidence cannot be recorded',
+  );
+  add(
+    'preconditions',
+    input.preconditionsSatisfied,
+    input.preconditionsSatisfied
+      ? 'live preconditions satisfied'
+      : 'a live precondition is unsatisfied',
+  );
 
   let blockedPendingReconciliation = false;
 
@@ -101,27 +129,67 @@ export function guardExecution(input: ExecutionGuardInput): ExecutionGuardVerdic
       add('simulation-binding', false, 'no simulation bound to a state-changing operation');
     } else {
       const current = simulationIsCurrent(input.simulation, input.now);
-      const invalidated = sourceDriftInvalidates(input.simulation, input.observedVersions, input.now);
-      add('simulation-binding', current && !invalidated, invalidated ? 'simulation invalidated by expiry or source/version drift (NS-005)' : 'simulation current and binding');
+      const invalidated = sourceDriftInvalidates(
+        input.simulation,
+        input.observedVersions,
+        input.now,
+      );
+      add(
+        'simulation-binding',
+        current && !invalidated,
+        invalidated
+          ? 'simulation invalidated by expiry or source/version drift (NS-005)'
+          : 'simulation current and binding',
+      );
     }
 
     // Source revision must match what the operation was authorized on (defence in depth beyond the
     // simulation binding — the operation's own desired tuple must equal the observed tuple).
-    const sourceMatches = operation.desiredVersions.sourceRevision === input.observedVersions.sourceRevision;
-    add('source-revision', sourceMatches, sourceMatches ? 'observed source revision matches authorized revision' : 'source revision drifted since authorization');
+    const sourceMatches =
+      operation.desiredVersions.sourceRevision === input.observedVersions.sourceRevision;
+    add(
+      'source-revision',
+      sourceMatches,
+      sourceMatches
+        ? 'observed source revision matches authorized revision'
+        : 'source revision drifted since authorization',
+    );
 
-    add('scope', input.withinScope, input.withinScope ? 'effect within approved scope' : 'effect exceeds approved scope');
-    add('rate-time-bounds', input.withinRateTimeBounds, input.withinRateTimeBounds ? 'within rate/time bounds' : 'rate/time bounds exhausted');
-    add('rollback', input.rollbackAvailable, input.rollbackAvailable ? 'rollback/compensation available' : 'no rollback path for a reversible effect');
+    add(
+      'scope',
+      input.withinScope,
+      input.withinScope ? 'effect within approved scope' : 'effect exceeds approved scope',
+    );
+    add(
+      'rate-time-bounds',
+      input.withinRateTimeBounds,
+      input.withinRateTimeBounds ? 'within rate/time bounds' : 'rate/time bounds exhausted',
+    );
+    add(
+      'rollback',
+      input.rollbackAvailable,
+      input.rollbackAvailable
+        ? 'rollback/compensation available'
+        : 'no rollback path for a reversible effect',
+    );
 
     // RECONCILE-BEFORE-MUTATION (FR-028): an outstanding uncertain outcome must be reconciled to an
     // established state before any NEW mutation dispatches.
     const uncertainOutstanding =
       input.lastAttempt !== undefined &&
       attemptIsUncertain(input.lastAttempt) &&
-      !(input.lastReconciliation !== undefined && reconciliationEstablishedState(input.lastReconciliation));
+      !(
+        input.lastReconciliation !== undefined &&
+        reconciliationEstablishedState(input.lastReconciliation)
+      );
     blockedPendingReconciliation = uncertainOutstanding;
-    add('reconcile-before-mutation', !uncertainOutstanding, uncertainOutstanding ? 'a prior uncertain outcome must be reconciled before a new mutation (FR-028)' : 'no unreconciled uncertain outcome outstanding');
+    add(
+      'reconcile-before-mutation',
+      !uncertainOutstanding,
+      uncertainOutstanding
+        ? 'a prior uncertain outcome must be reconciled before a new mutation (FR-028)'
+        : 'no unreconciled uncertain outcome outstanding',
+    );
   }
 
   const failed = checks.filter((c) => !c.passed).map((c) => c.check);

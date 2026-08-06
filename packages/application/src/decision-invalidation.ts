@@ -117,7 +117,11 @@ export function invalidateOnMaterialChange(
   now: EpochMillis,
 ): InvalidationResult {
   const verdict = detectMaterialChange(reviewed, current);
-  if (!verdict.changed || isTerminalDecisionStatus(current.status) || current.status === 'invalidated') {
+  if (
+    !verdict.changed ||
+    isTerminalDecisionStatus(current.status) ||
+    current.status === 'invalidated'
+  ) {
     return { package: current, invalidated: false, verdict };
   }
   const reason = `material change detected: ${verdict.triggers.join(', ')}`;

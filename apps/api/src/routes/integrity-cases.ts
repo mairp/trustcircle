@@ -199,7 +199,13 @@ function listIntegrityCases(deps: IntegrityCasesRouteDeps): RouteHandler {
   return (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const url = new URL(c.req.url, 'http://internal');
 
@@ -207,11 +213,23 @@ function listIntegrityCases(deps: IntegrityCasesRouteDeps): RouteHandler {
     let limit = DEFAULT_LIMIT;
     if (rawLimit !== null && rawLimit !== '') {
       if (!/^\d+$/.test(rawLimit)) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', 'limit must be a non-negative integer.');
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          'limit must be a non-negative integer.',
+        );
       }
       const n = Number(rawLimit);
       if (!Number.isInteger(n) || n < MIN_LIMIT || n > MAX_LIMIT) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`);
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`,
+        );
       }
       limit = n;
     }
@@ -247,16 +265,34 @@ function getIntegrityCase(deps: IntegrityCasesRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const caseId = caseIdOf(c);
     if (caseId === undefined) {
-      return problem(c, 400, 'invalid_case_id', 'Bad Request', 'The case id path segment must be a uuid.');
+      return problem(
+        c,
+        400,
+        'invalid_case_id',
+        'Bad Request',
+        'The case id path segment must be a uuid.',
+      );
     }
 
     const view = await deps.readCase(tenantId, caseId);
     if (view === undefined) {
-      return problem(c, 404, 'integrity_case_not_found', 'Not Found', 'No such integrity case in this tenant scope.');
+      return problem(
+        c,
+        404,
+        'integrity_case_not_found',
+        'Not Found',
+        'No such integrity case in this tenant scope.',
+      );
     }
 
     c.setHeader('etag', caseEtag(view));

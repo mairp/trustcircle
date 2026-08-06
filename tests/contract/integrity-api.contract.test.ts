@@ -74,7 +74,10 @@ const MANIFEST_ID = 'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa';
 const VERIFIER_ID = 'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb';
 const IDEMPOTENCY_KEY = 'idem-integrity-0000000000000000';
 
-const REASON: Json = { code: 'remediate_corruption', text: 'restore the derivative from the preserved original' };
+const REASON: Json = {
+  code: 'remediate_corruption',
+  text: 'restore the derivative from the preserved original',
+};
 
 function commandHeaders(overrides: Record<string, string | undefined> = {}): Headers {
   return {
@@ -99,7 +102,12 @@ function completePlan(): Json {
 }
 
 function remediationCommand(overrides: Record<string, unknown> = {}): Json {
-  return { mode: 'execute_if_pre_authorized', plan: completePlan(), reason: REASON, ...overrides } as Json;
+  return {
+    mode: 'execute_if_pre_authorized',
+    plan: completePlan(),
+    reason: REASON,
+    ...overrides,
+  } as Json;
 }
 
 function verificationCommand(overrides: Record<string, unknown> = {}): Json {
@@ -166,7 +174,9 @@ describe('FR-016 — integrity-case queue + detail', () => {
   });
 
   it('NEGATIVE — a case with an out-of-vocabulary problem_class is rejected', () => {
-    expect(validateIntegrityCase(DOC, wireCase({ problem_class: 'fabricated' })).length).toBeGreaterThan(0);
+    expect(
+      validateIntegrityCase(DOC, wireCase({ problem_class: 'fabricated' })).length,
+    ).toBeGreaterThan(0);
   });
 
   it('declares a strong ETag on the single-case read (SC-009 optimistic concurrency)', () => {
@@ -194,7 +204,9 @@ describe('FR-020 / GAR-004 — remediation command', () => {
   );
 
   it('NEGATIVE — an unknown mode is rejected', () => {
-    expect(validateRemediationCommand(DOC, remediationCommand({ mode: 'delete_everything' })).length).toBeGreaterThan(0);
+    expect(
+      validateRemediationCommand(DOC, remediationCommand({ mode: 'delete_everything' })).length,
+    ).toBeGreaterThan(0);
   });
 
   it('NEGATIVE — an incomplete plan (missing rollback_plan) is rejected', () => {
@@ -210,7 +222,9 @@ describe('FR-020 / GAR-004 — remediation command', () => {
   });
 
   it('NEGATIVE — an unknown top-level property is rejected (additionalProperties:false)', () => {
-    expect(validateRemediationCommand(DOC, remediationCommand({ force: true })).length).toBeGreaterThan(0);
+    expect(
+      validateRemediationCommand(DOC, remediationCommand({ force: true })).length,
+    ).toBeGreaterThan(0);
   });
 
   it('accepts a conformant 202 OperationAccepted response', () => {
@@ -240,7 +254,11 @@ describe('FR-020 / GAR-004 — remediation command', () => {
   });
 
   it('NEGATIVE — an OperationAccepted missing its audit_event_id is rejected', () => {
-    const accepted = { operation_id: OPERATION_ID, status: 'accepted', correlation_id: CORRELATION } as Json;
+    const accepted = {
+      operation_id: OPERATION_ID,
+      status: 'accepted',
+      correlation_id: CORRELATION,
+    } as Json;
     expect(validateOperationAccepted(DOC, accepted).length).toBeGreaterThan(0);
   });
 });
@@ -281,7 +299,11 @@ describe('FR-022 — verification command + record', () => {
       verifier_principal_id: VERIFIER_ID,
       result: 'failed',
       gate_results: [
-        { gate: 'state_reconciled_no_uncertainty', result: 'failed', detail: 'remote outcome uncertain' },
+        {
+          gate: 'state_reconciled_no_uncertainty',
+          result: 'failed',
+          detail: 'remote outcome uncertain',
+        },
       ],
       evidence_manifest_id: MANIFEST_ID,
       verified_at: '2026-08-02T00:00:00.000Z',
@@ -312,7 +334,9 @@ describe('protocol — headers, governed rejection', () => {
     const names = requiredHeaders(DOC, DOC.operation('post', REMEDIATION_PATH))
       .map((h) => h.name)
       .sort();
-    expect(names).toEqual(['If-Match', 'Idempotency-Key', 'X-Correlation-ID', 'X-Tenant-ID'].sort());
+    expect(names).toEqual(
+      ['If-Match', 'Idempotency-Key', 'X-Correlation-ID', 'X-Tenant-ID'].sort(),
+    );
     expect(validateRemediationHeaders(DOC, commandHeaders())).toEqual([]);
   });
 
@@ -326,7 +350,9 @@ describe('protocol — headers, governed rejection', () => {
 
   it('verification likewise requires the full state-changing header set', () => {
     expect(validateVerificationHeaders(DOC, commandHeaders())).toEqual([]);
-    expect(validateVerificationHeaders(DOC, commandHeaders({ 'If-Match': undefined })).length).toBeGreaterThan(0);
+    expect(
+      validateVerificationHeaders(DOC, commandHeaders({ 'If-Match': undefined })).length,
+    ).toBeGreaterThan(0);
   });
 
   it('a GAR-004 governed rejection is a Problem carrying an audit_event_id + safe next actions', () => {

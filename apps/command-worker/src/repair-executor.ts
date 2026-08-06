@@ -246,17 +246,23 @@ export function repairIdentityBasis(repair: ExecutableRepair): {
 }
 
 export function repairIdempotencyKey(repair: ExecutableRepair): string {
-  return 'repair-' + digest({ ...repairIdentityBasis(repair), purpose: 'repair_idempotency' }).slice(0, 40);
+  return (
+    'repair-' +
+    digest({ ...repairIdentityBasis(repair), purpose: 'repair_idempotency' }).slice(0, 40)
+  );
 }
 
 export function repairCorrelationId(repair: ExecutableRepair): string {
   return (
-    'corr-repair-' + digest({ ...repairIdentityBasis(repair), purpose: 'repair_correlation' }).slice(0, 32)
+    'corr-repair-' +
+    digest({ ...repairIdentityBasis(repair), purpose: 'repair_correlation' }).slice(0, 32)
   );
 }
 
 export function repairAttemptId(repair: ExecutableRepair): string {
-  return 'attempt-' + digest({ ...repairIdentityBasis(repair), purpose: 'repair_attempt' }).slice(0, 32);
+  return (
+    'attempt-' + digest({ ...repairIdentityBasis(repair), purpose: 'repair_attempt' }).slice(0, 32)
+  );
 }
 
 // ===========================================================================
@@ -289,7 +295,8 @@ export class RepairExecutor {
     this.#controlVersion = opts.controlVersion;
     this.#owner = opts.owner ?? DEFAULT_OWNER;
     const b = opts.batchSize ?? DEFAULT_BATCH_SIZE;
-    if (!Number.isInteger(b) || b <= 0) throw new RangeError('batchSize must be a positive integer');
+    if (!Number.isInteger(b) || b <= 0)
+      throw new RangeError('batchSize must be a positive integer');
     this.#batchSize = b;
   }
 
@@ -350,14 +357,30 @@ export class RepairExecutor {
 
     // FR-021 — kill switch checked before start.
     if (this.#oracles.killEngaged()) {
-      return { ...base, outcome: 'stopped', derivedEvidenceId: null, deduplicated: false, denyReason: null, safeNextAction: 'resume', error: 'kill switch engaged before start' };
+      return {
+        ...base,
+        outcome: 'stopped',
+        derivedEvidenceId: null,
+        deduplicated: false,
+        denyReason: null,
+        safeNextAction: 'resume',
+        error: 'kill switch engaged before start',
+      };
     }
 
     // FR-021 — checkpoint BEFORE the steps (resumable).
     try {
       await this.#ports.checkpoint(repair, 'before', now);
     } catch (err) {
-      return { ...base, outcome: 'failed', derivedEvidenceId: null, deduplicated: false, denyReason: null, safeNextAction: 'reconcile', error: `pre-checkpoint failed: ${describeRepairError(err)}` };
+      return {
+        ...base,
+        outcome: 'failed',
+        derivedEvidenceId: null,
+        deduplicated: false,
+        denyReason: null,
+        safeNextAction: 'reconcile',
+        error: `pre-checkpoint failed: ${describeRepairError(err)}`,
+      };
     }
 
     // Execute the steps under one idempotency identity, folding outputs, honouring the kill switch and
@@ -365,13 +388,29 @@ export class RepairExecutor {
     const chunks: Uint8Array[] = [];
     for (const step of repair.steps) {
       if (this.#oracles.killEngaged()) {
-        return { ...base, outcome: 'stopped', derivedEvidenceId: null, deduplicated: false, denyReason: null, safeNextAction: 'resume', error: `kill switch engaged before step ${step.stepId}` };
+        return {
+          ...base,
+          outcome: 'stopped',
+          derivedEvidenceId: null,
+          deduplicated: false,
+          denyReason: null,
+          safeNextAction: 'resume',
+          error: `kill switch engaged before step ${step.stepId}`,
+        };
       }
       let sr: StepResult;
       try {
         sr = await this.#ports.runStep(step, repair);
       } catch (err) {
-        return { ...base, outcome: 'failed', derivedEvidenceId: null, deduplicated: false, denyReason: null, safeNextAction: 'reconcile', error: `step ${step.stepId} threw: ${describeRepairError(err)}` };
+        return {
+          ...base,
+          outcome: 'failed',
+          derivedEvidenceId: null,
+          deduplicated: false,
+          denyReason: null,
+          safeNextAction: 'reconcile',
+          error: `step ${step.stepId} threw: ${describeRepairError(err)}`,
+        };
       }
       if (sr.status === 'uncertain') {
         // FR-022 / SC-008 — STOP + quarantine + escalate. Do NOT claim success on an uncertain step.
@@ -400,7 +439,15 @@ export class RepairExecutor {
     try {
       derived = await this.#ports.deriveEvidence(repair, concatBytes(chunks), now);
     } catch (err) {
-      return { ...base, outcome: 'failed', derivedEvidenceId: null, deduplicated: false, denyReason: null, safeNextAction: 'reconcile', error: `derived-evidence write failed: ${describeRepairError(err)}` };
+      return {
+        ...base,
+        outcome: 'failed',
+        derivedEvidenceId: null,
+        deduplicated: false,
+        denyReason: null,
+        safeNextAction: 'reconcile',
+        error: `derived-evidence write failed: ${describeRepairError(err)}`,
+      };
     }
 
     // FR-021 — checkpoint AFTER the steps (best-effort; a checkpoint failure does not undo the repair
@@ -465,7 +512,10 @@ export class RepairExecutor {
       `plan:${repair.planId}@v${repair.planVersion}`,
       `revision:${repair.preservedOriginalRevision}`,
       ...(detailed.derived
-        ? [`derived:${detailed.derived.derivedEvidenceId}`, `derived-digest:${detailed.derived.contentDigest}`]
+        ? [
+            `derived:${detailed.derived.derivedEvidenceId}`,
+            `derived-digest:${detailed.derived.contentDigest}`,
+          ]
         : []),
     ];
     const audit: AuditEventInput = {

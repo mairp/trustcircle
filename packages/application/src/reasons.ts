@@ -15,11 +15,7 @@
 // wraps it with the category taxonomy and the narrative/sensitivity oracles. It re-uses
 // `makeReason` (which enforces the code pattern + non-empty text) rather than re-implementing it.
 
-import {
-  makeReason,
-  isConsequentialReason,
-  type Reason,
-} from '@trustcircle/domain';
+import { makeReason, isConsequentialReason, type Reason } from '@trustcircle/domain';
 import { type DecisionActionVerb, DECISION_ACTIONS } from '@trustcircle/domain';
 
 // ---------------------------------------------------------------------------
@@ -98,14 +94,16 @@ export function isMeaningfulNarrative(text: string): boolean {
 // ---------------------------------------------------------------------------
 
 /** Patterns that look like a secret / credential / PII the approver should NOT paste into a reason. */
-const SENSITIVE_PATTERNS: readonly { readonly kind: string; readonly re: RegExp }[] = Object.freeze([
-  { kind: 'credential', re: /\b(password|passwd|secret|api[_-]?key|token|bearer)\b\s*[:=]/i },
-  { kind: 'private_key', re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
-  { kind: 'aws_key', re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { kind: 'email', re: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/ },
-  { kind: 'ssn', re: /\b\d{3}-\d{2}-\d{4}\b/ },
-  { kind: 'card', re: /\b(?:\d[ -]?){13,16}\b/ },
-]);
+const SENSITIVE_PATTERNS: readonly { readonly kind: string; readonly re: RegExp }[] = Object.freeze(
+  [
+    { kind: 'credential', re: /\b(password|passwd|secret|api[_-]?key|token|bearer)\b\s*[:=]/i },
+    { kind: 'private_key', re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+    { kind: 'aws_key', re: /\bAKIA[0-9A-Z]{16}\b/ },
+    { kind: 'email', re: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/ },
+    { kind: 'ssn', re: /\b\d{3}-\d{2}-\d{4}\b/ },
+    { kind: 'card', re: /\b(?:\d[ -]?){13,16}\b/ },
+  ],
+);
 
 /** The kinds of sensitive content detected in a narrative (empty ⇒ none). Non-destructive. */
 export function detectSensitiveContent(text: string): readonly string[] {
@@ -121,11 +119,7 @@ export function detectSensitiveContent(text: string): readonly string[] {
 // ---------------------------------------------------------------------------
 
 export type ReasonRejectionCode =
-  | 'MISSING_CODE'
-  | 'MISSING_TEXT'
-  | 'UNKNOWN_CATEGORY'
-  | 'NOT_MEANINGFUL'
-  | 'MALFORMED_CODE';
+  'MISSING_CODE' | 'MISSING_TEXT' | 'UNKNOWN_CATEGORY' | 'NOT_MEANINGFUL' | 'MALFORMED_CODE';
 
 export interface ReasonValidation {
   readonly ok: boolean;
@@ -163,10 +157,22 @@ export function validateDecisionReason(
     };
   }
   if (preserved.code.trim().length === 0) {
-    return { ok: false, rejection: 'MISSING_CODE', detail: 'a reason code is required', sensitiveKinds, preserved };
+    return {
+      ok: false,
+      rejection: 'MISSING_CODE',
+      detail: 'a reason code is required',
+      sensitiveKinds,
+      preserved,
+    };
   }
   if (preserved.text.trim().length === 0) {
-    return { ok: false, rejection: 'MISSING_TEXT', detail: 'a reason narrative is required', sensitiveKinds, preserved };
+    return {
+      ok: false,
+      rejection: 'MISSING_TEXT',
+      detail: 'a reason narrative is required',
+      sensitiveKinds,
+      preserved,
+    };
   }
   if (!isReasonCategoryFor(action, preserved.code)) {
     return {
@@ -200,7 +206,13 @@ export function validateDecisionReason(
     };
   }
   if (!isConsequentialReason(reason)) {
-    return { ok: false, rejection: 'NOT_MEANINGFUL', detail: 'reason not consequential', sensitiveKinds, preserved };
+    return {
+      ok: false,
+      rejection: 'NOT_MEANINGFUL',
+      detail: 'reason not consequential',
+      sensitiveKinds,
+      preserved,
+    };
   }
   return { ok: true, reason, sensitiveKinds, preserved };
 }

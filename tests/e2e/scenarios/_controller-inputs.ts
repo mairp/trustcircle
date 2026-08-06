@@ -84,7 +84,10 @@ export function actionIsEnabledForVM(a: OperationActionVM, terminal: boolean): b
 }
 
 /** Convenience: look up one action kind in a model and return its enabled verdict. */
-export function actionIsEnabledForScenario(model: OperationActionsModel, kind: OperationKind): boolean {
+export function actionIsEnabledForScenario(
+  model: OperationActionsModel,
+  kind: OperationKind,
+): boolean {
   const a = model.actions.find((x) => x.kind === kind);
   if (a === undefined) throw new Error(`action kind ${kind} not present in model`);
   return actionIsEnabledForVM(a, model.terminal);

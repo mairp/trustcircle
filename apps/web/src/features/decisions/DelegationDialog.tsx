@@ -200,7 +200,10 @@ function chainRegion(m: DelegationDialogModel): string {
       </section>`;
 }
 
-function fieldError(m: DelegationDialogModel, field: DelegationValidationVM['field']): { errId: string; message: string } | null {
+function fieldError(
+  m: DelegationDialogModel,
+  field: DelegationValidationVM['field'],
+): { errId: string; message: string } | null {
   const v = m.validation.find((x) => x.field === field);
   if (v === undefined) return null;
   return { errId: `err-delegation-${field}`, message: v.message };

@@ -20,7 +20,13 @@
 // The service is pure and clock-free. It grants no authority; it records and routes. The audit event
 // id is injected (the escalation commits atomically with its AuditEvent upstream).
 
-import { type Uuid, type EpochMillis, type TenantId, makeReason, type Reason } from '@trustcircle/domain';
+import {
+  type Uuid,
+  type EpochMillis,
+  type TenantId,
+  makeReason,
+  type Reason,
+} from '@trustcircle/domain';
 import { createHash } from 'node:crypto';
 
 export const ESCALATION_TRIGGERS = [
@@ -90,14 +96,20 @@ export function mustEscalate(facts: EscalationFacts): boolean {
 }
 
 const TRIGGER_REASON_TEXT: Readonly<Record<EscalationTrigger, string>> = Object.freeze({
-  destructive: 'a destructive change is required; only a human may authorize destructive remediation',
+  destructive:
+    'a destructive change is required; only a human may authorize destructive remediation',
   consequential: 'the required change is consequential and must be decided by a human',
-  unowned: 'the case has an ownership gap; no owner is available to act — routed for owner assignment',
+  unowned:
+    'the case has an ownership gap; no owner is available to act — routed for owner assignment',
   repeated: 'repair has been attempted repeatedly without a verified resolution',
-  expanding: 'the affected scope is expanding across cycles; containment must be reassessed by a human',
-  evidence_tampered: 'the original evidence is tampered or unverifiable; safe repair is not possible automatically',
-  rollback_failed: 'a rollback failed or conflicted with newer legitimate state; human compensation required',
-  verification_failed: 'verification did not pass; the case cannot reach verified closure automatically',
+  expanding:
+    'the affected scope is expanding across cycles; containment must be reassessed by a human',
+  evidence_tampered:
+    'the original evidence is tampered or unverifiable; safe repair is not possible automatically',
+  rollback_failed:
+    'a rollback failed or conflicted with newer legitimate state; human compensation required',
+  verification_failed:
+    'verification did not pass; the case cannot reach verified closure automatically',
 });
 
 export interface EscalateCommand {

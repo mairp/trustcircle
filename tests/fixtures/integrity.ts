@@ -59,9 +59,7 @@ import type {
   IntegrityQueueRowVM,
   IntegrityFilterChipVM,
 } from '../../apps/web/src/features/integrity/IntegrityQueue.tsx';
-import type {
-  EvidenceComparisonModel,
-} from '../../apps/web/src/features/integrity/EvidenceComparison.tsx';
+import type { EvidenceComparisonModel } from '../../apps/web/src/features/integrity/EvidenceComparison.tsx';
 import type {
   RemediationDetailModel,
   RemediationStepVM,
@@ -133,7 +131,10 @@ export interface IntegrityScenarioSpec {
 
 const REASON = (code: string, text: string) => makeReason(code, text);
 
-function caseFor(scenario: IntegrityScenarioName, overrides: Record<string, unknown>): IntegrityCase {
+function caseFor(
+  scenario: IntegrityScenarioName,
+  overrides: Record<string, unknown>,
+): IntegrityCase {
   return makeIntegrityCase({
     id: uuidFromSlug(`case-${scenario}`),
     tenantId: TENANT,
@@ -264,7 +265,10 @@ export function seedIntegrity(): readonly IntegrityScenarioSpec[] {
       severity: 'high',
       safetyImpact: 'high',
       quarantineId: uuidFromSlug('quarantine-quarantined'),
-      dependentWorkIds: [uuidFromSlug('dependent-quarantined-1'), uuidFromSlug('dependent-quarantined-2')],
+      dependentWorkIds: [
+        uuidFromSlug('dependent-quarantined-1'),
+        uuidFromSlug('dependent-quarantined-2'),
+      ],
     }),
     quarantine: activeQuarantine('quarantined'),
     plan: null,
@@ -274,7 +278,8 @@ export function seedIntegrity(): readonly IntegrityScenarioSpec[] {
   const autoRepairable: IntegrityScenarioSpec = {
     scenario: 'auto_repairable',
     title: 'Low-risk, policy-bound plan eligible for pre-authorized automatic repair',
-    observedVia: 'remediation_plan.authorizationMode=pre_authorized_low_risk via isAutomaticEligible()',
+    observedVia:
+      'remediation_plan.authorizationMode=pre_authorized_low_risk via isAutomaticEligible()',
     case: caseFor('auto_repairable', {
       state: 'remediation_proposed',
       ownerPrincipalId: REVIEWER,
@@ -335,7 +340,14 @@ export function seedIntegrity(): readonly IntegrityScenarioSpec[] {
     verification: null,
   };
 
-  return [detectedPreserved, quarantined, autoRepairable, needsApproval, verifiedClosed, unresolvedEscalated];
+  return [
+    detectedPreserved,
+    quarantined,
+    autoRepairable,
+    needsApproval,
+    verifiedClosed,
+    unresolvedEscalated,
+  ];
 }
 
 // ── Web view models (byte-identical presenter inputs) ────────────────────────────────────────────
@@ -478,7 +490,8 @@ export function seedEvidenceComparisonModel(
     quarantineContains: true,
     blockedCapabilities: [...(spec.quarantine?.blockedCapabilities ?? [])],
     repairApplied: false,
-    summary: 'Original preserved and intact; damaged current state is contained by an active quarantine.',
+    summary:
+      'Original preserved and intact; damaged current state is contained by an active quarantine.',
   };
 }
 
@@ -516,7 +529,8 @@ export function seedRemediationDetailModel(
     ownershipGap: false,
     planId: String(spec.plan!.id),
     planVersion: spec.plan!.version,
-    recommendation: 'Restore the deterministic derivative from the preserved original (low-risk, reversible).',
+    recommendation:
+      'Restore the deterministic derivative from the preserved original (low-risk, reversible).',
     steps,
     availableModes: ['recommend_only', 'simulate', 'request_approval', 'execute_if_pre_authorized'],
     attempt: {
@@ -537,7 +551,8 @@ export function seedRemediationDetailModel(
       caseClosed: false,
       closureBlocked: ['independent verification has not been run'],
     },
-    summary: 'Repair succeeded but is NOT verified; the case is NOT verified-closed until independent verification passes.',
+    summary:
+      'Repair succeeded but is NOT verified; the case is NOT verified-closed until independent verification passes.',
   };
 }
 
@@ -556,7 +571,11 @@ export function seedVerifiedClosedDetailModel(
     verification: {
       verificationId: String(spec.verification!.id),
       allGatesPassed: true,
-      gates: CLOSURE_GATES.map((g) => ({ name: g, passed: true, detail: 'gate passed under independent verification' })),
+      gates: CLOSURE_GATES.map((g) => ({
+        name: g,
+        passed: true,
+        detail: 'gate passed under independent verification',
+      })),
       caseClosed: true,
       closureBlocked: [],
     },

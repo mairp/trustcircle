@@ -113,7 +113,9 @@ export interface IntegrityInputs {
   readonly closedDetail: ReturnType<typeof seedVerifiedClosedDetailModel>;
 }
 
-export function buildIntegrityInputs(seed: readonly IntegrityScenarioSpec[] = seedIntegrity()): IntegrityInputs {
+export function buildIntegrityInputs(
+  seed: readonly IntegrityScenarioSpec[] = seedIntegrity(),
+): IntegrityInputs {
   return {
     seed,
     queue: seedIntegrityQueueModel(seed),
@@ -130,11 +132,14 @@ export function runIntegrityRemediationScenario(
   const criteria: CriterionResult[] = [];
 
   // FR-016 / SC-006 — damaged work is DETECTED and surfaced in a PRIORITIZED queue.
-  const orderedByPriority = queue.rows.every((r, i) => i === 0 || queue.rows[i - 1]!.priority >= r.priority);
+  const orderedByPriority = queue.rows.every(
+    (r, i) => i === 0 || queue.rows[i - 1]!.priority >= r.priority,
+  );
   const escalatedFirst = queue.rows[0]?.needsHumanAttention === true;
   criteria.push({
     ref: 'FR-016 / SC-006',
-    statement: 'Damaged governance work is detected and surfaced in a prioritized queue, highest-attention first.',
+    statement:
+      'Damaged governance work is detected and surfaced in a prioritized queue, highest-attention first.',
     satisfied:
       queue.rows.length === seed.length &&
       orderedByPriority &&
@@ -142,20 +147,24 @@ export function runIntegrityRemediationScenario(
       queue.query.visible === queue.rows.length,
     evidence: `queue lists ${queue.rows.length} case(s) in non-increasing priority; row[0] needsHumanAttention=${escalatedFirst}`,
     observedVia: 'IntegrityQueueModel.rows ordered by .priority + .needsHumanAttention',
-    negativeControl: 'the verified-closed case has the lowest priority and needsHumanAttention=false — not surfaced first',
+    negativeControl:
+      'the verified-closed case has the lowest priority and needsHumanAttention=false — not surfaced first',
   });
 
   // FR-017 / SC-007 — the ORIGINAL is preserved and reported INTACT (never masqueraded).
   criteria.push({
     ref: 'FR-017 / SC-007',
-    statement: 'The original of a damaged item is preserved and independently verifiable as intact.',
+    statement:
+      'The original of a damaged item is preserved and independently verifiable as intact.',
     satisfied:
       comparison.originalIntact === true &&
       comparison.original.contentDigest === comparison.originalVerifyDigest &&
       comparison.original.quarantined === false,
     evidence: `original intact=${comparison.originalIntact}; captured digest === verify digest (${comparison.originalVerifyDigest})`,
-    observedVia: 'EvidenceComparisonModel.originalIntact + original.contentDigest vs originalVerifyDigest',
-    negativeControl: 'the EMPTY comparison reports originalIntact=false — an un-fed view cannot masquerade as intact',
+    observedVia:
+      'EvidenceComparisonModel.originalIntact + original.contentDigest vs originalVerifyDigest',
+    negativeControl:
+      'the EMPTY comparison reports originalIntact=false — an un-fed view cannot masquerade as intact',
   });
 
   // FR-018 — OWNERSHIP HONESTY: the escalated case names an explicit gap (never a fabricated owner).
@@ -171,54 +180,65 @@ export function runIntegrityRemediationScenario(
       gapRow.needsHumanAttention === true,
     evidence: `escalated row ownershipGap=${gapRow?.ownershipGap}, ownerPrincipalId="${gapRow?.ownerPrincipalId}"`,
     observedVia: 'IntegrityQueueModel.rows[unresolved_escalated].{ownershipGap,ownerPrincipalId}',
-    negativeControl: 'the detected-preserved row has a named owner and ownershipGap=false — the gap is scenario-specific',
+    negativeControl:
+      'the detected-preserved row has a named owner and ownershipGap=false — the gap is scenario-specific',
   });
 
   // FR-019 / SC-007 — QUARANTINE CONTAINS the damaged effect while keeping it inspectable.
   const qSpec = specOf(seed, 'quarantined');
   criteria.push({
     ref: 'FR-019 / SC-007',
-    statement: 'A quarantine contains the damaged effect (blocks downstream use) while keeping the item inspectable.',
+    statement:
+      'A quarantine contains the damaged effect (blocks downstream use) while keeping the item inspectable.',
     satisfied:
       comparison.quarantineContains === true &&
       comparison.blockedCapabilities.length > 0 &&
       qSpec.quarantine !== null &&
       qSpec.quarantine.status === 'active',
     evidence: `containment=${comparison.quarantineContains}; blocked=[${comparison.blockedCapabilities.join(', ')}]`,
-    observedVia: 'EvidenceComparisonModel.quarantineContains + .blockedCapabilities + seed.quarantine.status',
-    negativeControl: 'the EMPTY comparison reports quarantineContains=false — no active quarantine, no false containment claim',
+    observedVia:
+      'EvidenceComparisonModel.quarantineContains + .blockedCapabilities + seed.quarantine.status',
+    negativeControl:
+      'the EMPTY comparison reports quarantineContains=false — no active quarantine, no false containment claim',
   });
 
   // FR-020 / FR-021 / SC-008 — only a BOUNDED, pre-authorized low-risk plan may auto-execute.
   const autoSpec = specOf(seed, 'auto_repairable');
   const needsApprovalSpec = specOf(seed, 'needs_approval');
   const autoEligible = autoSpec.plan !== null && isAutomaticEligible(autoSpec.plan);
-  const approvalEligible = needsApprovalSpec.plan !== null && isAutomaticEligible(needsApprovalSpec.plan);
-  const executeEnabled = autoDetail.steps.every((s) => s.preAuthorizedLowRisk) && !autoDetail.ownershipGap;
+  const approvalEligible =
+    needsApprovalSpec.plan !== null && isAutomaticEligible(needsApprovalSpec.plan);
+  const executeEnabled =
+    autoDetail.steps.every((s) => s.preAuthorizedLowRisk) && !autoDetail.ownershipGap;
   criteria.push({
     ref: 'FR-020 / FR-021 / SC-008',
-    statement: 'Only a bounded, pre-authorized low-risk plan may execute automatically; a destructive plan must not.',
+    statement:
+      'Only a bounded, pre-authorized low-risk plan may execute automatically; a destructive plan must not.',
     satisfied:
       autoEligible === true &&
       approvalEligible === false &&
       executeEnabled === true &&
       autoDetail.attempt.outcome === 'succeeded_unverified',
     evidence: `auto plan isAutomaticEligible=${autoEligible}; destructive plan eligible=${approvalEligible}; execute enabled=${executeEnabled}`,
-    observedVia: 'domain isAutomaticEligible(plan) + RemediationDetailModel.steps[*].preAuthorizedLowRisk',
-    negativeControl: 'the destructive needs-approval plan is NOT automatic-eligible — execute would be gated for it',
+    observedVia:
+      'domain isAutomaticEligible(plan) + RemediationDetailModel.steps[*].preAuthorizedLowRisk',
+    negativeControl:
+      'the destructive needs-approval plan is NOT automatic-eligible — execute would be gated for it',
   });
 
   // FR-020 — a repair that succeeded is NOT verified-closed (it awaits independent verification).
   criteria.push({
     ref: 'FR-020',
-    statement: 'A successful repair is succeeded-unverified, not closed — closure is a separate verification act.',
+    statement:
+      'A successful repair is succeeded-unverified, not closed — closure is a separate verification act.',
     satisfied:
       autoDetail.attempt.outcome === 'succeeded_unverified' &&
       autoDetail.verification.caseClosed === false &&
       autoDetail.attempt.rollbackAvailable === true,
     evidence: `attempt outcome=${autoDetail.attempt.outcome}; caseClosed=${autoDetail.verification.caseClosed}; rollbackAvailable=${autoDetail.attempt.rollbackAvailable}`,
     observedVia: 'RemediationDetailModel.attempt.outcome + .verification.caseClosed',
-    negativeControl: 'the verified-closed detail carries caseClosed=true only because its verification passed',
+    negativeControl:
+      'the verified-closed detail carries caseClosed=true only because its verification passed',
   });
 
   // FR-022 / SC-009 — CLOSURE only on an INDEPENDENT nine-gate verification pass.
@@ -231,7 +251,8 @@ export function runIntegrityRemediationScenario(
     }) === 'passed';
   criteria.push({
     ref: 'FR-022 / SC-009',
-    statement: 'A case is closed only when an independent verification passes all nine closure gates.',
+    statement:
+      'A case is closed only when an independent verification passes all nine closure gates.',
     satisfied:
       oracleClosed === true &&
       closedDetail.verification.caseClosed === true &&
@@ -239,8 +260,10 @@ export function runIntegrityRemediationScenario(
       closedDetail.verification.gates.length === 9 &&
       closedDetail.verification.gates.every((g) => g.passed),
     evidence: `domain verdict=passed; detail caseClosed=${closedDetail.verification.caseClosed}, gates=${closedDetail.verification.gates.length} all passed`,
-    observedVia: 'domain verifiedClosureResult({gateResults,verifierIndependent}) + RemediationDetailModel.verification',
-    negativeControl: 'the auto-repaired detail is NOT closed (0 gates verified) — a source-reported "done" never closes a case',
+    observedVia:
+      'domain verifiedClosureResult({gateResults,verifierIndependent}) + RemediationDetailModel.verification',
+    negativeControl:
+      'the auto-repaired detail is NOT closed (0 gates verified) — a source-reported "done" never closes a case',
   });
 
   return finish('integrity-remediation', criteria);
@@ -267,7 +290,8 @@ export async function runIntegrityAccessibilityScenario(
   const allFindings = reports.flatMap((r) => r.findings);
   criteria.push({
     ref: 'SC-006 / SC-007 / SC-009',
-    statement: 'The three integrity presenters carry zero structural/semantic accessibility violations.',
+    statement:
+      'The three integrity presenters carry zero structural/semantic accessibility violations.',
     satisfied: reports.every((r) => r.ok),
     evidence: `presenters audited=${reports.length}; findings=${allFindings.length}`,
     observedVia: 'auditIntegrityAccessibility(...) over the shipped renderers',
@@ -276,11 +300,13 @@ export async function runIntegrityAccessibilityScenario(
 
   criteria.push({
     ref: 'FR-017 / FR-022 / GAR-004',
-    statement: 'An un-fed presenter is honest: not intact, not closed, execute disabled, empty queue stated.',
+    statement:
+      'An un-fed presenter is honest: not intact, not closed, execute disabled, empty queue stated.',
     satisfied: emptyFindings.length === 0,
     evidence: `empty-model honesty findings=${emptyFindings.length}`,
     observedVia: 'auditEmptyModelsAreHonest(tenant) over EMPTY_* models',
-    negativeControl: 'were an empty comparison to claim intact, or an empty detail to claim closed, this would report a finding',
+    negativeControl:
+      'were an empty comparison to claim intact, or an empty detail to claim closed, this would report a finding',
   });
 
   return finish('integrity-accessibility', criteria);

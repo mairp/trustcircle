@@ -31,12 +31,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import {
-  toUuid,
-  type Uuid,
-  type TenantId,
-  type EpochMillis,
-} from '@trustcircle/domain';
+import { toUuid, type Uuid, type TenantId, type EpochMillis } from '@trustcircle/domain';
 
 import {
   validateManifest,
@@ -76,7 +71,9 @@ export function slugIdFactory(prefix: string): () => Uuid {
 // ── Stable principals + tenant ───────────────────────────────────────────────────────────────────
 
 export const TENANT: TenantId = uuidFromSlug('tenant-home-integrations') as unknown as TenantId;
-export const OTHER_TENANT: TenantId = uuidFromSlug('tenant-other-integrations') as unknown as TenantId;
+export const OTHER_TENANT: TenantId = uuidFromSlug(
+  'tenant-other-integrations',
+) as unknown as TenantId;
 
 export const PLATFORM_OWNER: Uuid = uuidFromSlug('principal-platform-owner');
 export const SOURCE_STEWARD: Uuid = uuidFromSlug('principal-source-steward');
@@ -160,7 +157,10 @@ export interface ConnectorSpec {
 }
 
 /** The requested capability set for each connector — always a SUBSET of the manifest's declared set. */
-function declaredSubset(manifest: AdapterManifest, want: readonly AdapterCapability[]): readonly AdapterCapability[] {
+function declaredSubset(
+  manifest: AdapterManifest,
+  want: readonly AdapterCapability[],
+): readonly AdapterCapability[] {
   return Object.freeze(want.filter((c) => manifest.capabilities.includes(c)));
 }
 
@@ -170,7 +170,13 @@ export const KANBAN_CONNECTOR: ConnectorSpec = Object.freeze({
   ids: KANBAN_IDS,
   manifest: KANBAN_MANIFEST,
   sourceRef: 'kanban://board/engineering',
-  requestedCapabilities: declaredSubset(KANBAN_MANIFEST, ['discover', 'inspect', 'snapshot', 'reconcile', 'collect_evidence']),
+  requestedCapabilities: declaredSubset(KANBAN_MANIFEST, [
+    'discover',
+    'inspect',
+    'snapshot',
+    'reconcile',
+    'collect_evidence',
+  ]),
   availabilityClass: 'optional',
   credentialRef: 'secret-ref://kanban/engineering',
   ownerPrincipalId: SOURCE_STEWARD,
@@ -183,7 +189,14 @@ export const WORKFLOW_CONNECTOR: ConnectorSpec = Object.freeze({
   ids: WORKFLOW_IDS,
   manifest: WORKFLOW_MANIFEST,
   sourceRef: 'workflow://orchestrator/prod',
-  requestedCapabilities: declaredSubset(WORKFLOW_MANIFEST, ['discover', 'inspect', 'snapshot', 'subscribe', 'reconcile', 'collect_evidence']),
+  requestedCapabilities: declaredSubset(WORKFLOW_MANIFEST, [
+    'discover',
+    'inspect',
+    'snapshot',
+    'subscribe',
+    'reconcile',
+    'collect_evidence',
+  ]),
   availabilityClass: 'optional',
   credentialRef: 'secret-ref://workflow/prod',
   ownerPrincipalId: WORKFLOW_OWNER,
@@ -196,7 +209,14 @@ export const AGENTCTL_CONNECTOR: ConnectorSpec = Object.freeze({
   ids: AGENTCTL_IDS,
   manifest: AGENTCTL_MANIFEST,
   sourceRef: 'agentctl://fleet/default',
-  requestedCapabilities: declaredSubset(AGENTCTL_MANIFEST, ['discover', 'inspect', 'snapshot', 'execute', 'reconcile', 'collect_evidence']),
+  requestedCapabilities: declaredSubset(AGENTCTL_MANIFEST, [
+    'discover',
+    'inspect',
+    'snapshot',
+    'execute',
+    'reconcile',
+    'collect_evidence',
+  ]),
   availabilityClass: 'on-demand',
   credentialRef: 'secret-ref://agentctl/fleet',
   ownerPrincipalId: AGENT_OPERATOR,
@@ -209,7 +229,13 @@ export const LISA_CONNECTOR: ConnectorSpec = Object.freeze({
   ids: LISA_IDS,
   manifest: LISA_MANIFEST,
   sourceRef: 'lisa://deployment/governance',
-  requestedCapabilities: declaredSubset(LISA_MANIFEST, ['discover', 'inspect', 'snapshot', 'subscribe', 'collect_evidence']),
+  requestedCapabilities: declaredSubset(LISA_MANIFEST, [
+    'discover',
+    'inspect',
+    'snapshot',
+    'subscribe',
+    'collect_evidence',
+  ]),
   availabilityClass: 'optional',
   credentialRef: 'secret-ref://lisa/governance',
   ownerPrincipalId: PLATFORM_OWNER,
@@ -222,7 +248,12 @@ export const WIGGUM_CONNECTOR: ConnectorSpec = Object.freeze({
   ids: WIGGUM_IDS,
   manifest: WIGGUM_MANIFEST,
   sourceRef: 'wiggum://bundle/verification',
-  requestedCapabilities: declaredSubset(WIGGUM_MANIFEST, ['discover', 'inspect', 'snapshot', 'collect_evidence']),
+  requestedCapabilities: declaredSubset(WIGGUM_MANIFEST, [
+    'discover',
+    'inspect',
+    'snapshot',
+    'collect_evidence',
+  ]),
   availabilityClass: 'optional',
   credentialRef: 'secret-ref://wiggum/verification',
   ownerPrincipalId: PLATFORM_OWNER,
@@ -260,16 +291,27 @@ export interface HealthTelemetryFixture {
   readonly freshnessSeconds: number;
 }
 
-export function telemetryFor(manifest: AdapterManifest, kind: 'fresh' | 'absent' | 'stale'): HealthTelemetryFixture {
+export function telemetryFor(
+  manifest: AdapterManifest,
+  kind: 'fresh' | 'absent' | 'stale',
+): HealthTelemetryFixture {
   const freshnessSeconds = manifest.health.freshness_seconds;
   const windowMs = freshnessSeconds * ONE_SECOND;
   if (kind === 'absent') {
     return Object.freeze({ kind, lastSuccessfulAt: undefined, freshnessSeconds });
   }
   if (kind === 'stale') {
-    return Object.freeze({ kind, lastSuccessfulAt: (NOW - windowMs - ONE_MINUTE) as EpochMillis, freshnessSeconds });
+    return Object.freeze({
+      kind,
+      lastSuccessfulAt: (NOW - windowMs - ONE_MINUTE) as EpochMillis,
+      freshnessSeconds,
+    });
   }
-  return Object.freeze({ kind, lastSuccessfulAt: (NOW - Math.floor(windowMs / 4)) as EpochMillis, freshnessSeconds });
+  return Object.freeze({
+    kind,
+    lastSuccessfulAt: (NOW - Math.floor(windowMs / 4)) as EpochMillis,
+    freshnessSeconds,
+  });
 }
 
 // ── Cursor batch scenarios (for cursor-recovery) ───────────────────────────────────────────────────
@@ -296,22 +338,78 @@ export const PRIOR_CURSOR = Object.freeze({
 
 /** An in-order, contiguous, healthy batch (no findings). */
 export const HEALTHY_BATCH: readonly BatchEventFixture[] = Object.freeze([
-  { aggregateRef: 'agg-1', sequence: 101, dedupKey: 'k-101', observedAt: (NOW - 40 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v1', sourceIdentity: 'source-identity-A' },
-  { aggregateRef: 'agg-1', sequence: 102, dedupKey: 'k-102', observedAt: (NOW - 30 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v1', sourceIdentity: 'source-identity-A' },
-  { aggregateRef: 'agg-1', sequence: 103, dedupKey: 'k-103', observedAt: (NOW - 20 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v1', sourceIdentity: 'source-identity-A' },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 101,
+    dedupKey: 'k-101',
+    observedAt: (NOW - 40 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v1',
+    sourceIdentity: 'source-identity-A',
+  },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 102,
+    dedupKey: 'k-102',
+    observedAt: (NOW - 30 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v1',
+    sourceIdentity: 'source-identity-A',
+  },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 103,
+    dedupKey: 'k-103',
+    observedAt: (NOW - 20 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v1',
+    sourceIdentity: 'source-identity-A',
+  },
 ]);
 
 /** A batch with a gap (missing 102), a duplicate (105 twice), an out-of-order pair, a mapping change,
  * and a source-identity change — the full recoverable-anomaly surface. */
 export const ANOMALOUS_BATCH: readonly BatchEventFixture[] = Object.freeze([
-  { aggregateRef: 'agg-1', sequence: 101, dedupKey: 'k-101', observedAt: (NOW - 40 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v2', sourceIdentity: 'source-identity-B' },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 101,
+    dedupKey: 'k-101',
+    observedAt: (NOW - 40 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v2',
+    sourceIdentity: 'source-identity-B',
+  },
   // gap: 102 missing
-  { aggregateRef: 'agg-1', sequence: 103, dedupKey: 'k-103', observedAt: (NOW - 30 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v2', sourceIdentity: 'source-identity-B' },
-  { aggregateRef: 'agg-1', sequence: 105, dedupKey: 'k-105', observedAt: (NOW - 10 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v2', sourceIdentity: 'source-identity-B' },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 103,
+    dedupKey: 'k-103',
+    observedAt: (NOW - 30 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v2',
+    sourceIdentity: 'source-identity-B',
+  },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 105,
+    dedupKey: 'k-105',
+    observedAt: (NOW - 10 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v2',
+    sourceIdentity: 'source-identity-B',
+  },
   // out-of-order: 104 arrives after 105
-  { aggregateRef: 'agg-1', sequence: 104, dedupKey: 'k-104', observedAt: (NOW - 20 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v2', sourceIdentity: 'source-identity-B' },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 104,
+    dedupKey: 'k-104',
+    observedAt: (NOW - 20 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v2',
+    sourceIdentity: 'source-identity-B',
+  },
   // duplicate: 105 again, same dedup key
-  { aggregateRef: 'agg-1', sequence: 105, dedupKey: 'k-105', observedAt: (NOW - 10 * ONE_MINUTE) as EpochMillis, mappingVersion: 'map-v2', sourceIdentity: 'source-identity-B' },
+  {
+    aggregateRef: 'agg-1',
+    sequence: 105,
+    dedupKey: 'k-105',
+    observedAt: (NOW - 10 * ONE_MINUTE) as EpochMillis,
+    mappingVersion: 'map-v2',
+    sourceIdentity: 'source-identity-B',
+  },
 ]);
 
 // ── Return-to-service checklist inputs ─────────────────────────────────────────────────────────────
@@ -336,7 +434,8 @@ export const RETURN_TO_SERVICE_PASSING = Object.freeze({
 // drive the REAL raiseAlert / notifyOwner / acknowledgeAlert / recoverAlert over these.
 
 export interface AlertScenarioFixture {
-  readonly alertClass: 'health' | 'freshness' | 'reconciliation' | 'evidence' | 'contract' | 'control_effectiveness';
+  readonly alertClass:
+    'health' | 'freshness' | 'reconciliation' | 'evidence' | 'contract' | 'control_effectiveness';
   readonly severity: 'low' | 'medium' | 'high' | 'critical';
   readonly subjectRef: string;
   readonly ownerPrincipalId: Uuid;
@@ -344,12 +443,48 @@ export interface AlertScenarioFixture {
 }
 
 export const ALERT_SCENARIOS: readonly AlertScenarioFixture[] = Object.freeze([
-  { alertClass: 'health', severity: 'high', subjectRef: LISA_CONNECTOR.sourceRef, ownerPrincipalId: PLATFORM_OWNER, reason: 'connector reported unhealthy for 3 consecutive observations' },
-  { alertClass: 'freshness', severity: 'medium', subjectRef: KANBAN_CONNECTOR.sourceRef, ownerPrincipalId: SOURCE_STEWARD, reason: 'observation freshness exceeded the manifest window' },
-  { alertClass: 'reconciliation', severity: 'high', subjectRef: WORKFLOW_CONNECTOR.sourceRef, ownerPrincipalId: WORKFLOW_OWNER, reason: 'reconciliation found unresolved drift' },
-  { alertClass: 'evidence', severity: 'medium', subjectRef: WIGGUM_CONNECTOR.sourceRef, ownerPrincipalId: PLATFORM_OWNER, reason: 'evidence collection gap detected' },
-  { alertClass: 'contract', severity: 'critical', subjectRef: AGENTCTL_CONNECTOR.sourceRef, ownerPrincipalId: AGENT_OPERATOR, reason: 'adapter reported a drifted contract version' },
-  { alertClass: 'control_effectiveness', severity: 'high', subjectRef: CORE_COMPONENT.name, ownerPrincipalId: PLATFORM_OWNER, reason: 'control effectiveness below objective' },
+  {
+    alertClass: 'health',
+    severity: 'high',
+    subjectRef: LISA_CONNECTOR.sourceRef,
+    ownerPrincipalId: PLATFORM_OWNER,
+    reason: 'connector reported unhealthy for 3 consecutive observations',
+  },
+  {
+    alertClass: 'freshness',
+    severity: 'medium',
+    subjectRef: KANBAN_CONNECTOR.sourceRef,
+    ownerPrincipalId: SOURCE_STEWARD,
+    reason: 'observation freshness exceeded the manifest window',
+  },
+  {
+    alertClass: 'reconciliation',
+    severity: 'high',
+    subjectRef: WORKFLOW_CONNECTOR.sourceRef,
+    ownerPrincipalId: WORKFLOW_OWNER,
+    reason: 'reconciliation found unresolved drift',
+  },
+  {
+    alertClass: 'evidence',
+    severity: 'medium',
+    subjectRef: WIGGUM_CONNECTOR.sourceRef,
+    ownerPrincipalId: PLATFORM_OWNER,
+    reason: 'evidence collection gap detected',
+  },
+  {
+    alertClass: 'contract',
+    severity: 'critical',
+    subjectRef: AGENTCTL_CONNECTOR.sourceRef,
+    ownerPrincipalId: AGENT_OPERATOR,
+    reason: 'adapter reported a drifted contract version',
+  },
+  {
+    alertClass: 'control_effectiveness',
+    severity: 'high',
+    subjectRef: CORE_COMPONENT.name,
+    ownerPrincipalId: PLATFORM_OWNER,
+    reason: 'control effectiveness below objective',
+  },
 ]);
 
 // ── A stable digest over the whole seeded world (a smoke witness the fixture itself is deterministic) ─
@@ -357,7 +492,9 @@ export const ALERT_SCENARIOS: readonly AlertScenarioFixture[] = Object.freeze([
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
     return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(',')}}`;
   }
   return JSON.stringify(value ?? null);
@@ -369,8 +506,14 @@ export function integrationsWorldDigest(): string {
       canonical({
         now: NOW,
         tenant: TENANT,
-        manifests: Object.fromEntries(Object.entries(NAMED_MANIFESTS).map(([k, m]) => [k, m.adapter_version])),
-        connectors: CONNECTOR_SPECS.map((s) => ({ slug: s.slug, adapter: s.adapterId, availability: s.availabilityClass })),
+        manifests: Object.fromEntries(
+          Object.entries(NAMED_MANIFESTS).map(([k, m]) => [k, m.adapter_version]),
+        ),
+        connectors: CONNECTOR_SPECS.map((s) => ({
+          slug: s.slug,
+          adapter: s.adapterId,
+          availability: s.availabilityClass,
+        })),
         alerts: ALERT_SCENARIOS.map((a) => a.alertClass),
       }),
     )

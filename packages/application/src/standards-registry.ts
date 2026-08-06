@@ -61,7 +61,8 @@ function currentIds(snapshot: RegistrySnapshot): ReadonlySet<string> {
   const byIdentifier = new Map<string, StandardPublication>();
   for (const p of snapshot.publications) {
     const seen = byIdentifier.get(p.identifier);
-    if (seen === undefined || p.registryVersion > seen.registryVersion) byIdentifier.set(p.identifier, p);
+    if (seen === undefined || p.registryVersion > seen.registryVersion)
+      byIdentifier.set(p.identifier, p);
   }
   // A publication is superseded iff another row supersedes it; the surviving current one is the max.
   const superseded = new Set<string>();
@@ -81,7 +82,9 @@ function clausesOf(snapshot: RegistrySnapshot, publicationId: string): ClauseVer
   return snapshot.clauses
     .filter((c) => c.publicationId === publicationId)
     .slice()
-    .sort((a, b) => (a.clauseRef < b.clauseRef ? -1 : a.clauseRef > b.clauseRef ? 1 : a.version - b.version));
+    .sort((a, b) =>
+      a.clauseRef < b.clauseRef ? -1 : a.clauseRef > b.clauseRef ? 1 : a.version - b.version,
+    );
 }
 
 /** Resolve a single registry entry (publication + clauses + duty class) for a scope. */
@@ -155,9 +158,7 @@ export function queryRegistry(snapshot: RegistrySnapshot, query: RegistryQuery =
   const page = Math.max(1, Math.trunc(query.page ?? 1));
   const pageSize = Math.min(500, Math.max(1, Math.trunc(query.pageSize ?? 50)));
   const start = (page - 1) * pageSize;
-  const entries = rows
-    .slice(start, start + pageSize)
-    .map((p) => resolveEntry(snapshot, p, acts));
+  const entries = rows.slice(start, start + pageSize).map((p) => resolveEntry(snapshot, p, acts));
 
   return Object.freeze({ entries: Object.freeze(entries), total, page, pageSize });
 }

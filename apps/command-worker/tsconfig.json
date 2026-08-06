@@ -24,6 +24,9 @@
     },
     {
       "path": "../../packages/adapter-sdk"
+    },
+    {
+      "path": "../../packages/evidence"
     }
   ]
 }

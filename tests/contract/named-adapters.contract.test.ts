@@ -99,7 +99,8 @@ const PINS: Readonly<Record<string, NamedAdapterPin>> = Object.freeze({
 });
 
 /** A digestible governance-authority "smell test" — no authoritative field may name a decision. */
-const APPROVAL_RE = /\bapprov|\baccept(ance|ed)?\b|\bdecision\b|\bsign[-_ ]?off\b|\bclos(e|ure)\b|\bgovernance_verdict\b|\bquarantine\b/i;
+const APPROVAL_RE =
+  /\bapprov|\baccept(ance|ed)?\b|\bdecision\b|\bsign[-_ ]?off\b|\bclos(e|ure)\b|\bgovernance_verdict\b|\bquarantine\b/i;
 
 describe('named adapters · every shipped manifest matches its PINNED mapping', () => {
   it('loads exactly the five expected named adapters', () => {

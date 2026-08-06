@@ -17,12 +17,7 @@
 // DETERMINISM. The fixed clock NOW, no I/O, no randomness. Same fixture ⇒ byte-identical inputs.
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 
-import {
-  NOW,
-  TENANT,
-  iso,
-  IDS,
-} from '../../fixtures/compliance.ts';
+import { NOW, TENANT, iso, IDS } from '../../fixtures/compliance.ts';
 
 import type { EpochMillis } from '@trustcircle/domain';
 import type { TenantScope } from '../../../apps/web/src/app/layout.tsx';

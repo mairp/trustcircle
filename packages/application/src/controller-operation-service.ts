@@ -103,11 +103,15 @@ export function createOrGetOperation(
     ...(input.riskClass !== undefined ? { riskClass: input.riskClass } : {}),
     ...(input.observedVersions !== undefined ? { observedVersions: input.observedVersions } : {}),
     ...(input.simulationId !== undefined ? { simulationId: input.simulationId } : {}),
-    ...(input.approvalDecisionId !== undefined ? { approvalDecisionId: input.approvalDecisionId } : {}),
+    ...(input.approvalDecisionId !== undefined
+      ? { approvalDecisionId: input.approvalDecisionId }
+      : {}),
     ...(input.steps !== undefined ? { steps: input.steps } : {}),
     ...(input.bounds !== undefined ? { bounds: input.bounds } : {}),
     ...(input.evidencePlan !== undefined ? { evidencePlan: input.evidencePlan } : {}),
-    ...(input.continuityLeaseId !== undefined ? { continuityLeaseId: input.continuityLeaseId } : {}),
+    ...(input.continuityLeaseId !== undefined
+      ? { continuityLeaseId: input.continuityLeaseId }
+      : {}),
     ...(input.state !== undefined ? { state: input.state } : {}),
   });
 

@@ -95,7 +95,13 @@ describe('allowedNextOperations — the platform never widens the permitted set 
   });
 
   it('a terminal state NEVER permits a state-changing re-drive (execute/approve/simulate/pause/resume)', () => {
-    const forbiddenInTerminal: OperationKind[] = ['execute', 'approve', 'simulate', 'pause', 'resume'];
+    const forbiddenInTerminal: OperationKind[] = [
+      'execute',
+      'approve',
+      'simulate',
+      'pause',
+      'resume',
+    ];
     for (const s of TERMINAL_OPERATION_STATES) {
       const permitted = allowedNextOperations(s);
       for (const k of forbiddenInTerminal) {

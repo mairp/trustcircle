@@ -26,3 +26,4 @@ export * from './decision-api.ts';
 export * from './operations-api.ts';
 // integrity-specific named validators bound to the four `Integrity`-tagged operations.
 export * from './integrity-api.ts';
+export * from './governed-platform-api.ts';

@@ -54,9 +54,13 @@ const SIGNING_KEY = 'contract-test-signing-key-0123456789';
 
 describe('adapter-manifest contract · every shipped named manifest is valid', () => {
   it('loads exactly the five named adapters', () => {
-    expect(ENTRIES.map(([k]) => k).sort()).toEqual(
-      ['agentctl', 'kanban', 'lisa', 'wiggum', 'workflow-orchestration'],
-    );
+    expect(ENTRIES.map(([k]) => k).sort()).toEqual([
+      'agentctl',
+      'kanban',
+      'lisa',
+      'wiggum',
+      'workflow-orchestration',
+    ]);
   });
 
   for (const [id, manifest] of ENTRIES) {

@@ -112,7 +112,9 @@ export function grantContinuityLease(input: GrantContinuityLeaseInput): GrantedC
     operationApproved: input.operationApproved,
   });
   if (!eligibility.eligible) {
-    throw new TypeError(`continuity lease refused: ${eligibility.reason} (continuity never grants new authority, FR-047)`);
+    throw new TypeError(
+      `continuity lease refused: ${eligibility.reason} (continuity never grants new authority, FR-047)`,
+    );
   }
 
   const requested = input.requestedDurationMs ?? CONTINUITY_LEASE_CEILING_MS;
@@ -126,10 +128,14 @@ export function grantContinuityLease(input: GrantContinuityLeaseInput): GrantedC
     continuityPolicyVersionId: input.continuityPolicyVersionId,
     // exactOptionalPropertyTypes: forward each optional only when present, never as explicit undefined.
     ...(input.policySnapshot !== undefined ? { policySnapshot: input.policySnapshot } : {}),
-    ...(input.eligibleOperationClasses !== undefined ? { eligibleOperationClasses: input.eligibleOperationClasses } : {}),
+    ...(input.eligibleOperationClasses !== undefined
+      ? { eligibleOperationClasses: input.eligibleOperationClasses }
+      : {}),
     ...(input.actionLimit !== undefined ? { actionLimit: input.actionLimit } : {}),
     ...(input.resourceLimits !== undefined ? { resourceLimits: input.resourceLimits } : {}),
-    ...(input.requiredLocalObservations !== undefined ? { requiredLocalObservations: input.requiredLocalObservations } : {}),
+    ...(input.requiredLocalObservations !== undefined
+      ? { requiredLocalObservations: input.requiredLocalObservations }
+      : {}),
     ...(input.stopConditions !== undefined ? { stopConditions: input.stopConditions } : {}),
     ownerPrincipalId: input.ownerPrincipalId,
     operationStartedBeforeFailure: input.operationStartedBeforeFailure,
@@ -181,11 +187,15 @@ export function continuityLeaseActive(lease: ControllerContinuityLease, now: Epo
  * answer is always YES when any effect was buffered under the lease — the buffered effects reconcile
  * FIRST. Returns the reconciliation obligation.
  */
-export function continuityReturnObligation(input: {
-  readonly bufferedEffectCount: number;
-}): { readonly mustReconcileBeforeMutation: boolean; readonly reason: string } {
+export function continuityReturnObligation(input: { readonly bufferedEffectCount: number }): {
+  readonly mustReconcileBeforeMutation: boolean;
+  readonly reason: string;
+} {
   if (input.bufferedEffectCount > 0) {
-    return { mustReconcileBeforeMutation: true, reason: 'buffered_continuity_effects_must_reconcile_first' };
+    return {
+      mustReconcileBeforeMutation: true,
+      reason: 'buffered_continuity_effects_must_reconcile_first',
+    };
   }
   return { mustReconcileBeforeMutation: false, reason: 'no_buffered_effects' };
 }

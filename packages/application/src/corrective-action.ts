@@ -10,7 +10,8 @@
 import type { Uuid, EpochMillis } from '@trustcircle/domain';
 
 export type FindingSeverity = 'low' | 'medium' | 'high' | 'critical';
-export type FindingStatus = 'open' | 'in_progress' | 'remediated' | 'verified' | 'closed' | 'reopened';
+export type FindingStatus =
+  'open' | 'in_progress' | 'remediated' | 'verified' | 'closed' | 'reopened';
 
 export interface ComplianceFinding {
   readonly id: Uuid;
@@ -26,7 +27,8 @@ export interface ComplianceFinding {
   readonly residualRiskAccepted: boolean;
 }
 
-export type CorrectiveStatus = 'open' | 'in_progress' | 'implemented' | 'verified' | 'closed' | 'reopened';
+export type CorrectiveStatus =
+  'open' | 'in_progress' | 'implemented' | 'verified' | 'closed' | 'reopened';
 
 export interface CorrectiveAction {
   readonly id: Uuid;
@@ -69,7 +71,8 @@ export function raiseFinding(cmd: RaiseFindingCommand): ComplianceFinding {
   });
 }
 
-export type CorrectiveRejectionCode = 'MISSING_ROOT_CAUSE' | 'MISSING_CORRECTION' | 'MISSING_ACTION';
+export type CorrectiveRejectionCode =
+  'MISSING_ROOT_CAUSE' | 'MISSING_CORRECTION' | 'MISSING_ACTION';
 
 export interface OpenCorrectiveCommand {
   readonly id: Uuid;
@@ -93,9 +96,12 @@ function blank(s: string): boolean {
 
 /** Open a corrective action — REQUIRES a non-empty correction, root cause, and action. */
 export function openCorrectiveAction(cmd: OpenCorrectiveCommand): CorrectiveOutcome {
-  if (blank(cmd.correction)) return { accepted: false, correctiveAction: null, rejectionCode: 'MISSING_CORRECTION' };
-  if (blank(cmd.rootCause)) return { accepted: false, correctiveAction: null, rejectionCode: 'MISSING_ROOT_CAUSE' };
-  if (blank(cmd.action)) return { accepted: false, correctiveAction: null, rejectionCode: 'MISSING_ACTION' };
+  if (blank(cmd.correction))
+    return { accepted: false, correctiveAction: null, rejectionCode: 'MISSING_CORRECTION' };
+  if (blank(cmd.rootCause))
+    return { accepted: false, correctiveAction: null, rejectionCode: 'MISSING_ROOT_CAUSE' };
+  if (blank(cmd.action))
+    return { accepted: false, correctiveAction: null, rejectionCode: 'MISSING_ACTION' };
   const ca: CorrectiveAction = Object.freeze({
     id: cmd.id,
     tenantId: cmd.finding.tenantId,
@@ -135,14 +141,21 @@ export function reviewEffectiveness(
 
 /** Close a corrective action — REQUIRES a verified-effective review and NO observed recurrence. */
 export function closeCorrectiveAction(ca: CorrectiveAction): CloseCorrectiveOutcome {
-  if (ca.recurrenceObserved) return { accepted: false, correctiveAction: ca, rejectionCode: 'RECURRENCE_OBSERVED' };
+  if (ca.recurrenceObserved)
+    return { accepted: false, correctiveAction: ca, rejectionCode: 'RECURRENCE_OBSERVED' };
   if (ca.effectivenessResult !== 'effective' || ca.status !== 'verified') {
     return { accepted: false, correctiveAction: ca, rejectionCode: 'NOT_VERIFIED_EFFECTIVE' };
   }
-  return { accepted: true, correctiveAction: Object.freeze({ ...ca, status: 'closed' }), rejectionCode: null };
+  return {
+    accepted: true,
+    correctiveAction: Object.freeze({ ...ca, status: 'closed' }),
+    rejectionCode: null,
+  };
 }
 
 /** True iff a finding is overdue at `now` (open/in-progress past its due instant). */
 export function findingOverdue(f: ComplianceFinding, now: EpochMillis): boolean {
-  return (f.status === 'open' || f.status === 'in_progress' || f.status === 'reopened') && now >= f.dueAt;
+  return (
+    (f.status === 'open' || f.status === 'in_progress' || f.status === 'reopened') && now >= f.dueAt
+  );
 }

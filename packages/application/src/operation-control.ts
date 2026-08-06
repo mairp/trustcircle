@@ -49,10 +49,20 @@ export function decidePause(input: PauseInput): ControlVerdict {
     return { nextState: 'paused', noop: true, permitted: true, reason: 'already_paused' };
   }
   if (!canOperationTransition(operation.state, 'paused')) {
-    return { nextState: operation.state, noop: false, permitted: false, reason: `cannot_pause_from_${operation.state}` };
+    return {
+      nextState: operation.state,
+      noop: false,
+      permitted: false,
+      reason: `cannot_pause_from_${operation.state}`,
+    };
   }
   if (!input.atSafeCheckpoint) {
-    return { nextState: operation.state, noop: false, permitted: false, reason: 'pause_requires_safe_checkpoint' };
+    return {
+      nextState: operation.state,
+      noop: false,
+      permitted: false,
+      reason: 'pause_requires_safe_checkpoint',
+    };
   }
   return { nextState: 'paused', noop: false, permitted: true, reason: 'paused_at_safe_checkpoint' };
 }

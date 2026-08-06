@@ -88,7 +88,8 @@ export interface IntegrityQueueRowVM {
 
 /** One selectable facet filter chip (a declarative, machine-readable toggle). */
 export interface IntegrityFilterChipVM {
-  readonly facet: 'problem_class' | 'severity' | 'safety' | 'quarantine' | 'ownership' | 'closure' | 'attention';
+  readonly facet:
+    'problem_class' | 'severity' | 'safety' | 'quarantine' | 'ownership' | 'closure' | 'attention';
   readonly value: string;
   readonly label: string;
   readonly active: boolean;
@@ -222,9 +223,7 @@ function quarantineCell(r: IntegrityQueueRowVM): string {
     return '<span data-testid="row-not-quarantined">not quarantined</span>';
   }
   const blocked =
-    r.blockedCapabilities.length > 0
-      ? esc(r.blockedCapabilities.join(', '))
-      : 'all governed use';
+    r.blockedCapabilities.length > 0 ? esc(r.blockedCapabilities.join(', ')) : 'all governed use';
   return `<span data-testid="row-quarantined" data-blocked="${esc(r.blockedCapabilities.join(' '))}">quarantined — blocks ${blocked}</span>`;
 }
 
@@ -240,7 +239,8 @@ function closureCell(r: IntegrityQueueRowVM): string {
   if (r.closureRealized) {
     return '<strong data-testid="row-verified-closed" data-verified="true">VERIFIED-CLOSED — independent nine-gate verification passed.</strong>';
   }
-  const blockers = r.closureBlocked.length > 0 ? esc(r.closureBlocked.join(', ')) : 'not yet verified';
+  const blockers =
+    r.closureBlocked.length > 0 ? esc(r.closureBlocked.join(', ')) : 'not yet verified';
   return `<strong class="warn" data-testid="row-not-closed" data-verified="false" data-closure-blocked="${esc(
     r.closureBlocked.join(' '),
   )}">NOT verified-closed — ${blockers}.</strong>`;

@@ -208,7 +208,9 @@ function centralReviewRegion(m: JointDecisionStatusModel): string {
           }</dd></div>
           <div class="scope-row"><dt>Approved</dt><dd data-testid="central-approved">${cr.approved ? 'yes' : 'no'}</dd></div>
           <div class="scope-row"><dt>Decided at</dt><dd>${
-            cr.decidedAtIso ? `<time datetime="${esc(cr.decidedAtIso)}">${esc(cr.decidedAtIso)}</time>` : 'not yet decided'
+            cr.decidedAtIso
+              ? `<time datetime="${esc(cr.decidedAtIso)}">${esc(cr.decidedAtIso)}</time>`
+              : 'not yet decided'
           }</dd></div>
           <div class="scope-row"><dt>Detail</dt><dd data-testid="central-detail">${esc(cr.detail)}</dd></div>
         </dl>
@@ -276,7 +278,9 @@ export function renderJointDecisionStatus(props: JointDecisionStatusProps): stri
     ${tenantScopeBanner(tenant)}
     <div id="global-status" role="status" aria-live="polite" data-testid="global-status">
       <span data-testid="global-status-text">${
-        m.executionBlocked ? 'Execution is blocked pending joint approval.' : 'All joint gates passed.'
+        m.executionBlocked
+          ? 'Execution is blocked pending joint approval.'
+          : 'All joint gates passed.'
       }</span>
     </div>
   </header>

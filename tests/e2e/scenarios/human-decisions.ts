@@ -104,7 +104,9 @@ export interface HumanDecisionInputs {
   readonly emergency: EmergencyInterventionModel;
 }
 
-export function buildHumanDecisionInputs(seed: SeededDecisions = seedDecisions()): HumanDecisionInputs {
+export function buildHumanDecisionInputs(
+  seed: SeededDecisions = seedDecisions(),
+): HumanDecisionInputs {
   return {
     seed,
     inbox: seedDecisionInboxModel(seed),
@@ -131,20 +133,23 @@ export function runHumanDecisionScenario(
   );
   criteria.push({
     ref: 'FR-010',
-    statement: 'Authorized humans see a complete, prioritized decision queue with the context to decide.',
+    statement:
+      'Authorized humans see a complete, prioritized decision queue with the context to decide.',
     satisfied:
       inbox.rows.length === 5 &&
       orderedByPriority &&
       inbox.rows.every((r) => r.requestedAction.length > 0 && r.riskTier.length > 0),
     evidence: `queue lists ${inbox.rows.length} decisions in non-increasing priority order, each with requested action + risk + impact + expiry`,
     observedVia: 'DecisionInboxModel.rows (queue projection) ordered by .priority',
-    negativeControl: 'if any row lost its requestedAction/riskTier the completeness check flips false',
+    negativeControl:
+      'if any row lost its requestedAction/riskTier the completeness check flips false',
   });
 
   // FR-011 — the AUTHORIZED decision is ACTIONABLE with the full action set (approve/deny/…).
   criteria.push({
     ref: 'FR-011',
-    statement: 'A decision the human is authorized to act on offers the full attributable action set.',
+    statement:
+      'A decision the human is authorized to act on offers the full attributable action set.',
     satisfied:
       authorizedRow !== undefined &&
       authorizedRow.actionable &&
@@ -153,13 +158,15 @@ export function runHumanDecisionScenario(
       ),
     evidence: `authorized row actionable=${authorizedRow?.actionable}; allowedActions=[${authorizedRow?.allowedActions.join(', ')}]`,
     observedVia: 'DecisionInboxModel.rows[authorized].allowedActions + .actionable',
-    negativeControl: 'the expired + conflicted rows carry an EMPTY allowedActions set (not actionable)',
+    negativeControl:
+      'the expired + conflicted rows carry an EMPTY allowedActions set (not actionable)',
   });
 
   // FR-012 — SEPARATION OF DUTIES: the conflicted decision is NOT actionable and names the conflict.
   criteria.push({
     ref: 'FR-012',
-    statement: 'A separation-of-duties conflict blocks the action and is stated in text, never hidden.',
+    statement:
+      'A separation-of-duties conflict blocks the action and is stated in text, never hidden.',
     satisfied:
       conflictedRow !== undefined &&
       !conflictedRow.actionable &&
@@ -167,7 +174,8 @@ export function runHumanDecisionScenario(
       conflictedRow.conflicts.some((c) => c.toLowerCase().includes('separation-of-duties')),
     evidence: `conflicted row actionable=${conflictedRow?.actionable}; conflicts=[${conflictedRow?.conflicts.join(' | ')}]`,
     observedVia: 'DecisionInboxModel.rows[conflicted].conflicts + .actionable',
-    negativeControl: 'the authorized row has zero conflicts and is actionable — the SoD block is scenario-specific',
+    negativeControl:
+      'the authorized row has zero conflicts and is actionable — the SoD block is scenario-specific',
   });
 
   // FR-013 — DELEGATION: authority is delegated within a bounded window; lapse is an effect.
@@ -177,7 +185,8 @@ export function runHumanDecisionScenario(
   const lapsedOutOfWindow = seed.now >= expiredDeleg.expiresAt;
   criteria.push({
     ref: 'FR-013',
-    statement: 'Authority may be delegated within a bounded window to a distinct recipient; lapse is an accountability effect.',
+    statement:
+      'Authority may be delegated within a bounded window to a distinct recipient; lapse is an accountability effect.',
     satisfied:
       seed.packages.delegated.status === 'delegated' &&
       active.status === 'active' &&
@@ -188,7 +197,8 @@ export function runHumanDecisionScenario(
       (delegatedRow?.actionable ?? false),
     evidence: `active delegation ${active.delegationId} in-window (valid ${active.validFrom}→${active.expiresAt}, now ${seed.now}); expired delegation ${expiredDeleg.delegationId} lapsed`,
     observedVia: 'seed.delegations.active/.expired (status + window) + package.status="delegated"',
-    negativeControl: 'the expired delegation is past its window (status="expired") — an unbounded grant would still be "active"',
+    negativeControl:
+      'the expired delegation is past its window (status="expired") — an unbounded grant would still be "active"',
   });
 
   // FR-014 / SC-020 — EXPIRY never silently closes: past-deadline decision is expired + escalated, no live actions.
@@ -196,7 +206,8 @@ export function runHumanDecisionScenario(
   const authorizedNotExpired = !decisionIsExpired(seed.packages.authorized, seed.now);
   criteria.push({
     ref: 'FR-014 / SC-020',
-    statement: 'A decision past its deadline is expired and escalated — never silently closed or actioned.',
+    statement:
+      'A decision past its deadline is expired and escalated — never silently closed or actioned.',
     satisfied:
       oracleExpired &&
       authorizedNotExpired &&
@@ -218,7 +229,8 @@ export function runHumanDecisionScenario(
     satisfied: reasonAttributable,
     evidence: `reason code="${seed.reasons.approve.code}", text length=${seed.reasons.approve.text.length}`,
     observedVia: 'seed.reasons.approve (makeReason enforces non-empty code + text)',
-    negativeControl: 'makeReason rejects an empty/blank reason text — an unattributed outcome cannot be constructed',
+    negativeControl:
+      'makeReason rejects an empty/blank reason text — an unattributed outcome cannot be constructed',
   });
 
   // FR-015 / SC-004 — EMERGENCY intervention: break-glass stops, confers NO authority, review OPEN.
@@ -228,15 +240,18 @@ export function runHumanDecisionScenario(
   );
   criteria.push({
     ref: 'FR-015 / SC-004',
-    statement: 'Break-glass can stop an operation but never confers decision authority, and its post-event review stays open until completed.',
+    statement:
+      'Break-glass can stop an operation but never confers decision authority, and its post-event review stays open until completed.',
     satisfied:
       bgEvent !== undefined &&
       bgEvent.reviewComplete === false &&
       bgEvent.reviewerPrincipalId === '' &&
       willNotApprove,
     evidence: `break-glass event ${bgEvent?.id} reviewComplete=${bgEvent?.reviewComplete}; consequence states stop will NOT approve/grant authority`,
-    observedVia: 'EmergencyInterventionModel.priorEvents[0].reviewComplete + .consequences(will_not)',
-    negativeControl: 'a completed review would set reviewComplete=true + a reviewer — the open-review alert only fires while OPEN',
+    observedVia:
+      'EmergencyInterventionModel.priorEvents[0].reviewComplete + .consequences(will_not)',
+    negativeControl:
+      'a completed review would set reviewComplete=true + a reviewer — the open-review alert only fires while OPEN',
   });
 
   return finish('human-decision-queue', criteria);
@@ -251,7 +266,9 @@ export interface JointApprovalInputs {
   readonly joint: JointDecisionStatusModel;
 }
 
-export function buildJointApprovalInputs(seed: SeededDecisions = seedDecisions()): JointApprovalInputs {
+export function buildJointApprovalInputs(
+  seed: SeededDecisions = seedDecisions(),
+): JointApprovalInputs {
   return { seed, joint: seedJointDecisionStatusModel(seed) };
 }
 
@@ -265,10 +282,13 @@ export function runFederatedJointApprovalScenario(
   const allTenantsCurrentlyApproved =
     joint.tenantApprovals.length > 0 &&
     joint.tenantApprovals.every((t) => t.status === 'approved' && t.current);
-  const someTenantPending = joint.tenantApprovals.some((t) => t.status !== 'approved' || !t.current);
+  const someTenantPending = joint.tenantApprovals.some(
+    (t) => t.status !== 'approved' || !t.current,
+  );
   criteria.push({
     ref: 'FR-043',
-    statement: 'Every affected tenant must supply a current scoped approval before the joint action executes.',
+    statement:
+      'Every affected tenant must supply a current scoped approval before the joint action executes.',
     satisfied:
       joint.tenantApprovals.length === seed.joint.affectedTenantIds.length &&
       !allTenantsCurrentlyApproved &&
@@ -276,7 +296,8 @@ export function runFederatedJointApprovalScenario(
       joint.executionBlocked,
     evidence: `${joint.tenantApprovals.length} affected tenants; approved+current=${joint.tenantApprovals.filter((t) => t.status === 'approved' && t.current).length}; execution blocked=${joint.executionBlocked}`,
     observedVia: 'JointDecisionStatusModel.tenantApprovals[*].{status,current} + .executionBlocked',
-    negativeControl: 'were all tenants approved+current AND gates passed, executionBlocked would flip false',
+    negativeControl:
+      'were all tenants approved+current AND gates passed, executionBlocked would flip false',
   });
 
   // FR-044 — NON-WAIVABLE central guardrails must ALL pass; they cannot be waived by any tenant.
@@ -291,15 +312,18 @@ export function runFederatedJointApprovalScenario(
     satisfied:
       guardrails.length > 0 && anyGuardrailOpen && guardrailsAreCentral && joint.executionBlocked,
     evidence: `${guardrails.length} central guardrail(s), ${guardrails.filter((g) => !g.passed).length} not passed; all have tenantId===null (non-waivable)`,
-    observedVia: 'JointDecisionStatusModel.centralGuardrails[*].passed + domain isCentralGuardrail (tenantId===null)',
-    negativeControl: 'a tenant-scoped requirement (tenantId!=null) would NOT be a central guardrail — waivability is defined by null tenant',
+    observedVia:
+      'JointDecisionStatusModel.centralGuardrails[*].passed + domain isCentralGuardrail (tenantId===null)',
+    negativeControl:
+      'a tenant-scoped requirement (tenantId!=null) would NOT be a central guardrail — waivability is defined by null tenant',
   });
 
   // FR-045 — a DISTINCT central governance reviewer must approve; independent of tenant approvers.
   const cr = joint.centralReview;
   criteria.push({
     ref: 'FR-045',
-    statement: 'A distinct central governance reviewer — independent of every tenant approver and the requester — must approve.',
+    statement:
+      'A distinct central governance reviewer — independent of every tenant approver and the requester — must approve.',
     satisfied:
       cr.distinct === true &&
       cr.approved === false && // not yet approved ⇒ gate open (fixture is mid-flight)
@@ -307,18 +331,21 @@ export function runFederatedJointApprovalScenario(
       cr.reviewerPrincipalId !== seed.packages.crossTenant.requesterPrincipalId,
     evidence: `central reviewer=${cr.reviewerPrincipalId || 'unassigned'}, distinct=${cr.distinct}, approved=${cr.approved}`,
     observedVia: 'JointDecisionStatusModel.centralReview.{distinct,approved,reviewerPrincipalId}',
-    negativeControl: 'the central reviewer id differs from the requester id — a self-review would collapse distinct→false',
+    negativeControl:
+      'the central reviewer id differs from the requester id — a self-review would collapse distinct→false',
   });
 
   // AC6 / SC-005 — NO cross-tenant evidence leakage: each tenant row discloses status only.
   const noEvidenceLeak = joint.tenantApprovals.every((t) => t.evidenceDisclosed === false);
   criteria.push({
     ref: 'FR-043 / AC6 / SC-005',
-    statement: 'Federated approval discloses no tenant’s evidence to another tenant (least-privilege disclosure).',
+    statement:
+      'Federated approval discloses no tenant’s evidence to another tenant (least-privilege disclosure).',
     satisfied: noEvidenceLeak && joint.tenantApprovals.length > 0,
     evidence: `all ${joint.tenantApprovals.length} tenant rows carry evidenceDisclosed=false (status/reviewer/time only)`,
     observedVia: 'JointDecisionStatusModel.tenantApprovals[*].evidenceDisclosed',
-    negativeControl: 'the VM type pins evidenceDisclosed to the literal false — a leak is unrepresentable in the disclosed model',
+    negativeControl:
+      'the VM type pins evidenceDisclosed to the literal false — a leak is unrepresentable in the disclosed model',
   });
 
   return finish('federated-joint-approval', criteria);

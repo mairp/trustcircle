@@ -74,10 +74,11 @@ export interface ComplianceReviewEvaluation {
 }
 
 /** Roles that are INCOMPATIBLE with acting as the independent applicability reviewer (FR-053). */
-export const INCOMPATIBLE_REVIEWER_ROLES: ReadonlySet<ComplianceRoleKey> = new Set<ComplianceRoleKey>([
-  'tenant_compliance_owner', // the proposing role — cannot independently review its own proposal
-  'control_owner', // owns the affected control — not independent of it
-]);
+export const INCOMPATIBLE_REVIEWER_ROLES: ReadonlySet<ComplianceRoleKey> =
+  new Set<ComplianceRoleKey>([
+    'tenant_compliance_owner', // the proposing role — cannot independently review its own proposal
+    'control_owner', // owns the affected control — not independent of it
+  ]);
 
 function blank(s: string | null | undefined): boolean {
   return typeof s !== 'string' || s.trim().length === 0;
@@ -106,7 +107,8 @@ export function evaluateApplicabilityReview(
   if (blank(ctx.reviewerPrincipalId)) {
     violations.push({
       code: 'REVIEWER_MISSING',
-      message: 'no independent reviewer principal supplied; applicability cannot be activated (FR-053)',
+      message:
+        'no independent reviewer principal supplied; applicability cannot be activated (FR-053)',
       principals: [],
     });
     // Without a reviewer, no further distinctness check is meaningful.

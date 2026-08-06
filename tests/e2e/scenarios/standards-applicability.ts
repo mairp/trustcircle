@@ -186,7 +186,10 @@ function auditExportRequest(): AuditExportRequest {
     scope: { tenantId: TENANT as unknown as Uuid },
     periodFrom: NOW - 365 * 24 * 3_600_000,
     periodTo: NOW,
-    reason: { code: 'external_audit', text: 'Prepare the annual ISO/IEC 42001 audit evidence pack.' },
+    reason: {
+      code: 'external_audit',
+      text: 'Prepare the annual ISO/IEC 42001 audit evidence pack.',
+    },
     coverageInputs: {
       decisions: fi.decisions,
       obligations: fi.obligations,
@@ -250,14 +253,19 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
   const imported = importStandardsSeed(futureSeed, at);
   const importedAgain = importStandardsSeed(futureSeed, at);
   const importedDigestsStable =
-    JSON.stringify(imported.publicationDigests) === JSON.stringify(importedAgain.publicationDigests);
+    JSON.stringify(imported.publicationDigests) ===
+    JSON.stringify(importedAgain.publicationDigests);
   let duplicateThrew = false;
   let duplicateErrName = '';
   try {
-    importStandardsSeed({ publications: [futureSeed.publications[0]!, futureSeed.publications[0]!] }, at);
+    importStandardsSeed(
+      { publications: [futureSeed.publications[0]!, futureSeed.publications[0]!] },
+      at,
+    );
   } catch (err) {
     duplicateThrew = true;
-    duplicateErrName = err instanceof StandardsImportError ? err.name : `Other:${(err as Error).name}`;
+    duplicateErrName =
+      err instanceof StandardsImportError ? err.name : `Other:${(err as Error).name}`;
   }
   criteria.push({
     ref: 'FR-051 / SC-012',
@@ -285,7 +293,8 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
     jurisdiction: 'EU',
     useCase: { domain: 'credit-underwriting', riskTier: 'high' },
     proposedResult: 'applicable',
-    rationale: 'The clause applies: the underwriting system makes consequential automated decisions in the EU.',
+    rationale:
+      'The clause applies: the underwriting system makes consequential automated decisions in the EU.',
     evidenceIds: [IDS.EVIDENCE_APPLICABILITY],
     obligationOwnerPrincipalId: CONTROL_OWNER,
     proposerPrincipalId: COMPLIANCE_OWNER,
@@ -299,7 +308,10 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
     reviewerRoles: ['independent_compliance_reviewer'],
     action: 'approve',
   });
-  const approveReason = makeReason('independent_review_approved', 'Independent reviewer approved applicability.');
+  const approveReason = makeReason(
+    'independent_review_approved',
+    'Independent reviewer approved applicability.',
+  );
   const reviewed = reviewApplicability({
     current: proposed.decision,
     action: 'approve',
@@ -350,7 +362,9 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
   const reopensReopened = nonApplicabilityReopensGap(DECISION_REOPENED_NA, at);
   const reopensReady = nonApplicabilityReopensGap(DECISION_READY, at);
   const reopenedCoverage = coverageForScenario('reopened-non-applicability');
-  const surfacesReopenedGap = reopenedCoverage.gaps.some((g) => g.kind === 'reopened_non_applicability');
+  const surfacesReopenedGap = reopenedCoverage.gaps.some(
+    (g) => g.kind === 'reopened_non_applicability',
+  );
   criteria.push({
     ref: 'FR-033 / FR-054',
     statement:
@@ -400,7 +414,7 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
       expiredCertCoverage.claimBoundary === 'ready',
     evidence: `ready=${readyCoverage.claimBoundary}; certified=${certifiedCoverage.claimBoundary}; expired-cert=${expiredCertCoverage.claimBoundary}`,
     observedVia:
-      "reconstructCoverage over the READY / CERTIFIED / EXPIRED-CERT input bundles — claimBoundary (coverage engine)",
+      'reconstructCoverage over the READY / CERTIFIED / EXPIRED-CERT input bundles — claimBoundary (coverage engine)',
     negativeControl:
       'the EXPIRED-cert scope has the identical readiness picture yet stays ready (never certified) — an out-of-window certificate cannot lift the boundary',
   });
@@ -446,7 +460,10 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
   const refCountExcludesCross = pkg.body.referenceCount === exportReferenceCount(request);
   const noteHonest = pkg.body.externalClaimNote === EXTERNAL_CLAIM_NOTE;
   // Negative control 1: reversing the custody chain breaks intactness AND verification.
-  const tamperedCustody = { ...pkg, body: { ...pkg.body, custody: [...pkg.body.custody].reverse() } };
+  const tamperedCustody = {
+    ...pkg,
+    body: { ...pkg.body, custody: [...pkg.body.custody].reverse() },
+  };
   const tamperedCustodyRejected =
     custodyChainIsIntact(tamperedCustody.body.custody) === false &&
     verifyManifest(tamperedCustody, SIGNING_KEY) === false;
@@ -559,7 +576,8 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
       lapsedIsLapsed === true &&
       currentIsLapsed === false,
     evidence: `lapsed review cadence lapsed=${lapsedIsLapsed}; current review cadence lapsed=${currentIsLapsed}`,
-    observedVia: 'holdManagementReview → reviewCadenceLapsed(review, NOW) (management-review service predicate)',
+    observedVia:
+      'holdManagementReview → reviewCadenceLapsed(review, NOW) (management-review service predicate)',
     negativeControl:
       'a review held 5 days ago on the same quarterly cadence reports NOT lapsed — lapse is derived from the cadence + held instant, not asserted',
   });
@@ -572,7 +590,9 @@ export function runStandardsApplicabilityScenario(inputs: ComplianceInputs): Sce
 // Lazily imports the `.tsx` oracle (vitest-only); asserts report.ok + honest-empty, each with a control.
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 
-export async function runComplianceAccessibilityScenario(inputs: ComplianceInputs): Promise<ScenarioResult> {
+export async function runComplianceAccessibilityScenario(
+  inputs: ComplianceInputs,
+): Promise<ScenarioResult> {
   const oracle = await import(ACCESSIBILITY_ORACLE);
   const coverage = buildCoverageViewModel();
   const reports: readonly AccessibilityReport[] = oracle.auditComplianceAccessibility({

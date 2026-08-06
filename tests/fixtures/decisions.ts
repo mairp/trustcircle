@@ -138,12 +138,7 @@ function iso(ms: EpochMillis): string {
 /** A named seeded decision scenario + the durable read path an assertion witnesses it through. */
 export interface DecisionScenarioSpec {
   readonly scenario:
-    | 'authorized'
-    | 'conflicted'
-    | 'delegated'
-    | 'expired'
-    | 'cross-tenant'
-    | 'emergency';
+    'authorized' | 'conflicted' | 'delegated' | 'expired' | 'cross-tenant' | 'emergency';
   /** The seeded fact an assertion pins. */
   readonly witness: string;
   /** The durable read path the fact is observed through (never a mutation response). */
@@ -159,27 +154,33 @@ export const SIX_DECISION_SCENARIOS: readonly DecisionScenarioSpec[] = [
   {
     scenario: 'conflicted',
     witness: 'requester is the only eligible approver → separation_of_duties gate unmet',
-    observedVia: 'DecisionInboxModel.rows[conflicted].conflicts names the SoD conflict; actionable === false',
+    observedVia:
+      'DecisionInboxModel.rows[conflicted].conflicts names the SoD conflict; actionable === false',
   },
   {
     scenario: 'delegated',
     witness: 'active delegation makes the recipient the actor; a second delegation already expired',
-    observedVia: 'seed.delegations: one status="active" (in-window) + one status="expired" (lapsed)',
+    observedVia:
+      'seed.delegations: one status="active" (in-window) + one status="expired" (lapsed)',
   },
   {
     scenario: 'expired',
     witness: 'package past expiresAt at NOW → decisionIsExpired true, no live actions',
-    observedVia: 'decisionIsExpired(seed.packages.expired, NOW) === true; row status="expired", escalated',
+    observedVia:
+      'decisionIsExpired(seed.packages.expired, NOW) === true; row status="expired", escalated',
   },
   {
     scenario: 'cross-tenant',
-    witness: 'joint package affecting 3 tenants; execution blocked until all three gates pass; no evidence leak',
-    observedVia: 'JointDecisionStatusModel.executionBlocked + per-tenant rows with evidenceDisclosed===false',
+    witness:
+      'joint package affecting 3 tenants; execution blocked until all three gates pass; no evidence leak',
+    observedVia:
+      'JointDecisionStatusModel.executionBlocked + per-tenant rows with evidenceDisclosed===false',
   },
   {
     scenario: 'emergency',
     witness: 'active break-glass stopped an op, conferred NO decision authority, review still open',
-    observedVia: 'EmergencyInterventionModel.priorEvents[*].reviewComplete===false (open-reviews alert)',
+    observedVia:
+      'EmergencyInterventionModel.priorEvents[*].reviewComplete===false (open-reviews alert)',
   },
 ];
 
@@ -404,7 +405,11 @@ export function seedDecisions(now: EpochMillis = NOW): SeededDecisions {
     breakGlassGrantId: mint(),
     tenantId: TENANT as unknown as string,
     principalId: OPERATOR,
-    scope: { scopeType: 'action', scopeId: 'operation.emergency-stop', allowedActions: ['operation.stop'] },
+    scope: {
+      scopeType: 'action',
+      scopeId: 'operation.emergency-stop',
+      allowedActions: ['operation.stop'],
+    },
     reasonText: 'runaway migration on payments-db — emergency stop to contain blast radius',
     incidentId: uuidFromSlug('incident-payments-runaway'),
     activatedAt: (now - 20 * ONE_MINUTE) as unknown as number,
@@ -424,7 +429,10 @@ export function seedDecisions(now: EpochMillis = NOW): SeededDecisions {
     delegations: { active: activeDelegation, expired: expiredDelegation },
     breakGlass,
     reasons: {
-      approve: makeReason('approved_within_authority', 'Reviewed; within delegated authority and policy.'),
+      approve: makeReason(
+        'approved_within_authority',
+        'Reviewed; within delegated authority and policy.',
+      ),
       emergency: makeReason(
         'emergency_stop',
         'Runaway migration contained via break-glass; post-event review required.',
@@ -494,7 +502,9 @@ function inboxRow(
 }
 
 /** Project the seeded packages onto the DecisionInbox model the queue renderer consumes. */
-export function seedDecisionInboxModel(seed: SeededDecisions = seedDecisions()): DecisionInboxModel {
+export function seedDecisionInboxModel(
+  seed: SeededDecisions = seedDecisions(),
+): DecisionInboxModel {
   const { packages: p, now } = seed;
   const rows: readonly DecisionInboxRowVM[] = [
     inboxRow(p.expired, now, {

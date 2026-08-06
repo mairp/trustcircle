@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { OperationalCaseRepository } from '@trustcircle/application';
 import type { ContextRole, RequestLike, VerifiedIdentity } from './middleware/context.ts';
 import { registerComplianceRoutes } from './routes/compliance.ts';
-import type { CoverageView } from './routes/compliance.ts';
+import type { CoverageView, FrameworkMatrixView } from './routes/compliance.ts';
 import { registerControllersRoutes } from './routes/controllers.ts';
 import type { ControllerView, OperationView } from './routes/controllers.ts';
 import { registerDecisionDashboardRoutes } from './routes/decision-dashboard.ts';
@@ -22,6 +22,8 @@ import { registerInventoryRoutes } from './routes/inventory.ts';
 import type { TenantProjection } from './routes/inventory.ts';
 import { createRuntimeOperationsCommandCenter } from './operations-runtime.ts';
 import { registerOperationsCommandCenterRoutes } from './routes/operations-command-center.ts';
+import { registerGovernedPlatformRoutes } from './routes/governed-platform.ts';
+import type { GovernedPlatformRouteDeps } from './routes/governed-platform.ts';
 import {
   API_VERSION,
   createApp,
@@ -501,6 +503,21 @@ function readonlyMutation(): never {
   throw new Error('local preview is read-only');
 }
 
+function unavailableGovernedPlatformDeps(now: () => number): GovernedPlatformRouteDeps {
+  return {
+    now,
+    nextId: () => randomUUID(),
+    signDigest: (value) => createHash('sha256').update(value).digest('hex'),
+    reviews: {
+      listSnapshots: () => [],
+      readReviewSource: () => undefined,
+      readSnapshot: () => undefined,
+      commitSnapshot: () => readonlyMutation(),
+      commitComparison: () => readonlyMutation(),
+    },
+  };
+}
+
 function mountDomainRoutes(
   app: App,
   repository: RuntimeReadModelRepository,
@@ -818,6 +835,131 @@ function mountDomainRoutes(
         },
       } as unknown as CoverageView;
     },
+
+    frameworkMatrix: (query): FrameworkMatrixView | undefined => {
+      const snapshot = snapshotFor(String(query.tenantId));
+      if (!snapshot) return undefined;
+      const defaultPublicationId = text(snapshot.publications[0] ?? {}, 'id');
+      const at = query.at ?? snapshot.observedAtMs;
+      const matrixRows: FrameworkMatrixView['rows'] = snapshot.controlMappings
+        .map((mapping) => {
+          const publicationId = text(
+            mapping,
+            'source_publication_id',
+            query.publicationId ? String(query.publicationId) : defaultPublicationId,
+          );
+          if (!publicationId) return undefined;
+          if (query.publicationId && publicationId !== String(query.publicationId)) {
+            return undefined;
+          }
+          const mappingId = text(mapping, 'id');
+          const evaluation = snapshot.controlEvaluations.find(
+            (candidate) => text(candidate, 'control_mapping_id') === mappingId,
+          );
+          const effectiveness = text(
+            evaluation ?? {},
+            'effectiveness',
+            text(evaluation ?? {}, 'result'),
+          );
+          const controlCoverage =
+            effectiveness === 'effective' || effectiveness === 'pass'
+              ? 'covered'
+              : effectiveness === 'ineffective' || effectiveness === 'fail'
+                ? 'partial'
+                : 'not_assessed';
+          const evidenceSufficiency =
+            evaluation && typeof evaluation['evidence_sufficient'] === 'boolean'
+              ? evaluation['evidence_sufficient']
+                ? 'sufficient'
+                : 'insufficient'
+              : 'not_assessed';
+          return {
+            id: mappingId,
+            tenantId: String(query.tenantId),
+            sourcePublicationId: publicationId,
+            sourceClauseRef: text(
+              mapping,
+              'source_clause_ref',
+              text(mapping, 'obligation_id', 'unresolved-clause'),
+            ),
+            requirementType: text(mapping, 'source_material_type', 'organizational_duty'),
+            applicability: text(mapping, 'applicability_state', 'applicable'),
+            duty: text(mapping, 'duty', 'organizational_obligation'),
+            targetType: text(mapping, 'target_type', 'control'),
+            targetRef: text(
+              mapping,
+              'target_ref',
+              text(mapping, 'control_id', 'unresolved-control'),
+            ),
+            mappingType: text(mapping, 'mapping_type', 'supports'),
+            mappingStatus: text(mapping, 'status', 'active'),
+            coverageExtent: text(mapping, 'coverage_extent', 'full'),
+            conditions: arrayValue(mapping, 'conditions').map(String),
+            controlCoverage,
+            evidenceSufficiency,
+            readiness: 'not_assessed',
+            assessment:
+              text(evaluation ?? {}, 'assessment_status') === 'assessed'
+                ? 'assessed'
+                : 'not_assessed',
+            certification: 'not_certified',
+            evidenceRefs: arrayValue(mapping, 'evidence_refs').map(String),
+            mappingOwnerPrincipalId: text(
+              mapping,
+              'mapping_owner_principal_id',
+              text(mapping, 'owner_principal_id', 'unassigned'),
+            ),
+            ...(text(mapping, 'obligation_owner_principal_id')
+              ? {
+                  obligationOwnerPrincipalId: text(mapping, 'obligation_owner_principal_id'),
+                }
+              : {}),
+            rationale: text(
+              mapping,
+              'rationale',
+              'Legacy control mapping; richer framework dimensions remain unassessed.',
+            ),
+            confidenceBand: text(mapping, 'confidence_band', 'unknown'),
+            mappingVersion: numberValue(mapping, 'version', 1),
+            ...(text(mapping, 'supersedes_mapping_id')
+              ? { supersedesMappingId: text(mapping, 'supersedes_mapping_id') }
+              : {}),
+            ...(text(mapping, 'superseded_by_mapping_id')
+              ? { supersededByMappingId: text(mapping, 'superseded_by_mapping_id') }
+              : {}),
+            ...(text(mapping, 'reviewed_by_principal_id')
+              ? { reviewedByPrincipalId: text(mapping, 'reviewed_by_principal_id') }
+              : {}),
+            ...(numberValue(mapping, 'reviewed_at') > 0
+              ? { reviewedAt: numberValue(mapping, 'reviewed_at') }
+              : {}),
+          };
+        })
+        .filter((row): row is NonNullable<typeof row> => row !== undefined);
+      const gapIds = matrixRows
+        .filter(
+          (row) =>
+            row.controlCoverage !== 'covered' ||
+            row.evidenceSufficiency !== 'sufficient' ||
+            row.readiness !== 'ready' ||
+            row.assessment !== 'assessed',
+        )
+        .map((row) => row.id);
+      return {
+        tenantId: query.tenantId,
+        ...(query.publicationId === undefined ? {} : { publicationId: query.publicationId }),
+        at,
+        rows: matrixRows,
+        metadata: {
+          generatedAt: snapshot.observedAtMs,
+          sourceCursor: digest([snapshot.controlMappings, snapshot.controlEvaluations]),
+          freshness: 'current',
+          partialCoverage: gapIds.length > 0,
+          coverageGaps: gapIds,
+        },
+        digest: 'sha256:' + digest(matrixRows),
+      };
+    },
     readEvidence: (tenantId, evidenceId) => {
       const row = snapshotFor(String(tenantId))?.evidence.find(
         (candidate) => text(candidate, 'evidence_item_id') === String(evidenceId),
@@ -1091,6 +1233,7 @@ export interface ProductionApiRuntimeOptions {
   readonly preview: LocalPreviewIdentityOptions;
   readonly readiness: ReadinessProvider;
   readonly operationsRepository?: OperationalCaseRepository;
+  readonly governedPlatform?: GovernedPlatformRouteDeps;
   readonly now?: () => number;
 }
 
@@ -1121,6 +1264,10 @@ export function createProductionApiRuntime(
   };
   const { app, shutdown } = createApp({ verifyIdentity, readiness: options.readiness, now });
   mountDomainRoutes(app, options.repository, now, options.operationsRepository);
+  registerGovernedPlatformRoutes(
+    app,
+    options.governedPlatform ?? unavailableGovernedPlatformDeps(now),
+  );
 
   return {
     app,

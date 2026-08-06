@@ -26,8 +26,10 @@ import {
 } from '@trustcircle/domain';
 
 import {
+  createFrameworkMapping,
   importStandardsSeed,
   registryUuid,
+  reviewFrameworkMapping,
   StandardsImportError,
   type StandardsSeed,
   type ImportedRegistry,
@@ -44,11 +46,14 @@ import {
   CLAUSE_UNMAPPED,
   CLAUSE_REOPENED,
   CLAUSES,
+  TENANT,
   NOW,
   IDS,
 } from '../fixtures/compliance.ts';
 
 const ISO_FULL_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const OWNER = '018f0000-0000-7000-8000-000000000010';
+const REVIEWER = '018f0000-0000-7000-8000-000000000011';
 
 describe('T184 standards registry — immutable publication facts (FR-051)', () => {
   it('makeStandardPublication returns a frozen read-only object whose fields echo the inputs', () => {
@@ -291,5 +296,110 @@ describe('T184 standards registry — future 4200x imports (SC-012)', () => {
     };
     expect(() => importStandardsSeed(conflicting, NOW)).toThrow(StandardsImportError);
     expect(() => importStandardsSeed(conflicting, NOW)).toThrow(/duplicate/i);
+  });
+});
+
+describe('Spec004 framework mapping - truthful typed relationships (FR-048/049)', () => {
+  const mappingTypes = [
+    'equivalent',
+    'supports',
+    'partially_supports',
+    'conditional',
+    'conflicts',
+    'supersedes',
+    'related',
+    'not_applicable',
+  ] as const;
+
+  it('preserves every mapping type and source material class as a versioned reviewed fact', () => {
+    const materialTypes = [
+      'requirement',
+      'guidance',
+      'draft',
+      'organizational_duty',
+      'external_certification',
+    ] as const;
+    for (const [index, mappingType] of mappingTypes.entries()) {
+      const mapping = createFrameworkMapping({
+        id: '018f0000-0000-7000-8000-0000000001' + String(index).padStart(2, '0'),
+        tenantId: TENANT,
+        sourcePublicationId: IDS.PUB_42001_ID,
+        sourceClauseRef: 'A.' + (index + 1),
+        sourceMaterialType: materialTypes[index % materialTypes.length]!,
+        targetType: 'control',
+        targetRef: '/controls/control-' + index,
+        mappingType,
+        coverageExtent:
+          mappingType === 'partially_supports'
+            ? 'partial'
+            : mappingType === 'not_applicable'
+              ? 'none'
+              : mappingType === 'conditional'
+                ? 'conditional'
+                : 'full',
+        conditions: mappingType === 'conditional' ? ['Only for production AI systems'] : [],
+        applicabilityState: mappingType === 'not_applicable' ? 'not_applicable' : 'applicable',
+        obligationOwnerPrincipalId: OWNER,
+        mappingOwnerPrincipalId: OWNER,
+        evidenceRefs: ['/evidence/mapping-' + index],
+        rationale: 'Preserve the explicit relationship without creating a conformity claim.',
+        confidenceBand: 'high',
+        now: NOW,
+      });
+      const reviewed = reviewFrameworkMapping({
+        mapping,
+        tenantId: TENANT,
+        expectedVersion: 1,
+        reviewerPrincipalId: REVIEWER,
+        authorityDecisionId: 'decision-framework-' + index,
+        verdict: mappingType === 'conflicts' ? 'disputed' : 'active',
+        reason: { code: 'mapping.review', text: 'Review the exact typed relationship.' },
+        now: NOW + 1,
+      });
+      expect(reviewed.mappingType).toBe(mappingType);
+      expect(reviewed.sourceMaterialType).toBe(materialTypes[index % materialTypes.length]);
+      expect(reviewed.version).toBe(2);
+      expect(reviewed.reviewedByPrincipalId).toBe(REVIEWER);
+      expect(Object.isFrozen(reviewed.history)).toBe(true);
+    }
+  });
+
+  it('rejects self-review and requires conditions for conditional mappings', () => {
+    const input = {
+      id: '018f0000-0000-7000-8000-000000000199',
+      tenantId: TENANT,
+      sourcePublicationId: IDS.PUB_42001_ID,
+      sourceClauseRef: '5.1',
+      sourceMaterialType: 'requirement' as const,
+      targetType: 'control' as const,
+      targetRef: '/controls/control-1',
+      mappingType: 'conditional' as const,
+      coverageExtent: 'conditional' as const,
+      conditions: [] as string[],
+      applicabilityState: 'conditional' as const,
+      obligationOwnerPrincipalId: OWNER,
+      mappingOwnerPrincipalId: OWNER,
+      evidenceRefs: ['/evidence/mapping-conditional'],
+      rationale: 'A condition is required.',
+      confidenceBand: 'medium' as const,
+      now: NOW,
+    };
+    expect(() => createFrameworkMapping(input)).toThrow(/condition/i);
+    const mapping = createFrameworkMapping({
+      ...input,
+      conditions: ['Only for production AI systems'],
+    });
+    expect(() =>
+      reviewFrameworkMapping({
+        mapping,
+        tenantId: TENANT,
+        expectedVersion: 1,
+        reviewerPrincipalId: OWNER,
+        authorityDecisionId: 'decision-self-review',
+        verdict: 'active',
+        reason: { code: 'mapping.review', text: 'Self review must fail.' },
+        now: NOW + 1,
+      }),
+    ).toThrow(/distinct|self|review/i);
   });
 });

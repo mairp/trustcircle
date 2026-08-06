@@ -82,12 +82,13 @@ const TERMINAL_STATES: ReadonlySet<ApplicabilityDecision['state']> = new Set([
 ]);
 
 /** The accepted next state for each review action. */
-const ACTION_STATE: Readonly<Record<ApplicabilityAction, ApplicabilityDecision['state']>> = Object.freeze({
-  approve: 'active',
-  reject: 'rejected',
-  request_changes: 'changes_requested',
-  expire: 'expired',
-});
+const ACTION_STATE: Readonly<Record<ApplicabilityAction, ApplicabilityDecision['state']>> =
+  Object.freeze({
+    approve: 'active',
+    reject: 'rejected',
+    request_changes: 'changes_requested',
+    expire: 'expired',
+  });
 
 function reasonMissing(r: Reason | undefined | null): boolean {
   return (
@@ -126,7 +127,12 @@ export function proposeApplicability(cmd: ApplicabilityProposalCommand): Applica
     version: 1,
     createdAt: cmd.now,
   });
-  return { accepted: true, decision, digest: applicabilityDecisionDigest(decision), rejectionCode: null };
+  return {
+    accepted: true,
+    decision,
+    digest: applicabilityDecisionDigest(decision),
+    rejectionCode: null,
+  };
 }
 
 function rejectAction(
@@ -198,7 +204,12 @@ export function reviewApplicability(cmd: ApplicabilityActionCommand): Applicabil
     return rejectAction(cmd, 'ILLEGAL_TRANSITION');
   }
 
-  return { accepted: true, decision: next, digest: applicabilityDecisionDigest(next), rejectionCode: null };
+  return {
+    accepted: true,
+    decision: next,
+    digest: applicabilityDecisionDigest(next),
+    rejectionCode: null,
+  };
 }
 
 /** The accepted next state for a review action (exposed for the projector / UI state machine). */

@@ -41,10 +41,8 @@ export const DEAD_LETTER_REPLAY_STATES = ['held', 'authorized', 'replayed', 'dis
 export type DeadLetterReplayState = (typeof DEAD_LETTER_REPLAY_STATES)[number];
 
 /** Replay states that REQUIRE an explicit replay authority (mirror the DB CHECK). */
-const REPLAY_STATES_REQUIRING_AUTHORITY: ReadonlySet<DeadLetterReplayState> = new Set<DeadLetterReplayState>([
-  'authorized',
-  'replayed',
-]);
+const REPLAY_STATES_REQUIRING_AUTHORITY: ReadonlySet<DeadLetterReplayState> =
+  new Set<DeadLetterReplayState>(['authorized', 'replayed']);
 
 /** True iff the replay state may only be entered with an explicit `replayAuthorizedBy`. */
 export function replayStateRequiresAuthority(state: DeadLetterReplayState): boolean {
@@ -180,7 +178,9 @@ export function toDeadLetter(input: DeadLetterInput): DeadLetter {
 export function authorizeReplay(dl: DeadLetter, authorizedBy: string, at: number): DeadLetter {
   if (!Number.isFinite(at)) throw new RangeError('at must be a finite epoch-ms instant');
   if (typeof authorizedBy !== 'string' || authorizedBy.trim().length === 0) {
-    throw new TypeError('replay requires an explicit authority (replayAuthorizedBy must be non-empty)');
+    throw new TypeError(
+      'replay requires an explicit authority (replayAuthorizedBy must be non-empty)',
+    );
   }
   if (dl.replayState !== 'held') {
     throw new TypeError(`only a 'held' dead letter may be authorized (was '${dl.replayState}')`);

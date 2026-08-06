@@ -231,7 +231,9 @@ describe('T091 — federated cross-tenant decision (AC6): all gates fail closed'
         approval(TENANT_Y, APPROVER_Y, j.packageDigest),
       ],
       // reviewer principal is APPROVER_X — also a tenant approver ⇒ not distinct.
-      crossTenantAction: crossTenantAction({ tenantApproverPrincipalIds: [APPROVER_X, APPROVER_Y] }),
+      crossTenantAction: crossTenantAction({
+        tenantApproverPrincipalIds: [APPROVER_X, APPROVER_Y],
+      }),
       reviewerAuthority: authorityWith(APPROVER_X, 'central_governance_reviewer'),
     });
     expect(result.complete).toBe(false);

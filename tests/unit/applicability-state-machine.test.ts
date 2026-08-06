@@ -33,10 +33,7 @@ import {
   type ApplicabilityOutcome,
 } from '@trustcircle/application';
 
-import {
-  evaluateApplicabilityReview,
-  type ApplicabilityReviewContext,
-} from '@trustcircle/authz';
+import { evaluateApplicabilityReview, type ApplicabilityReviewContext } from '@trustcircle/authz';
 
 import {
   NOW,
@@ -62,7 +59,10 @@ const PROPOSAL_ID = '0f1e2d3c-4b5a-7c8d-9e0f-a1b2c3d4e5f6' as Uuid;
 const NEW_DECISION_ID = '1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6' as Uuid;
 const EVIDENCE_ID = IDS.EVIDENCE_APPLICABILITY;
 
-const APPROVE_REASON: Reason = makeReason('independent_review_approved', 'Independent reviewer approved.');
+const APPROVE_REASON: Reason = makeReason(
+  'independent_review_approved',
+  'Independent reviewer approved.',
+);
 
 function proposalCommand(
   overrides: Partial<ApplicabilityProposalCommand> = {},
@@ -215,9 +215,7 @@ describe('applicability INDEPENDENT REVIEW — incompatible reviewer role (FR-05
   });
 
   it('a reviewer lacking the independent role is not permitted (NOT_INDEPENDENT_ROLE)', () => {
-    const verdict = evaluateApplicabilityReview(
-      reviewContext({ reviewerRoles: ['auditor'] }),
-    );
+    const verdict = evaluateApplicabilityReview(reviewContext({ reviewerRoles: ['auditor'] }));
     expect(verdict.permitted).toBe(false);
     expect(verdict.violations.map((v) => v.code)).toContain('REVIEWER_NOT_INDEPENDENT_ROLE');
   });

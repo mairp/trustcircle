@@ -14,3 +14,12 @@ export * from './inbox-consumer.ts';
 // evidence, rebuild state, per-stream freshness, and safe next action are all current and
 // fail-visible through a single ProjectorStatus. Additive, backward-compatible export surface.
 export * from './main.ts';
+
+// Production registration for the Spec 004 governed continuation projection. The status surface
+// keeps ownership, freshness, attempts, last success, retry, terminal evidence, and recovery
+// guidance observable from the process composition root.
+export { GovernedPlatformProjector } from '@trustcircle/projections';
+export type {
+  GovernedPlatformProjectorStatus,
+  GovernedPlatformProjectorStatusInput,
+} from '@trustcircle/projections';

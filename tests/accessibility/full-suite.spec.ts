@@ -112,11 +112,16 @@ test.describe('AR-004 · non-color meaning', () => {
   test('GATE: the risk chart states risk in text, not color ("not by color alone")', () => {
     expect(has(/not by color alone|not by color/i)).toBe(true);
     // decorative color bars are hidden from AT; the text/table carries the meaning
-    expect(has(/aria-hidden="true"[^>]*class="bars"|class="bars"[^>]*aria-hidden="true"/)).toBe(true);
+    expect(has(/aria-hidden="true"[^>]*class="bars"|class="bars"[^>]*aria-hidden="true"/)).toBe(
+      true,
+    );
   });
 
   test('RED WITNESS: markup that un-hides the color-only bars and drops the text note fails', () => {
-    const regressed = HTML.replace(/not by color alone/i, 'shown in the chart').replace(/aria-hidden="true"/g, '');
+    const regressed = HTML.replace(/not by color alone/i, 'shown in the chart').replace(
+      /aria-hidden="true"/g,
+      '',
+    );
     const conveysWithoutColor = /not by color alone/i.test(regressed);
     expect(conveysWithoutColor).toBe(false);
   });
@@ -129,11 +134,16 @@ test.describe('AR-005 · non-visual chart parity (text summary + table alternati
   test('GATE: the risk figure has a text summary and a tabular alternative', () => {
     expect(has(/data-testid="chart-text-summary"/)).toBe(true);
     expect(has(/data-testid="chart-table-alternative"/)).toBe(true);
-    expect(has(/<caption>Tabular alternative for the risk-distribution chart<\/caption>/)).toBe(true);
+    expect(has(/<caption>Tabular alternative for the risk-distribution chart<\/caption>/)).toBe(
+      true,
+    );
   });
 
   test('RED WITNESS: markup with the table alternative removed fails chart parity', () => {
-    const regressed = HTML.replace(/<table data-testid="chart-table-alternative">[\s\S]*?<\/table>/, '');
+    const regressed = HTML.replace(
+      /<table data-testid="chart-table-alternative">[\s\S]*?<\/table>/,
+      '',
+    );
     expect(has(/data-testid="chart-table-alternative"/, regressed)).toBe(false);
   });
 });
@@ -161,12 +171,19 @@ test.describe('AR-006 · 400% reflow', () => {
 test.describe('AR-007 · time-limit warning + accessible extension', () => {
   test('GATE: a polite session-timeout warning and an extend-session control exist', () => {
     expect(has(/data-testid="timeout-warning"/)).toBe(true);
-    expect(has(/data-testid="timeout-warning"[^>]*aria-live="polite"|role="status"[^>]*data-testid="timeout-warning"|data-testid="timeout-warning"[^>]*role="status"/)).toBe(true);
+    expect(
+      has(
+        /data-testid="timeout-warning"[^>]*aria-live="polite"|role="status"[^>]*data-testid="timeout-warning"|data-testid="timeout-warning"[^>]*role="status"/,
+      ),
+    ).toBe(true);
     expect(has(/data-testid="extend-session-btn"[^>]*>Extend session/)).toBe(true);
   });
 
   test('RED WITNESS: markup with the extend-session control removed fails AR-007', () => {
-    const regressed = HTML.replace(/<button[^>]*data-testid="extend-session-btn"[^>]*>[\s\S]*?<\/button>/, '');
+    const regressed = HTML.replace(
+      /<button[^>]*data-testid="extend-session-btn"[^>]*>[\s\S]*?<\/button>/,
+      '',
+    );
     expect(has(/data-testid="extend-session-btn"/, regressed)).toBe(false);
   });
 });

@@ -106,7 +106,9 @@ export function iso(ms: EpochMillis): string {
 // ───────────────────────────────────────────────────────────────────────────────────────────────
 
 export const TENANT: TenantId = uuidFromSlug('tenant-home-compliance') as unknown as TenantId;
-export const OTHER_TENANT: TenantId = uuidFromSlug('tenant-other-compliance') as unknown as TenantId;
+export const OTHER_TENANT: TenantId = uuidFromSlug(
+  'tenant-other-compliance',
+) as unknown as TenantId;
 
 export const COMPLIANCE_OWNER: Uuid = uuidFromSlug('principal-compliance-owner-quinn');
 export const INDEPENDENT_REVIEWER: Uuid = uuidFromSlug('principal-independent-reviewer-avery');
@@ -139,7 +141,8 @@ export const SEVEN_COVERAGE_SCENARIOS: readonly CoverageScenarioSpec[] = [
   {
     scenario: 'ready',
     witness: 'active reviewed applicability + a fully-covered obligation with sufficient evidence',
-    observedVia: "reconstructCoverage(readyScope).claimBoundary === 'ready' && complete === true && gaps.length === 0",
+    observedVia:
+      "reconstructCoverage(readyScope).claimBoundary === 'ready' && complete === true && gaps.length === 0",
   },
   {
     scenario: 'certified',
@@ -149,12 +152,14 @@ export const SEVEN_COVERAGE_SCENARIOS: readonly CoverageScenarioSpec[] = [
   {
     scenario: 'readiness-not-certification',
     witness: 'the same readiness picture but the certification is EXPIRED at NOW',
-    observedVia: "reconstructCoverage(expiredCertScope).claimBoundary === 'ready' (never 'certified')",
+    observedVia:
+      "reconstructCoverage(expiredCertScope).claimBoundary === 'ready' (never 'certified')",
   },
   {
     scenario: 'stale',
     witness: 'a mapped control whose evidence is stale; current state is not inferred',
-    observedVia: "reconstructCoverage(staleScope).gaps includes kind==='stale_evidence' && boundary < 'ready'",
+    observedVia:
+      "reconstructCoverage(staleScope).gaps includes kind==='stale_evidence' && boundary < 'ready'",
   },
   {
     scenario: 'unmapped',
@@ -164,12 +169,14 @@ export const SEVEN_COVERAGE_SCENARIOS: readonly CoverageScenarioSpec[] = [
   {
     scenario: 'reopened-non-applicability',
     witness: 'a not_applicable decision whose review instant has passed → gap reopens (FR-054)',
-    observedVia: "reconstructCoverage(reopenedScope).gaps includes kind==='reopened_non_applicability'",
+    observedVia:
+      "reconstructCoverage(reopenedScope).gaps includes kind==='reopened_non_applicability'",
   },
   {
     scenario: 'cross-tenant',
     witness: 'an identical obligation owned by OTHER_TENANT never appears in TENANT coverage',
-    observedVia: 'reconstructCoverage over TENANT rows excludes every OTHER_TENANT row (tenant isolation)',
+    observedVia:
+      'reconstructCoverage over TENANT rows excludes every OTHER_TENANT row (tenant isolation)',
   },
 ];
 
@@ -276,7 +283,10 @@ export const CLAUSES: readonly ClauseVersion[] = Object.freeze([
 const SYSTEM_ID = uuidFromSlug('system-underwriting-ai');
 const EVIDENCE_APPLICABILITY = uuidFromSlug('evidence-applicability-basis');
 
-const APPROVE_REASON: Reason = makeReason('independent_review_approved', 'Independent reviewer approved applicability.');
+const APPROVE_REASON: Reason = makeReason(
+  'independent_review_approved',
+  'Independent reviewer approved applicability.',
+);
 
 /** An ACTIVE, independently-reviewed 'applicable' decision (reviewer distinct from proposer) (FR-053). */
 export const DECISION_READY: ApplicabilityDecision = makeApplicabilityDecision({
@@ -352,7 +362,8 @@ export const DECISION_UNMAPPED: ApplicabilityDecision = makeApplicabilityDecisio
   jurisdiction: 'EU',
   useCase: { domain: 'credit-underwriting' },
   proposedResult: 'applicable',
-  rationale: 'Applicable; deliberately has no control mapping to surface an unmapped-obligation gap.',
+  rationale:
+    'Applicable; deliberately has no control mapping to surface an unmapped-obligation gap.',
   evidenceIds: [EVIDENCE_APPLICABILITY],
   obligationOwnerPrincipalId: CONTROL_OWNER,
   proposerPrincipalId: COMPLIANCE_OWNER,
@@ -428,7 +439,12 @@ export const DECISIONS: readonly ApplicabilityDecision[] = Object.freeze([
 // 4. Obligations + control mappings + evaluations.
 // ───────────────────────────────────────────────────────────────────────────────────────────────
 
-function obligation(slug: string, clauseVersionId: Uuid, decisionId: Uuid, tenantId: Uuid = TENANT as unknown as Uuid): Obligation {
+function obligation(
+  slug: string,
+  clauseVersionId: Uuid,
+  decisionId: Uuid,
+  tenantId: Uuid = TENANT as unknown as Uuid,
+): Obligation {
   return makeObligation({
     id: uuidFromSlug(`obligation-${slug}`),
     tenantId,
@@ -444,7 +460,11 @@ function obligation(slug: string, clauseVersionId: Uuid, decisionId: Uuid, tenan
 
 export const OBLIGATION_READY: Obligation = obligation('ready', CLAUSE_READY.id, DECISION_READY.id);
 export const OBLIGATION_STALE: Obligation = obligation('stale', CLAUSE_STALE.id, DECISION_STALE.id);
-export const OBLIGATION_UNMAPPED: Obligation = obligation('unmapped', CLAUSE_UNMAPPED.id, DECISION_UNMAPPED.id);
+export const OBLIGATION_UNMAPPED: Obligation = obligation(
+  'unmapped',
+  CLAUSE_UNMAPPED.id,
+  DECISION_UNMAPPED.id,
+);
 export const OBLIGATION_CROSS_TENANT: Obligation = obligation(
   'cross-tenant',
   CLAUSE_READY.id,
@@ -458,14 +478,21 @@ export const OBLIGATIONS: readonly Obligation[] = Object.freeze([
   OBLIGATION_UNMAPPED,
 ]);
 
-function mapping(slug: string, obligationId: Uuid, tenantId: Uuid = TENANT as unknown as Uuid): ControlMapping {
+function mapping(
+  slug: string,
+  obligationId: Uuid,
+  tenantId: Uuid = TENANT as unknown as Uuid,
+): ControlMapping {
   return makeControlMapping({
     id: uuidFromSlug(`mapping-${slug}`),
     tenantId,
     obligationId,
     controlId: uuidFromSlug(`control-${slug}`),
     responsibility: 'organization',
-    evidenceExpectations: ['a signed control-operation attestation', 'the most recent evidence envelope'],
+    evidenceExpectations: [
+      'a signed control-operation attestation',
+      'the most recent evidence envelope',
+    ],
     evidenceWindowMillis: 90 * ONE_DAY,
     reviewAt: (NOW + 180 * ONE_DAY) as EpochMillis,
     version: 1,
@@ -511,7 +538,10 @@ export const EVAL_STALE: ControlEvaluationFact = Object.freeze({
   evaluatedAt: (NOW - 200 * ONE_DAY) as EpochMillis,
 });
 
-export const EVALUATIONS: readonly ControlEvaluationFact[] = Object.freeze([EVAL_READY, EVAL_STALE]);
+export const EVALUATIONS: readonly ControlEvaluationFact[] = Object.freeze([
+  EVAL_READY,
+  EVAL_STALE,
+]);
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────
 // 5. Assessments (internal readiness / external) — the assurance ladder below certification.
@@ -541,7 +571,10 @@ export const ASSESSMENT_EXTERNAL: Assessment = makeAssessment({
   version: 1,
 });
 
-export const ASSESSMENTS: readonly Assessment[] = Object.freeze([ASSESSMENT_INTERNAL_READY, ASSESSMENT_EXTERNAL]);
+export const ASSESSMENTS: readonly Assessment[] = Object.freeze([
+  ASSESSMENT_INTERNAL_READY,
+  ASSESSMENT_EXTERNAL,
+]);
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────
 // 6. External certifications — one DISPLAYABLE (in-window, valid), one EXPIRED (never 'certified').
@@ -595,7 +628,12 @@ const READY_SCOPE: CoverageScope = Object.freeze({
 });
 
 function baseInputs(
-  overrides: Partial<Pick<CoverageInputs, 'decisions' | 'obligations' | 'mappings' | 'evaluations' | 'certifications' | 'scope' | 'at'>>,
+  overrides: Partial<
+    Pick<
+      CoverageInputs,
+      'decisions' | 'obligations' | 'mappings' | 'evaluations' | 'certifications' | 'scope' | 'at'
+    >
+  >,
 ): CoverageInputs {
   return {
     scope: overrides.scope ?? READY_SCOPE,
@@ -680,15 +718,16 @@ export const FULL_TENANT_INPUTS: CoverageInputs = Object.freeze({
 });
 
 /** A convenience map from scenario name → its coverage inputs. */
-export const COVERAGE_INPUTS_BY_SCENARIO: Readonly<Record<CoverageScenarioName, CoverageInputs>> = Object.freeze({
-  ready: READY_INPUTS,
-  certified: CERTIFIED_INPUTS,
-  'readiness-not-certification': EXPIRED_CERT_INPUTS,
-  stale: STALE_INPUTS,
-  unmapped: UNMAPPED_INPUTS,
-  'reopened-non-applicability': REOPENED_INPUTS,
-  'cross-tenant': CROSS_TENANT_INPUTS,
-});
+export const COVERAGE_INPUTS_BY_SCENARIO: Readonly<Record<CoverageScenarioName, CoverageInputs>> =
+  Object.freeze({
+    ready: READY_INPUTS,
+    certified: CERTIFIED_INPUTS,
+    'readiness-not-certification': EXPIRED_CERT_INPUTS,
+    stale: STALE_INPUTS,
+    unmapped: UNMAPPED_INPUTS,
+    'reopened-non-applicability': REOPENED_INPUTS,
+    'cross-tenant': CROSS_TENANT_INPUTS,
+  });
 
 /** Reconstruct the coverage for a named scenario at `NOW` (composes the REAL engine). */
 export function coverageForScenario(name: CoverageScenarioName): CoverageResult {
@@ -713,7 +752,10 @@ export interface AuditExportRequestFixture {
 export const AUDIT_EXPORT_REQUEST: AuditExportRequestFixture = Object.freeze({
   scope: Object.freeze({ system_id: String(SYSTEM_ID), publication_id: String(PUB_42001_ID) }),
   period: Object.freeze({ from: iso((NOW - ONE_YEAR) as EpochMillis), to: iso(NOW) }),
-  reason: Object.freeze({ code: 'external_audit', text: 'Prepare evidence pack for the annual ISO/IEC 42001 audit.' }),
+  reason: Object.freeze({
+    code: 'external_audit',
+    text: 'Prepare evidence pack for the annual ISO/IEC 42001 audit.',
+  }),
 });
 
 // Re-export the shared scope + ids downstream fixtures/tests pin without recomputing a slug.

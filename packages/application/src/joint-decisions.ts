@@ -88,16 +88,17 @@ export function assessJointDecision(input: {
 
   // 1. Every affected tenant must contribute a CURRENT approval (digest matches the joint digest).
   const currentApprovalTenantIds = new Set(
-    tenantApprovals
-      .filter((a) => a.packageDigest === joint.packageDigest)
-      .map((a) => a.tenantId),
+    tenantApprovals.filter((a) => a.packageDigest === joint.packageDigest).map((a) => a.tenantId),
   );
   const staleTenants = tenantApprovals.filter((a) => a.packageDigest !== joint.packageDigest);
-  const missingTenantIds = joint.affectedTenantIds.filter(
-    (t) => !currentApprovalTenantIds.has(t),
-  );
+  const missingTenantIds = joint.affectedTenantIds.filter((t) => !currentApprovalTenantIds.has(t));
   if (missingTenantIds.length > 0) blockingReasons.push('MISSING_TENANT_APPROVAL');
-  if (staleTenants.some((a) => joint.affectedTenantIds.includes(a.tenantId) && !currentApprovalTenantIds.has(a.tenantId))) {
+  if (
+    staleTenants.some(
+      (a) =>
+        joint.affectedTenantIds.includes(a.tenantId) && !currentApprovalTenantIds.has(a.tenantId),
+    )
+  ) {
     blockingReasons.push('STALE_TENANT_APPROVAL');
   }
 

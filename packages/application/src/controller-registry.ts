@@ -99,7 +99,9 @@ export function registerControllerVersion(
     createdAt: input.createdAt,
     // exactOptionalPropertyTypes: forward each optional only when present, never as explicit undefined.
     ...(input.riskClass !== undefined ? { riskClass: input.riskClass } : {}),
-    ...(input.requiredAuthority !== undefined ? { requiredAuthority: input.requiredAuthority } : {}),
+    ...(input.requiredAuthority !== undefined
+      ? { requiredAuthority: input.requiredAuthority }
+      : {}),
     ...(input.preconditions !== undefined ? { preconditions: input.preconditions } : {}),
     ...(input.stopConditions !== undefined ? { stopConditions: input.stopConditions } : {}),
     ...(input.rollbackPlan !== undefined ? { rollbackPlan: input.rollbackPlan } : {}),
@@ -107,7 +109,9 @@ export function registerControllerVersion(
     ...(input.healthProbe !== undefined ? { healthProbe: input.healthProbe } : {}),
     ...(input.tests !== undefined ? { tests: input.tests } : {}),
     ...(input.approvalPolicy !== undefined ? { approvalPolicy: input.approvalPolicy } : {}),
-    ...(input.approvalDecisionId !== undefined ? { approvalDecisionId: input.approvalDecisionId } : {}),
+    ...(input.approvalDecisionId !== undefined
+      ? { approvalDecisionId: input.approvalDecisionId }
+      : {}),
     ...(input.lifecycleState !== undefined ? { lifecycleState: input.lifecycleState } : {}),
     ...(input.effectiveFrom !== undefined ? { effectiveFrom: input.effectiveFrom } : {}),
     ...(input.effectiveTo !== undefined ? { effectiveTo: input.effectiveTo } : {}),

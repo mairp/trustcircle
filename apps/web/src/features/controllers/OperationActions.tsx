@@ -116,9 +116,12 @@ export function actionIsEnabled(a: OperationActionVM, terminal: boolean): boolea
 /** The stated textual reason an action is disabled (empty when enabled). */
 export function disabledReasonFor(a: OperationActionVM, terminal: boolean): string {
   if (terminal) return 'the operation is terminal; no action may be requested';
-  if (!a.permittedByState) return `not permitted from the current state (${a.kind} is not in the allowed next actions)`;
-  if (a.stateChanging && !a.simulationSatisfied) return 'a state-changing action requires a still-binding simulation (FR-025)';
-  if (a.stateChanging && !a.approvalSatisfied) return 'a state-changing action requires an approval decision (GAR-005)';
+  if (!a.permittedByState)
+    return `not permitted from the current state (${a.kind} is not in the allowed next actions)`;
+  if (a.stateChanging && !a.simulationSatisfied)
+    return 'a state-changing action requires a still-binding simulation (FR-025)';
+  if (a.stateChanging && !a.approvalSatisfied)
+    return 'a state-changing action requires an approval decision (GAR-005)';
   return '';
 }
 
@@ -126,7 +129,7 @@ export function disabledReasonFor(a: OperationActionVM, terminal: boolean): stri
 
 function actionButton(a: OperationActionVM, terminal: boolean): string {
   const enabled = actionIsEnabled(a, terminal);
-  const reason = enabled ? '' : (a.disabledReason || disabledReasonFor(a, terminal));
+  const reason = enabled ? '' : a.disabledReason || disabledReasonFor(a, terminal);
   const disabledAttrs = enabled
     ? ''
     : ` disabled aria-disabled="true" data-disabled-reason="${esc(reason)}"`;

@@ -224,7 +224,8 @@ function searchAndFilterControls(m: DecisionInboxModel): string {
 // ── One queue row ────────────────────────────────────────────────────────────────────────────────
 
 function requirementsCell(reqs: readonly InboxRequirementVM[]): string {
-  if (reqs.length === 0) return '<span data-testid="row-no-open-requirements">no open requirements</span>';
+  if (reqs.length === 0)
+    return '<span data-testid="row-no-open-requirements">no open requirements</span>';
   const items = reqs
     .map(
       (r) =>

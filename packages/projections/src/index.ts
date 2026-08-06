@@ -56,3 +56,4 @@ export * from './last-known-state.ts';
 // (availability class), business impact, affected work, and a conservative SAFE NEXT ACTION — at an
 // injected `at`. It never infers current health from stale data. Leaf-clean, snapshot-digest witness.
 export * from './operational-projector.ts';
+export * from './governed-platform-projector.ts';

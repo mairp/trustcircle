@@ -62,21 +62,24 @@ export function runUncertainRemoteOutcomeScenario(inputs: ControllerInputs): Sce
   // FR-028 — an uncertain latest outcome is NOT confirmed, and IS awaiting reconciliation.
   criteria.push({
     ref: 'FR-028 (uncertainty ≠ success)',
-    statement: 'A timed-out/severed dispatch is not confirmed and surfaces awaiting-reconciliation — an acknowledgement is never a success.',
+    statement:
+      'A timed-out/severed dispatch is not confirmed and surfaces awaiting-reconciliation — an acknowledgement is never a success.',
     satisfied:
       uncertain.latestOutcomeUncertain === true &&
       uncertain.effectConfirmed === false &&
       uncertain.awaitingReconciliation === true &&
       uncertain.state === 'reconciling',
     evidence: `state=${uncertain.state}, latestOutcomeUncertain=${uncertain.latestOutcomeUncertain}, effectConfirmed=${uncertain.effectConfirmed}, awaitingReconciliation=${uncertain.awaitingReconciliation}`,
-    observedVia: 'OperationDetailModel(uncertain_outcome).{latestOutcomeUncertain,effectConfirmed,awaitingReconciliation,state}',
+    observedVia:
+      'OperationDetailModel(uncertain_outcome).{latestOutcomeUncertain,effectConfirmed,awaitingReconciliation,state}',
     negativeControl: `the verified_success op IS confirmed (effectConfirmed=${confirmed.effectConfirmed}, awaitingReconciliation=${confirmed.awaitingReconciliation}) — confirmation is scenario-truth, not a default`,
   });
 
   // FR-028 — the confirmed success WAS established by a DIRECT remote observation (not an ack).
   criteria.push({
     ref: 'FR-028 (observation-first)',
-    statement: 'The only confirmed operation is one whose effect a reconciliation established from a direct remote observation.',
+    statement:
+      'The only confirmed operation is one whose effect a reconciliation established from a direct remote observation.',
     satisfied:
       confirmed.effectConfirmed === true &&
       confirmed.state === 'succeeded' &&
@@ -85,35 +88,41 @@ export function runUncertainRemoteOutcomeScenario(inputs: ControllerInputs): Sce
       confirmed.reconciliation.establishedState === true &&
       confirmed.reconciliation.observedEffectCount === 1,
     evidence: `confirmed: usedRemoteObservation=${confirmed.reconciliation?.usedRemoteObservation}, establishedState=${confirmed.reconciliation?.establishedState}, observedEffectCount=${confirmed.reconciliation?.observedEffectCount}`,
-    observedVia: 'OperationDetailModel(verified_success).reconciliation.{usedRemoteObservation,establishedState,observedEffectCount}',
+    observedVia:
+      'OperationDetailModel(verified_success).reconciliation.{usedRemoteObservation,establishedState,observedEffectCount}',
     negativeControl: `the uncertain op's reconciliation established nothing (establishedState=${uncertain.reconciliation?.establishedState ?? 'n/a'}) — no observation, no success`,
   });
 
   // FR-028 — the uncertain op's reconciliation is explicitly STILL uncertain (no established state, count 0).
   criteria.push({
     ref: 'FR-028 (still uncertain)',
-    statement: 'While uncertain, the reconciliation region reports no established state and zero observed effects.',
+    statement:
+      'While uncertain, the reconciliation region reports no established state and zero observed effects.',
     satisfied:
       uncertain.reconciliation !== null &&
       uncertain.reconciliation.establishedState === false &&
       uncertain.reconciliation.observedEffectCount === 0 &&
       uncertain.reconciliation.usedRemoteObservation === false,
     evidence: `uncertain reconciliation: establishedState=${uncertain.reconciliation?.establishedState}, observedEffectCount=${uncertain.reconciliation?.observedEffectCount}`,
-    observedVia: 'OperationDetailModel(uncertain_outcome).reconciliation.{establishedState,observedEffectCount,usedRemoteObservation}',
-    negativeControl: 'were the reconciliation to claim establishedState=true with no observation, this would fail — state is never inferred',
+    observedVia:
+      'OperationDetailModel(uncertain_outcome).reconciliation.{establishedState,observedEffectCount,usedRemoteObservation}',
+    negativeControl:
+      'were the reconciliation to claim establishedState=true with no observation, this would fail — state is never inferred',
   });
 
   // SC-011 — one logical dispatch is exactly one governed effect: no duplicate is masked in either scenario.
   criteria.push({
     ref: 'SC-011 (one effect)',
-    statement: 'Neither the uncertain nor the confirmed operation reports a duplicate effect — one dispatch is exactly one effect, and any duplicate would be surfaced.',
+    statement:
+      'Neither the uncertain nor the confirmed operation reports a duplicate effect — one dispatch is exactly one effect, and any duplicate would be surfaced.',
     satisfied:
       (uncertain.reconciliation === null || uncertain.reconciliation.duplicateEffect === false) &&
       (confirmed.reconciliation === null || confirmed.reconciliation.duplicateEffect === false) &&
       (confirmed.reconciliation?.observedEffectCount ?? 0) <= 1,
     evidence: `confirmed observedEffectCount=${confirmed.reconciliation?.observedEffectCount ?? 0}; duplicateEffect uncertain=${uncertain.reconciliation?.duplicateEffect ?? false}/confirmed=${confirmed.reconciliation?.duplicateEffect ?? false}`,
     observedVia: 'OperationDetailModel.reconciliation.{duplicateEffect,observedEffectCount}',
-    negativeControl: 'the OperationDetail presenter renders a duplicate-effect warning when duplicateEffect=true — a duplicate can never be hidden',
+    negativeControl:
+      'the OperationDetail presenter renders a duplicate-effect warning when duplicateEffect=true — a duplicate can never be hidden',
   });
 
   return finish('uncertain-remote-outcome', criteria);

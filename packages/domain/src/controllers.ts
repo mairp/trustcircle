@@ -242,7 +242,9 @@ export function makeControllerVersion(input: {
   assertPositiveInt(input.version, 'controller.version');
   assertNonEmpty(input.name, 'controller.name');
   if (!Array.isArray(input.capabilities) || input.capabilities.length < 1) {
-    throw new TypeError('controller.capabilities must be a non-empty array (a controller with no declared capability can operate nothing)');
+    throw new TypeError(
+      'controller.capabilities must be a non-empty array (a controller with no declared capability can operate nothing)',
+    );
   }
   const capabilities = input.capabilities.map((cap, i) => {
     assertCapability(cap, `controller.capabilities[${i}]`);
@@ -261,22 +263,30 @@ export function makeControllerVersion(input: {
   const lifecycleState = input.lifecycleState ?? 'draft';
   assertMember(lifecycleState, CONTROLLER_LIFECYCLE_STATES, 'controller.lifecycleState');
   assertUuid(input.ownerPrincipalId, 'controller.ownerPrincipalId');
-  if (input.approvalDecisionId !== undefined) assertUuid(input.approvalDecisionId, 'controller.approvalDecisionId');
+  if (input.approvalDecisionId !== undefined)
+    assertUuid(input.approvalDecisionId, 'controller.approvalDecisionId');
   const tests = frozenObjArray(input.tests);
-  if (input.effectiveFrom !== undefined) assertEpoch(input.effectiveFrom, 'controller.effectiveFrom');
+  if (input.effectiveFrom !== undefined)
+    assertEpoch(input.effectiveFrom, 'controller.effectiveFrom');
   if (input.effectiveTo !== undefined) assertEpoch(input.effectiveTo, 'controller.effectiveTo');
   // Fail-closed activation: an ACTIVE version must carry ≥1 test, a health probe, an activation
   // instant, and an approval-requirement policy — a controller cannot govern production without a
   // verification obligation, an observability probe, and a declared approval policy (GAR-005).
   if (lifecycleState === 'active') {
     if (input.effectiveFrom === undefined) {
-      throw new TypeError('an active controller version requires an effectiveFrom instant (fail-closed activation)');
+      throw new TypeError(
+        'an active controller version requires an effectiveFrom instant (fail-closed activation)',
+      );
     }
     if (tests.length < 1) {
-      throw new TypeError('an active controller version requires ≥ 1 test (fail-closed activation)');
+      throw new TypeError(
+        'an active controller version requires ≥ 1 test (fail-closed activation)',
+      );
     }
     if (input.approvalDecisionId === undefined) {
-      throw new TypeError('an active controller version requires an approvalDecisionId (registration approval)');
+      throw new TypeError(
+        'an active controller version requires an approvalDecisionId (registration approval)',
+      );
     }
   }
   assertEpoch(input.createdAt, 'controller.createdAt');
@@ -307,7 +317,10 @@ export function makeControllerVersion(input: {
 
 /** The capability that declares `kind`, or undefined when the manifest does not declare it. An
  *  operation whose kind is not a declared capability MUST be refused (manifest-only control). */
-export function capabilityFor(v: ControllerVersion, kind: OperationKind): ControllerCapability | undefined {
+export function capabilityFor(
+  v: ControllerVersion,
+  kind: OperationKind,
+): ControllerCapability | undefined {
   return v.capabilities.find((c) => c.operationKind === kind);
 }
 
@@ -420,7 +433,8 @@ export function makeControllerInstance(input: {
   assertMember(health, HEALTH_STATES, 'instance.health');
   const state = input.state ?? 'observed';
   assertMember(state, INSTANCE_STATES, 'instance.state');
-  if (input.activeOperationId !== undefined) assertUuid(input.activeOperationId, 'instance.activeOperationId');
+  if (input.activeOperationId !== undefined)
+    assertUuid(input.activeOperationId, 'instance.activeOperationId');
   const version = input.version ?? 1;
   assertPositiveInt(version, 'instance.version');
   assertEpoch(input.lastObservationAt, 'instance.lastObservationAt');
@@ -572,7 +586,9 @@ export function makeSimulation(input: {
   assertEpoch(input.producedAt, 'simulation.producedAt');
   assertEpoch(input.expiresAt, 'simulation.expiresAt');
   if (input.expiresAt <= input.producedAt) {
-    throw new RangeError('simulation.expiresAt must be strictly after producedAt (a simulation must expire)');
+    throw new RangeError(
+      'simulation.expiresAt must be strictly after producedAt (a simulation must expire)',
+    );
   }
   return compact<Simulation>({
     id: input.id,
@@ -605,7 +621,11 @@ export function simulationIsCurrent(s: Simulation, now: EpochMillis): boolean {
  * member — most commonly a source revision change — the simulation no longer binds and the operation
  * MUST be re-simulated. Returns true when the simulation is INVALIDATED (drift detected or stale).
  */
-export function sourceDriftInvalidates(s: Simulation, observed: BoundVersions, now: EpochMillis): boolean {
+export function sourceDriftInvalidates(
+  s: Simulation,
+  observed: BoundVersions,
+  now: EpochMillis,
+): boolean {
   if (!simulationIsCurrent(s, now)) return true;
   return !boundVersionsEqual(s.bound, observed);
 }
@@ -796,19 +816,39 @@ export function makeControllerOperation(input: {
   const observed = input.observedVersions ?? input.desiredVersions;
   assertBoundVersions(observed, 'operation.observedVersions');
   if (input.simulationId !== undefined) assertUuid(input.simulationId, 'operation.simulationId');
-  if (input.approvalDecisionId !== undefined) assertUuid(input.approvalDecisionId, 'operation.approvalDecisionId');
-  if (input.continuityLeaseId !== undefined) assertUuid(input.continuityLeaseId, 'operation.continuityLeaseId');
+  if (input.approvalDecisionId !== undefined)
+    assertUuid(input.approvalDecisionId, 'operation.approvalDecisionId');
+  if (input.continuityLeaseId !== undefined)
+    assertUuid(input.continuityLeaseId, 'operation.continuityLeaseId');
   const state = input.state ?? 'requested';
   assertMember(state, OPERATION_STATES, 'operation.state');
   // A state-changing operation may only reach approved/executing/onward with a simulation + approval.
-  if (STATE_CHANGING_OPERATION_KINDS.includes(input.operationKind) && input.operationKind !== 'emergency_stop') {
-    const needsGate = (['approved', 'executing', 'continuity', 'paused', 'reconciling', 'verifying', 'succeeded', 'rolled_back'] as OperationState[]).includes(state);
+  if (
+    STATE_CHANGING_OPERATION_KINDS.includes(input.operationKind) &&
+    input.operationKind !== 'emergency_stop'
+  ) {
+    const needsGate = (
+      [
+        'approved',
+        'executing',
+        'continuity',
+        'paused',
+        'reconciling',
+        'verifying',
+        'succeeded',
+        'rolled_back',
+      ] as OperationState[]
+    ).includes(state);
     if (needsGate) {
       if (input.simulationId === undefined) {
-        throw new TypeError(`a state-changing operation at state=${state} requires a simulationId (simulate-before-execute)`);
+        throw new TypeError(
+          `a state-changing operation at state=${state} requires a simulationId (simulate-before-execute)`,
+        );
       }
       if (input.approvalDecisionId === undefined) {
-        throw new TypeError(`a state-changing operation at state=${state} requires an approvalDecisionId (approve-before-execute)`);
+        throw new TypeError(
+          `a state-changing operation at state=${state} requires an approvalDecisionId (approve-before-execute)`,
+        );
       }
     }
   }
@@ -947,7 +987,10 @@ export function makeOperationAttempt(input: {
   assertUuid(input.operationId, 'attempt.operationId');
   assertNonEmpty(input.stepId, 'attempt.stepId');
   assertPositiveInt(input.attemptNumber, 'attempt.attemptNumber');
-  if (typeof input.dispatchIdempotencyKey !== 'string' || input.dispatchIdempotencyKey.trim().length < 8) {
+  if (
+    typeof input.dispatchIdempotencyKey !== 'string' ||
+    input.dispatchIdempotencyKey.trim().length < 8
+  ) {
     throw new TypeError('attempt.dispatchIdempotencyKey must be ≥ 8 chars');
   }
   assertUuid(input.boundAdapterVersionId, 'attempt.boundAdapterVersionId');
@@ -958,7 +1001,9 @@ export function makeOperationAttempt(input: {
   // UNCERTAINTY IS NOT SUCCESS (FR-028): `confirmed` REQUIRES a directly observed remote effect —
   // a bare acknowledgement (which can be lost or arrive without the effect) is never confirmation.
   if (outcome === 'confirmed' && !remoteEffectObserved) {
-    throw new TypeError('attempt.outcome=confirmed requires remoteEffectObserved=true (acknowledgement is not confirmation, FR-028)');
+    throw new TypeError(
+      'attempt.outcome=confirmed requires remoteEffectObserved=true (acknowledgement is not confirmation, FR-028)',
+    );
   }
   assertEpoch(input.startedAt, 'attempt.startedAt');
   if (input.completedAt !== undefined) assertEpoch(input.completedAt, 'attempt.completedAt');
@@ -970,7 +1015,8 @@ export function makeOperationAttempt(input: {
     attemptNumber: input.attemptNumber,
     dispatchIdempotencyKey: input.dispatchIdempotencyKey.trim(),
     boundAdapterVersionId: input.boundAdapterVersionId,
-    requestDigest: input.requestDigest ?? sha256(`${input.operationId}:${input.stepId}:${input.attemptNumber}`),
+    requestDigest:
+      input.requestDigest ?? sha256(`${input.operationId}:${input.stepId}:${input.attemptNumber}`),
     acknowledged,
     remoteEffectObserved,
     response: frozenObj(input.response),
@@ -1067,7 +1113,9 @@ export function makeControllerContinuityLease(input: {
   // FR-047: continuity applies ONLY to an operation approved AND started before the failure. A lease
   // whose operation had not started is a NEW-authority grant and is forbidden.
   if (input.operationStartedBeforeFailure !== true) {
-    throw new TypeError('a continuity lease requires operationStartedBeforeFailure=true (continuity never starts a new operation, FR-047)');
+    throw new TypeError(
+      'a continuity lease requires operationStartedBeforeFailure=true (continuity never starts a new operation, FR-047)',
+    );
   }
   const durationMs = input.expiresAt - input.grantedAt;
   if (durationMs <= 0) {
@@ -1075,12 +1123,15 @@ export function makeControllerContinuityLease(input: {
   }
   // NFR-012: hard 15-minute ceiling — a lease may not exceed it.
   if (durationMs > CONTINUITY_LEASE_CEILING_MS) {
-    throw new RangeError(`a continuity lease may not exceed ${CONTINUITY_LEASE_CEILING_MS}ms (15 minutes, NFR-012); got ${durationMs}ms`);
+    throw new RangeError(
+      `a continuity lease may not exceed ${CONTINUITY_LEASE_CEILING_MS}ms (15 minutes, NFR-012); got ${durationMs}ms`,
+    );
   }
   const state = input.state ?? 'active';
   assertMember(state, CONTINUITY_LEASE_STATES, 'lease.state');
   const eligible = input.eligibleOperationClasses ?? [];
-  for (const k of eligible) assertMember(k, OPERATION_KINDS, 'lease.eligibleOperationClasses entry');
+  for (const k of eligible)
+    assertMember(k, OPERATION_KINDS, 'lease.eligibleOperationClasses entry');
   const actionLimit = input.actionLimit ?? 1;
   assertPositiveInt(actionLimit, 'lease.actionLimit');
   const obs = input.requiredLocalObservations ?? [];
@@ -1106,7 +1157,10 @@ export function makeControllerContinuityLease(input: {
 }
 
 /** True iff the lease is active AND unexpired at `now`. Beyond expiry the controller MUST pause. */
-export function controllerContinuityLeaseActiveAt(l: ControllerContinuityLease, now: EpochMillis): boolean {
+export function controllerContinuityLeaseActiveAt(
+  l: ControllerContinuityLease,
+  now: EpochMillis,
+): boolean {
   return l.state === 'active' && now < l.expiresAt;
 }
 
@@ -1130,7 +1184,10 @@ export function continuityMayExecuteStep(input: {
   if (!controllerContinuityLeaseActiveAt(lease, now)) {
     return { permitted: false, reason: 'lease_expired_or_inactive' };
   }
-  if (lease.eligibleOperationClasses.length > 0 && !lease.eligibleOperationClasses.includes(operationKind)) {
+  if (
+    lease.eligibleOperationClasses.length > 0 &&
+    !lease.eligibleOperationClasses.includes(operationKind)
+  ) {
     return { permitted: false, reason: 'operation_class_not_eligible' };
   }
   if (input.actionsAlreadyTaken >= lease.actionLimit) {
@@ -1246,11 +1303,15 @@ export function makeReconciliationRun(input: {
   // NEVER infer success from an acknowledgement (FR-028): a `reconciled_effect_present` verdict
   // REQUIRES a direct remote observation, not a returned ack.
   if (result === 'reconciled_effect_present' && !usedRemoteObservation) {
-    throw new TypeError('reconciled_effect_present requires usedRemoteObservation=true (never infer success from an acknowledgement, FR-028)');
+    throw new TypeError(
+      'reconciled_effect_present requires usedRemoteObservation=true (never infer success from an acknowledgement, FR-028)',
+    );
   }
   // A duplicate effect is a defect: reconciliation of a single logical dispatch must not observe > 1.
   if (result === 'reconciled_effect_present' && observedEffectCount > 1) {
-    throw new TypeError('reconciled_effect_present with observedEffectCount>1 is a duplicate governed effect (SC-011)');
+    throw new TypeError(
+      'reconciled_effect_present with observedEffectCount>1 is a duplicate governed effect (SC-011)',
+    );
   }
   assertEpoch(input.ranAt, 'reconciliation.ranAt');
   return compact<ReconciliationRun>({
@@ -1296,7 +1357,13 @@ export function reconciliationRunDigest(r: ReconciliationRun): string {
 //    else escalates and stays degraded.
 // ===========================================================================
 
-export const ROLLBACK_RESULTS = ['rolled_back', 'partial', 'conflict', 'unavailable', 'failed'] as const;
+export const ROLLBACK_RESULTS = [
+  'rolled_back',
+  'partial',
+  'conflict',
+  'unavailable',
+  'failed',
+] as const;
 export type RollbackResult = (typeof ROLLBACK_RESULTS)[number];
 
 export interface RollbackContext {
@@ -1340,23 +1407,72 @@ export function decideRollback(ctx: RollbackContext): RollbackDecision {
   const residual = Math.max(0, ctx.totalSteps - ctx.compensatedSteps);
 
   if (ctx.preimageEvidenceId === null) {
-    return { result: 'unavailable', operationCleared: false, protectedNewerState: false, remainsDegraded: true, mustEscalate: true, residualDifferences: residual };
+    return {
+      result: 'unavailable',
+      operationCleared: false,
+      protectedNewerState: false,
+      remainsDegraded: true,
+      mustEscalate: true,
+      residualDifferences: residual,
+    };
   }
   // Protect newer legitimate state — a straight restore over a drifted source destroys real work.
   if (ctx.observedRevision !== ctx.producedRevision) {
-    return { result: 'conflict', operationCleared: false, protectedNewerState: true, remainsDegraded: true, mustEscalate: true, residualDifferences: residual };
+    return {
+      result: 'conflict',
+      operationCleared: false,
+      protectedNewerState: true,
+      remainsDegraded: true,
+      mustEscalate: true,
+      residualDifferences: residual,
+    };
   }
   if (!ctx.compensationAvailable) {
-    return { result: 'unavailable', operationCleared: false, protectedNewerState: false, remainsDegraded: true, mustEscalate: true, residualDifferences: residual };
+    return {
+      result: 'unavailable',
+      operationCleared: false,
+      protectedNewerState: false,
+      remainsDegraded: true,
+      mustEscalate: true,
+      residualDifferences: residual,
+    };
   }
   if (!ctx.compensationSucceeded) {
-    return { result: 'failed', operationCleared: false, protectedNewerState: false, remainsDegraded: true, mustEscalate: true, residualDifferences: residual };
+    return {
+      result: 'failed',
+      operationCleared: false,
+      protectedNewerState: false,
+      remainsDegraded: true,
+      mustEscalate: true,
+      residualDifferences: residual,
+    };
   }
   if (ctx.compensatedSteps < ctx.totalSteps) {
-    return { result: 'partial', operationCleared: false, protectedNewerState: false, remainsDegraded: true, mustEscalate: true, residualDifferences: residual };
+    return {
+      result: 'partial',
+      operationCleared: false,
+      protectedNewerState: false,
+      remainsDegraded: true,
+      mustEscalate: true,
+      residualDifferences: residual,
+    };
   }
   if (!ctx.restorationVerified) {
-    return { result: 'partial', operationCleared: false, protectedNewerState: false, remainsDegraded: true, mustEscalate: true, residualDifferences: 0 };
+    return {
+      result: 'partial',
+      operationCleared: false,
+      protectedNewerState: false,
+      remainsDegraded: true,
+      mustEscalate: true,
+      residualDifferences: 0,
+    };
   }
-  return { result: 'rolled_back', operationCleared: true, protectedNewerState: false, remainsDegraded: false, mustEscalate: false, residualDifferences: 0 };
+  return {
+    result: 'rolled_back',
+    operationCleared: true,
+    protectedNewerState: false,
+    remainsDegraded: false,
+    mustEscalate: false,
+    residualDifferences: 0,
+  };
 }

@@ -462,7 +462,9 @@ class BodyError extends Error {
 }
 
 /** Validate + normalize an adapter-registration body. */
-function parseAdapterRegistration(raw: unknown): Omit<
+function parseAdapterRegistration(
+  raw: unknown,
+): Omit<
   RegisterAdapterCommand,
   'tenantId' | 'registrarPrincipalId' | 'correlationId' | 'idempotencyKey'
 > {
@@ -534,7 +536,10 @@ function parseAdapterRegistration(raw: unknown): Omit<
     !Array.isArray(capabilities) ||
     !capabilities.every((cap) => typeof cap === 'string' && cap.length > 0)
   ) {
-    throw new BodyError('invalid_capabilities', 'capabilities must be an array of non-empty strings.');
+    throw new BodyError(
+      'invalid_capabilities',
+      'capabilities must be an array of non-empty strings.',
+    );
   }
   const manifest = body['manifest'];
   if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) {
@@ -591,7 +596,13 @@ function registerAdapter(ports: IntegrationRoutePorts): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     let raw: unknown;
@@ -653,7 +664,13 @@ function listConnectors(ports: IntegrationRoutePorts): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     const url = new URL(c.req.url, 'http://internal');
@@ -707,7 +724,13 @@ function reconcileConnector(ports: IntegrationRoutePorts): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const connectorId = connectorIdOf(c);
     if (connectorId === undefined) {
@@ -775,7 +798,13 @@ function platformHealth(ports: IntegrationRoutePorts): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     let view: PlatformHealthView;
@@ -810,7 +839,13 @@ function platformReadiness(ports: IntegrationRoutePorts): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     let view: PlatformReadinessView;

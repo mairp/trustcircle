@@ -67,9 +67,7 @@ export type InfrastructureClassification = (typeof INFRASTRUCTURE_CLASSIFICATION
 export const UNKNOWN_INFRASTRUCTURE = 'unknown' as const;
 
 export function isInfrastructureClassification(s: unknown): s is InfrastructureClassification {
-  return (
-    typeof s === 'string' && (INFRASTRUCTURE_CLASSIFICATIONS as readonly string[]).includes(s)
-  );
+  return typeof s === 'string' && (INFRASTRUCTURE_CLASSIFICATIONS as readonly string[]).includes(s);
 }
 
 /**
@@ -221,7 +219,9 @@ for (const [candidate, p] of Object.entries(PLACEMENTS)) {
   }
   // A mutating system MUST require owner approval — a read-only one need not.
   if (p.interactionMode === 'mutation' && !p.mutationRequiresApproval) {
-    throw new Error(`infrastructure: mutating candidate "${candidate}" must require owner approval`);
+    throw new Error(
+      `infrastructure: mutating candidate "${candidate}" must require owner approval`,
+    );
   }
 }
 
@@ -335,14 +335,23 @@ export function safeInfraId(id: string): string {
   return looksLikeSecretValue(rejoined) ? REDACTED_PLACEHOLDER : rejoined;
 }
 
-function freshnessOf(lastObservedAt: EpochMillis, now: EpochMillis, horizon: number): InfraFreshness {
+function freshnessOf(
+  lastObservedAt: EpochMillis,
+  now: EpochMillis,
+  horizon: number,
+): InfraFreshness {
   if (!Number.isFinite(lastObservedAt)) return 'unknown';
   return now - lastObservedAt <= horizon ? 'fresh' : 'stale';
 }
 
 function metadataFor(
   scope: ScanScope,
-  input: { location: string; classification: string; onboarding: OnboardingState | 'gap'; evidence: unknown },
+  input: {
+    location: string;
+    classification: string;
+    onboarding: OnboardingState | 'gap';
+    evidence: unknown;
+  },
 ): MetadataOnlyRecord {
   const record = toMetadataOnlyRecord({
     scope,
@@ -354,7 +363,9 @@ function metadataFor(
     evidence: input.evidence,
   });
   if (!isMetadataOnly(record)) {
-    throw new Error(`infrastructure classifier produced a non-metadata record for ${input.location}`);
+    throw new Error(
+      `infrastructure classifier produced a non-metadata record for ${input.location}`,
+    );
   }
   return record;
 }
@@ -388,7 +399,9 @@ export function classifyInfrastructure(
   else if (freshness === 'stale' || freshness === 'unknown') gapReason = 'stale';
 
   if (gapReason) {
-    const firstObserved = Number.isFinite(discovered.lastObservedAt) ? discovered.lastObservedAt : now;
+    const firstObserved = Number.isFinite(discovered.lastObservedAt)
+      ? discovered.lastObservedAt
+      : now;
     const ageMs = Math.max(0, now - firstObserved);
     const gap: InfrastructureGap = Object.freeze({
       candidateId: identity,

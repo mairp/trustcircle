@@ -69,7 +69,9 @@ test.describe('decision queue — prioritized, contextful, accessible', () => {
     await expect(page.locator('main#main')).toBeVisible();
   });
 
-  test('rows are ordered by priority (impact × risk × time) and stated in text', async ({ page }) => {
+  test('rows are ordered by priority (impact × risk × time) and stated in text', async ({
+    page,
+  }) => {
     const priorities = await page
       .getByTestId('row-priority')
       .allInnerTexts()
@@ -78,10 +80,17 @@ test.describe('decision queue — prioritized, contextful, accessible', () => {
     const sorted = [...priorities].sort((a, b) => b - a);
     expect(priorities).toEqual(sorted); // non-increasing → highest priority surfaced first
     // NEGATIVE control: an ascending order would NOT equal the descending sort.
-    expect(priorities).not.toEqual([...priorities].sort((a, b) => a - b).reverse().reverse());
+    expect(priorities).not.toEqual(
+      [...priorities]
+        .sort((a, b) => a - b)
+        .reverse()
+        .reverse(),
+    );
   });
 
-  test('every row carries the context to decide (action, risk, impact, expiry)', async ({ page }) => {
+  test('every row carries the context to decide (action, risk, impact, expiry)', async ({
+    page,
+  }) => {
     const rows = page.getByTestId('inbox-row');
     await expect(rows).toHaveCount(5);
     for (const cell of ['row-requested-action', 'row-risk', 'row-impact', 'row-expiry']) {
@@ -98,7 +107,10 @@ test.describe('decision queue — prioritized, contextful, accessible', () => {
       `[data-testid="inbox-row"][data-decision-id="${SEED.packages.expired.id}"]`,
     );
     await expect(expiredRow).toHaveAttribute('data-time-posture', 'expired');
-    await expect(expiredRow.getByTestId('row-time-warning')).toHaveAttribute('data-severity', 'expired');
+    await expect(expiredRow.getByTestId('row-time-warning')).toHaveAttribute(
+      'data-severity',
+      'expired',
+    );
     await expect(expiredRow.getByTestId('row-time-warning')).toContainText(/expired/i);
 
     // The conflicted package (ttl ≤ 4h) renders the "Expiring soon" warning.
@@ -136,7 +148,9 @@ test.describe('decision queue — prioritized, contextful, accessible', () => {
       `[data-testid="inbox-row"][data-decision-id="${SEED.packages.conflicted.id}"]`,
     );
     await expect(conflicted).toHaveAttribute('data-actionable', 'false');
-    await expect(conflicted.getByTestId('row-conflicts-cell')).toContainText(/separation-of-duties/i);
+    await expect(conflicted.getByTestId('row-conflicts-cell')).toContainText(
+      /separation-of-duties/i,
+    );
 
     // FR-014 — the expired decision withholds live actions and is escalated (never silently closed).
     const expired = page.locator(
@@ -168,8 +182,14 @@ test.describe('federated joint approval — blocked on three gates, no evidence 
     page,
   }) => {
     await expect(page.getByTestId('joint-main')).toHaveAttribute('data-execution-blocked', 'true');
-    await expect(page.getByTestId('joint-summary')).toHaveAttribute('data-guardrails-passed', 'false');
-    await expect(page.getByTestId('joint-summary')).toHaveAttribute('data-all-tenants-approved', 'false');
+    await expect(page.getByTestId('joint-summary')).toHaveAttribute(
+      'data-guardrails-passed',
+      'false',
+    );
+    await expect(page.getByTestId('joint-summary')).toHaveAttribute(
+      'data-all-tenants-approved',
+      'false',
+    );
     await expect(page.getByTestId('joint-summary-text')).toContainText(/blocked/i);
   });
 
@@ -243,11 +263,22 @@ test.describe('acceptance runners — every criterion discharged, non-vacuously'
     const result = runHumanDecisionScenario(buildHumanDecisionInputs(SEED));
     expect(result.allSatisfied).toBe(true);
     // Every FR/SC the runner claims is present.
-    for (const ref of ['FR-010', 'FR-011', 'FR-012', 'FR-013', 'FR-014 / SC-020', 'SC-003', 'FR-015 / SC-004']) {
+    for (const ref of [
+      'FR-010',
+      'FR-011',
+      'FR-012',
+      'FR-013',
+      'FR-014 / SC-020',
+      'SC-003',
+      'FR-015 / SC-004',
+    ]) {
       const c = result.criteria.find((x) => x.ref === ref);
       expect(c, `criterion ${ref} present`).toBeDefined();
       expect(c!.satisfied, `criterion ${ref} satisfied`).toBe(true);
-      expect(c!.negativeControl.length, `criterion ${ref} has a non-vacuity control`).toBeGreaterThan(0);
+      expect(
+        c!.negativeControl.length,
+        `criterion ${ref} has a non-vacuity control`,
+      ).toBeGreaterThan(0);
     }
     expect(result.digest).toMatch(/^sha256:[0-9a-f]{64}$/);
   });

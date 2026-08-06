@@ -89,7 +89,10 @@ export function importStandardsSeed(seed: StandardsSeed, now: EpochMillis): Impo
   if (seed === null || typeof seed !== 'object') {
     throw new StandardsImportError('seed must be an object');
   }
-  const seedPubs = requireArray(seed.publications, 'seed.publications') as readonly SeedPublication[];
+  const seedPubs = requireArray(
+    seed.publications,
+    'seed.publications',
+  ) as readonly SeedPublication[];
 
   const publications: StandardPublication[] = [];
   const clauses: ClauseVersion[] = [];

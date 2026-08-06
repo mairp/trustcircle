@@ -119,6 +119,7 @@ const EXPECTED_ADAPTERS = [
   'adapters/workflow-orchestration',
   'adapters/agentctl',
   'adapters/wiggum', // hosts src/snapshot.ts per T264 / US6 (read-only Wiggum discovery)
+  'adapters/lisa', // governed LISA evidence, lifecycle, mapping, and snapshot adapter boundary
 ];
 
 const ALL_MEMBERS = [...EXPECTED_PACKAGES, ...EXPECTED_APPS, ...EXPECTED_ADAPTERS];

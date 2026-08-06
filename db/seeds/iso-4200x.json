@@ -16,19 +16,59 @@
       "registryVersion": 1,
       "supersedesId": null,
       "clauses": [
-        { "clauseRef": "4", "title": "Context of the organization", "materialType": "requirements", "version": 1 },
+        {
+          "clauseRef": "4",
+          "title": "Context of the organization",
+          "materialType": "requirements",
+          "version": 1
+        },
         { "clauseRef": "5", "title": "Leadership", "materialType": "requirements", "version": 1 },
         { "clauseRef": "6", "title": "Planning", "materialType": "requirements", "version": 1 },
-        { "clauseRef": "6.1.2", "title": "AI risk assessment", "materialType": "requirements", "version": 1 },
-        { "clauseRef": "6.1.4", "title": "AI system impact assessment", "materialType": "requirements", "version": 1 },
+        {
+          "clauseRef": "6.1.2",
+          "title": "AI risk assessment",
+          "materialType": "requirements",
+          "version": 1
+        },
+        {
+          "clauseRef": "6.1.4",
+          "title": "AI system impact assessment",
+          "materialType": "requirements",
+          "version": 1
+        },
         { "clauseRef": "7", "title": "Support", "materialType": "requirements", "version": 1 },
         { "clauseRef": "8", "title": "Operation", "materialType": "requirements", "version": 1 },
-        { "clauseRef": "9", "title": "Performance evaluation", "materialType": "requirements", "version": 1 },
-        { "clauseRef": "9.2", "title": "Internal audit", "materialType": "requirements", "version": 1 },
-        { "clauseRef": "9.3", "title": "Management review", "materialType": "requirements", "version": 1 },
+        {
+          "clauseRef": "9",
+          "title": "Performance evaluation",
+          "materialType": "requirements",
+          "version": 1
+        },
+        {
+          "clauseRef": "9.2",
+          "title": "Internal audit",
+          "materialType": "requirements",
+          "version": 1
+        },
+        {
+          "clauseRef": "9.3",
+          "title": "Management review",
+          "materialType": "requirements",
+          "version": 1
+        },
         { "clauseRef": "10", "title": "Improvement", "materialType": "requirements", "version": 1 },
-        { "clauseRef": "10.2", "title": "Nonconformity and corrective action", "materialType": "requirements", "version": 1 },
-        { "clauseRef": "A.1", "title": "Annex A reference controls — Policies related to AI", "materialType": "requirements", "version": 1 }
+        {
+          "clauseRef": "10.2",
+          "title": "Nonconformity and corrective action",
+          "materialType": "requirements",
+          "version": 1
+        },
+        {
+          "clauseRef": "A.1",
+          "title": "Annex A reference controls — Policies related to AI",
+          "materialType": "requirements",
+          "version": 1
+        }
       ]
     },
     {
@@ -44,11 +84,36 @@
       "registryVersion": 1,
       "supersedesId": null,
       "clauses": [
-        { "clauseRef": "5", "title": "Considerations for AI system impact assessments", "materialType": "guidance", "version": 1 },
-        { "clauseRef": "6", "title": "Timing and integration into the AI system life cycle", "materialType": "guidance", "version": 1 },
-        { "clauseRef": "7", "title": "Documenting the AI system impact assessment process", "materialType": "guidance", "version": 1 },
-        { "clauseRef": "8", "title": "AI system impact assessment content", "materialType": "guidance", "version": 1 },
-        { "clauseRef": "8.4", "title": "Potential harms and benefits to individuals and groups", "materialType": "guidance", "version": 1 }
+        {
+          "clauseRef": "5",
+          "title": "Considerations for AI system impact assessments",
+          "materialType": "guidance",
+          "version": 1
+        },
+        {
+          "clauseRef": "6",
+          "title": "Timing and integration into the AI system life cycle",
+          "materialType": "guidance",
+          "version": 1
+        },
+        {
+          "clauseRef": "7",
+          "title": "Documenting the AI system impact assessment process",
+          "materialType": "guidance",
+          "version": 1
+        },
+        {
+          "clauseRef": "8",
+          "title": "AI system impact assessment content",
+          "materialType": "guidance",
+          "version": 1
+        },
+        {
+          "clauseRef": "8.4",
+          "title": "Potential harms and benefits to individuals and groups",
+          "materialType": "guidance",
+          "version": 1
+        }
       ]
     },
     {
@@ -64,9 +129,24 @@
       "registryVersion": 1,
       "supersedesId": null,
       "clauses": [
-        { "clauseRef": "5", "title": "General requirements for certification bodies", "materialType": "certification_body_criteria", "version": 1 },
-        { "clauseRef": "7", "title": "Resource requirements — competence of personnel", "materialType": "certification_body_criteria", "version": 1 },
-        { "clauseRef": "9", "title": "Process requirements — audit and certification", "materialType": "certification_body_criteria", "version": 1 }
+        {
+          "clauseRef": "5",
+          "title": "General requirements for certification bodies",
+          "materialType": "certification_body_criteria",
+          "version": 1
+        },
+        {
+          "clauseRef": "7",
+          "title": "Resource requirements — competence of personnel",
+          "materialType": "certification_body_criteria",
+          "version": 1
+        },
+        {
+          "clauseRef": "9",
+          "title": "Process requirements — audit and certification",
+          "materialType": "certification_body_criteria",
+          "version": 1
+        }
       ]
     }
   ]

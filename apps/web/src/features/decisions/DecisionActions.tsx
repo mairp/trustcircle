@@ -59,7 +59,10 @@ export type DecisionActionVerb = (typeof DECISION_ACTION_VERBS)[number];
 const VERB_META: Readonly<Record<DecisionActionVerb, { label: string; hint: string }>> = {
   approve: { label: 'Approve', hint: 'Permit the requested action to proceed.' },
   deny: { label: 'Deny', hint: 'Refuse the requested action.' },
-  request_changes: { label: 'Request changes', hint: 'Return the request to the requester for revision.' },
+  request_changes: {
+    label: 'Request changes',
+    hint: 'Return the request to the requester for revision.',
+  },
   escalate: { label: 'Escalate', hint: 'Raise the decision to a higher authority.' },
   expire: { label: 'Expire', hint: 'Close a lapsed decision without approving it.' },
   cancel: { label: 'Cancel', hint: 'Withdraw the decision request.' },

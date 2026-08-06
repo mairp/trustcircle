@@ -24,8 +24,8 @@ export function CopilotWorkspace({
     <>
       <section className="copilot-boundary" aria-labelledby="copilot-boundary-title">
         <div>
-          <p className="domain-kicker">Citation-only assistance</p>
-          <h2 id="copilot-boundary-title">Facts stay separate from inference</h2>
+          <p className="domain-kicker">Generated assistance ? non-authoritative</p>
+          <h2 id="copilot-boundary-title">Governed citations stay separate from inference</h2>
         </div>
         <ul>
           <li>Only records already authorized for this tenant and role are searched.</li>
@@ -34,6 +34,9 @@ export function CopilotWorkspace({
           </li>
           <li>
             The copilot cannot approve, attest, verify, close, or execute any governed action.
+          </li>
+          <li>
+            Missing, stale, unauthorized, or conflicting evidence produces a visible abstention.
           </li>
         </ul>
       </section>
@@ -56,7 +59,7 @@ export function CopilotWorkspace({
       </form>
       {question ? (
         <article className="copilot-answer" aria-labelledby="copilot-answer-title">
-          <p className="domain-kicker">Governed answer</p>
+          <p className="domain-kicker">Generated assistance ? non-authoritative</p>
           <h2 id="copilot-answer-title">{question}</h2>
           <section>
             <h3>Facts</h3>
@@ -79,8 +82,8 @@ export function CopilotWorkspace({
                 ))}
               </ol>
             ) : (
-              <div className="verified-empty">
-                <strong>No citable records matched</strong>
+              <div className="verified-empty copilot-abstention" role="status">
+                <strong>Abstained: no citable records matched</strong>
                 <span>No answer is inferred from absent, unauthorized, or unavailable data.</span>
               </div>
             )}
@@ -99,6 +102,15 @@ export function CopilotWorkspace({
               {cited.length > 0
                 ? 'Open the highest-priority cited record, confirm its current owner and source freshness, then use only the safe next action exposed by that authoritative workflow.'
                 : 'Broaden the question or restore unavailable domain reads; do not treat the empty answer as a healthy result.'}
+            </p>
+          </section>
+          <section className="copilot-limitations">
+            <h3>Limitations and abstention boundary</h3>
+            <p>
+              This response is generated from the current authorized projection. It is not an
+              approval, attestation, certification, or authoritative compliance conclusion. Re-open
+              each citation before acting; if freshness, authority, or source consistency cannot be
+              established, treat the response as abstained.
             </p>
           </section>
         </article>

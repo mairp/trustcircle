@@ -156,7 +156,12 @@ describe('FR-017 — the preserved original precedes and binds the opened case',
     expect(preserveCalls).toEqual([rec.recordId]);
 
     // INDEPENDENT read path — the durable case binds the preserved original (FR-017), never the response.
-    const canonical = await readCanonicalState(database, rec.tenantId, INTEGRITY_CASE_ENTITY_KIND, item.caseId!);
+    const canonical = await readCanonicalState(
+      database,
+      rec.tenantId,
+      INTEGRITY_CASE_ENTITY_KIND,
+      item.caseId!,
+    );
     expect(canonical).not.toBeNull();
     const state = canonical!.state as Record<string, unknown>;
     expect(state['originalEvidenceId']).toBe(`ev-original-${rec.recordId}-${rec.sourceRevision}`);
@@ -197,7 +202,9 @@ describe('FR-017 — the preserved original precedes and binds the opened case',
     expect(item.error).toMatch(/preservation refused/i);
     // The anti-masquerade guarantee: NO durable case exists for an unpreservable record.
     expect(driver.__committed.canonical_state.size).toBe(0);
-    expect(await readCanonicalState(database, rec.tenantId, INTEGRITY_CASE_ENTITY_KIND, item.caseId!)).toBeNull();
+    expect(
+      await readCanonicalState(database, rec.tenantId, INTEGRITY_CASE_ENTITY_KIND, item.caseId!),
+    ).toBeNull();
   });
 });
 
@@ -211,7 +218,12 @@ describe('FR-018 — ownership honesty on the opened case', () => {
     expect(item.disposition).toBe('opened');
     expect(item.safeNextAction).toBe('escalate');
 
-    const canonical = await readCanonicalState(database, rec.tenantId, INTEGRITY_CASE_ENTITY_KIND, item.caseId!);
+    const canonical = await readCanonicalState(
+      database,
+      rec.tenantId,
+      INTEGRITY_CASE_ENTITY_KIND,
+      item.caseId!,
+    );
     const state = canonical!.state as Record<string, unknown>;
     expect(state['ownershipGap']).toBe(true);
     expect(state['ownerPrincipalId']).toBeNull();
@@ -224,7 +236,12 @@ describe('FR-018 — ownership honesty on the opened case', () => {
     const pass = await detector.runDetectionPass(NOW);
     const item = pass.results[0]!;
     expect(item.safeNextAction).toBe('none');
-    const canonical = await readCanonicalState(database, rec.tenantId, INTEGRITY_CASE_ENTITY_KIND, item.caseId!);
+    const canonical = await readCanonicalState(
+      database,
+      rec.tenantId,
+      INTEGRITY_CASE_ENTITY_KIND,
+      item.caseId!,
+    );
     const state = canonical!.state as Record<string, unknown>;
     expect(state['ownershipGap']).toBe(false);
     expect(state['ownerPrincipalId']).toBe('user:alice');

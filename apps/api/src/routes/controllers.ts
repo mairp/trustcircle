@@ -266,7 +266,10 @@ function controllerToWire(view: ControllerView): GovernanceApiController {
   const withObservedAt =
     view.observedAt !== undefined ? { ...withOwner, observed_at: iso(view.observedAt) } : withOwner;
   return view.failureDetail !== undefined
-    ? { ...withObservedAt, failure_detail: view.failureDetail === null ? null : { ...view.failureDetail } }
+    ? {
+        ...withObservedAt,
+        failure_detail: view.failureDetail === null ? null : { ...view.failureDetail },
+      }
     : withObservedAt;
 }
 
@@ -292,7 +295,11 @@ function operationToWire(view: OperationView): GovernanceApiControllerOperation 
       : base;
   const withDecision =
     view.decisionRequestId !== undefined
-      ? { ...withSim, decision_request_id: view.decisionRequestId === null ? null : String(view.decisionRequestId) }
+      ? {
+          ...withSim,
+          decision_request_id:
+            view.decisionRequestId === null ? null : String(view.decisionRequestId),
+        }
       : withSim;
   const withLease =
     view.continuityLeaseExpiresAt !== undefined
@@ -304,10 +311,18 @@ function operationToWire(view: OperationView): GovernanceApiControllerOperation 
       : withDecision;
   const withRecon =
     view.reconciliationRunId !== undefined
-      ? { ...withLease, reconciliation_run_id: view.reconciliationRunId === null ? null : String(view.reconciliationRunId) }
+      ? {
+          ...withLease,
+          reconciliation_run_id:
+            view.reconciliationRunId === null ? null : String(view.reconciliationRunId),
+        }
       : withLease;
   return view.evidenceManifestId !== undefined
-    ? { ...withRecon, evidence_manifest_id: view.evidenceManifestId === null ? null : String(view.evidenceManifestId) }
+    ? {
+        ...withRecon,
+        evidence_manifest_id:
+          view.evidenceManifestId === null ? null : String(view.evidenceManifestId),
+      }
     : withRecon;
 }
 
@@ -326,7 +341,9 @@ function emptyMetadata(): GovernanceApiPageMetadata {
 // ===========================================================================
 
 function asRecord(v: unknown): Record<string, unknown> | undefined {
-  return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+  return v !== null && typeof v === 'object' && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : undefined;
 }
 
 function parseReason(v: unknown): { code: string; text: string } | undefined {
@@ -337,7 +354,15 @@ function parseReason(v: unknown): { code: string; text: string } | undefined {
 }
 
 const OPERATION_TYPES: readonly string[] = [
-  'discover', 'inspect', 'simulate', 'execute', 'pause', 'resume', 'reconcile', 'rollback', 'collect_evidence',
+  'discover',
+  'inspect',
+  'simulate',
+  'execute',
+  'pause',
+  'resume',
+  'reconcile',
+  'rollback',
+  'collect_evidence',
 ];
 
 // ===========================================================================
@@ -349,7 +374,13 @@ function listControllers(deps: ControllersRouteDeps): RouteHandler {
   return (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const url = new URL(c.req.url, 'http://internal');
 
@@ -357,11 +388,23 @@ function listControllers(deps: ControllersRouteDeps): RouteHandler {
     let limit = DEFAULT_LIMIT;
     if (rawLimit !== null && rawLimit !== '') {
       if (!/^\d+$/.test(rawLimit)) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', 'limit must be a non-negative integer.');
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          'limit must be a non-negative integer.',
+        );
       }
       const n = Number(rawLimit);
       if (!Number.isInteger(n) || n < MIN_LIMIT || n > MAX_LIMIT) {
-        return problem(c, 400, 'invalid_limit', 'Bad Request', `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`);
+        return problem(
+          c,
+          400,
+          'invalid_limit',
+          'Bad Request',
+          `limit must be in [${MIN_LIMIT}, ${MAX_LIMIT}].`,
+        );
       }
       limit = n;
     }
@@ -397,17 +440,35 @@ function getOperation(deps: ControllersRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const controllerId = uuidParam(c, 'controllerId');
     const operationId = uuidParam(c, 'operationId');
     if (controllerId === undefined || operationId === undefined) {
-      return problem(c, 400, 'invalid_id', 'Bad Request', 'controllerId and operationId path segments must be uuids.');
+      return problem(
+        c,
+        400,
+        'invalid_id',
+        'Bad Request',
+        'controllerId and operationId path segments must be uuids.',
+      );
     }
 
     const view = await deps.readOperation(tenantId, controllerId, operationId);
     if (view === undefined) {
-      return problem(c, 404, 'operation_not_found', 'Not Found', 'No such operation in this tenant scope.');
+      return problem(
+        c,
+        404,
+        'operation_not_found',
+        'Not Found',
+        'No such operation in this tenant scope.',
+      );
     }
 
     c.setHeader('etag', operationEtag(view));
@@ -420,17 +481,32 @@ function createOperation(deps: ControllersRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const controllerId = uuidParam(c, 'controllerId');
     if (controllerId === undefined) {
-      return problem(c, 400, 'invalid_controller_id', 'Bad Request', 'The controllerId path segment must be a uuid.');
+      return problem(
+        c,
+        400,
+        'invalid_controller_id',
+        'Bad Request',
+        'The controllerId path segment must be a uuid.',
+      );
     }
     // ONE idempotency identity (FR-026): a create MUST carry an Idempotency-Key.
     const idempotencyKey = c.req.header('idempotency-key');
     if (idempotencyKey === undefined || idempotencyKey.trim().length < 8) {
       return problem(
-        c, 400, 'idempotency_key_required', 'Bad Request',
+        c,
+        400,
+        'idempotency_key_required',
+        'Bad Request',
         'An Idempotency-Key header (≥ 8 chars) is required so a retry resolves to exactly one effect (FR-026).',
         ['retry with a stable Idempotency-Key'],
       );
@@ -449,20 +525,44 @@ function createOperation(deps: ControllersRouteDeps): RouteHandler {
 
     const operationType = body['operation_type'];
     if (typeof operationType !== 'string' || !OPERATION_TYPES.includes(operationType)) {
-      return problem(c, 400, 'invalid_operation_type', 'Bad Request', `operation_type must be one of: ${OPERATION_TYPES.join(', ')}.`);
+      return problem(
+        c,
+        400,
+        'invalid_operation_type',
+        'Bad Request',
+        `operation_type must be one of: ${OPERATION_TYPES.join(', ')}.`,
+      );
     }
     const expectedObservedVersion = body['expected_observed_version'];
     if (typeof expectedObservedVersion !== 'string' || expectedObservedVersion.length === 0) {
-      return problem(c, 400, 'expected_observed_version_required', 'Bad Request', 'expected_observed_version is required (source-drift guard, NS-005).');
+      return problem(
+        c,
+        400,
+        'expected_observed_version_required',
+        'Bad Request',
+        'expected_observed_version is required (source-drift guard, NS-005).',
+      );
     }
     const reason = parseReason(body['reason']);
     if (reason === undefined) {
-      return problem(c, 400, 'reason_required', 'Bad Request', 'A reason { code, text } is required.');
+      return problem(
+        c,
+        400,
+        'reason_required',
+        'Bad Request',
+        'A reason { code, text } is required.',
+      );
     }
     const scope = asRecord(body['scope']) ?? {};
     const targetState = asRecord(body['target_state']) ?? {};
-    const simulationId = typeof body['simulation_id'] === 'string' && isUuid(body['simulation_id']) ? (body['simulation_id'] as Uuid) : null;
-    const decisionRequestId = typeof body['decision_request_id'] === 'string' && isUuid(body['decision_request_id']) ? (body['decision_request_id'] as Uuid) : null;
+    const simulationId =
+      typeof body['simulation_id'] === 'string' && isUuid(body['simulation_id'])
+        ? (body['simulation_id'] as Uuid)
+        : null;
+    const decisionRequestId =
+      typeof body['decision_request_id'] === 'string' && isUuid(body['decision_request_id'])
+        ? (body['decision_request_id'] as Uuid)
+        : null;
 
     const result = await deps.createOperation({
       tenantId,
@@ -494,12 +594,24 @@ function actOnOperation(deps: ControllersRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const controllerId = uuidParam(c, 'controllerId');
     const operationId = uuidParam(c, 'operationId');
     if (controllerId === undefined || operationId === undefined) {
-      return problem(c, 400, 'invalid_id', 'Bad Request', 'controllerId and operationId path segments must be uuids.');
+      return problem(
+        c,
+        400,
+        'invalid_id',
+        'Bad Request',
+        'controllerId and operationId path segments must be uuids.',
+      );
     }
 
     let raw: unknown;
@@ -514,7 +626,13 @@ function actOnOperation(deps: ControllersRouteDeps): RouteHandler {
       return problem(c, 400, 'action_required', 'Bad Request', 'An action is required.');
     }
     if (!OPERATION_TYPES.includes(action)) {
-      return problem(c, 400, 'invalid_action', 'Bad Request', `action must be one of: ${OPERATION_TYPES.join(', ')}.`);
+      return problem(
+        c,
+        400,
+        'invalid_action',
+        'Bad Request',
+        `action must be one of: ${OPERATION_TYPES.join(', ')}.`,
+      );
     }
     const reason = parseReason(body?.['reason']);
     const version = ifMatchVersion(c);
@@ -529,12 +647,21 @@ function actOnOperation(deps: ControllersRouteDeps): RouteHandler {
     });
 
     if (result.notFound) {
-      return problem(c, 404, 'operation_not_found', 'Not Found', 'No such operation in this tenant scope.');
+      return problem(
+        c,
+        404,
+        'operation_not_found',
+        'Not Found',
+        'No such operation in this tenant scope.',
+      );
     }
     if (!result.permitted) {
       // FR-024 — the action is not permitted from the CURRENT state; a 409, never a silent no-op.
       return problem(
-        c, 409, 'action_not_permitted', 'Conflict',
+        c,
+        409,
+        'action_not_permitted',
+        'Conflict',
         `The action '${action}' is not permitted from the operation's current state: ${result.reason}.`,
         ['re-read the operation and choose a permitted next action'],
       );

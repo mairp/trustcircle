@@ -83,7 +83,9 @@ export function isReadinessRuntimeState(s: unknown): s is ReadinessRuntimeState 
 }
 
 /** The runtime states that count as HEALTHY (serving) for a core component. */
-const HEALTHY_STATES: ReadonlySet<ReadinessRuntimeState> = new Set<ReadinessRuntimeState>(['active']);
+const HEALTHY_STATES: ReadonlySet<ReadinessRuntimeState> = new Set<ReadinessRuntimeState>([
+  'active',
+]);
 
 // ===========================================================================
 // 2. Inputs.
@@ -160,17 +162,23 @@ export function evaluateReadiness(input: ReadinessInput): ReadinessResult {
   for (const a of input.activations) {
     assertNonEmpty(a.componentKey, 'activation.componentKey');
     if (!isReadinessAvailabilityClass(a.availabilityClass)) {
-      throw new TypeError(`activation.availabilityClass must be one of ${READINESS_AVAILABILITY_CLASSES.join('|')}`);
+      throw new TypeError(
+        `activation.availabilityClass must be one of ${READINESS_AVAILABILITY_CLASSES.join('|')}`,
+      );
     }
     if (!isReadinessRuntimeState(a.runtimeState)) {
-      throw new TypeError(`activation.runtimeState must be one of ${READINESS_RUNTIME_STATES.join('|')}`);
+      throw new TypeError(
+        `activation.runtimeState must be one of ${READINESS_RUNTIME_STATES.join('|')}`,
+      );
     }
 
     if (a.availabilityClass === 'core') {
       coreComponentCount += 1;
       // CORE HEALTH is computed ONLY from core components — never influenced by optional availability.
       if (!HEALTHY_STATES.has(a.runtimeState)) {
-        unhealthyCore.push(Object.freeze({ componentKey: a.componentKey, runtimeState: a.runtimeState }));
+        unhealthyCore.push(
+          Object.freeze({ componentKey: a.componentKey, runtimeState: a.runtimeState }),
+        );
       }
     } else if (!HEALTHY_STATES.has(a.runtimeState)) {
       // OPTIONAL / ON-DEMAND that is not active ⇒ an explicit, visible unavailable-feature entry.
@@ -186,8 +194,12 @@ export function evaluateReadiness(input: ReadinessInput): ReadinessResult {
   }
 
   // Stable, deterministic ordering by componentKey.
-  unhealthyCore.sort((x, y) => (x.componentKey < y.componentKey ? -1 : x.componentKey > y.componentKey ? 1 : 0));
-  optionalUnavailable.sort((x, y) => (x.componentKey < y.componentKey ? -1 : x.componentKey > y.componentKey ? 1 : 0));
+  unhealthyCore.sort((x, y) =>
+    x.componentKey < y.componentKey ? -1 : x.componentKey > y.componentKey ? 1 : 0,
+  );
+  optionalUnavailable.sort((x, y) =>
+    x.componentKey < y.componentKey ? -1 : x.componentKey > y.componentKey ? 1 : 0,
+  );
 
   const coreHealthy = unhealthyCore.length === 0;
   const verdict: ReadinessVerdict = coreHealthy ? 'ready' : 'not_ready';

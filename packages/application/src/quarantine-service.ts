@@ -16,7 +16,13 @@
 // in. It never deletes — a released/expired quarantine is retained so containment history stays
 // reconstructable.
 
-import { type Uuid, type EpochMillis, type TenantId, makeReason, type Reason } from '@trustcircle/domain';
+import {
+  type Uuid,
+  type EpochMillis,
+  type TenantId,
+  makeReason,
+  type Reason,
+} from '@trustcircle/domain';
 import {
   makeQuarantine,
   quarantineDigest,
@@ -86,7 +92,9 @@ export class QuarantineService {
         reason: input.reason,
         originalEvidenceId: input.originalEvidenceId,
         ...(input.authorityRef !== undefined ? { authorityRef: input.authorityRef } : {}),
-        ...(input.visibilityPolicy !== undefined ? { visibilityPolicy: input.visibilityPolicy } : {}),
+        ...(input.visibilityPolicy !== undefined
+          ? { visibilityPolicy: input.visibilityPolicy }
+          : {}),
         ...(input.releasePreconditions !== undefined
           ? { releasePreconditions: input.releasePreconditions }
           : {}),
@@ -106,7 +114,8 @@ export class QuarantineService {
   review(input: { quarantineId: Uuid; at: EpochMillis }): QuarantineOutcome {
     const current = this.#byId.get(input.quarantineId);
     if (current === undefined) return reject('UNKNOWN_QUARANTINE');
-    if (current.status === 'released' || current.status === 'expired') return reject('ALREADY_RELEASED');
+    if (current.status === 'released' || current.status === 'expired')
+      return reject('ALREADY_RELEASED');
     const next = this.#rebuild(current, {
       status: 'under_review',
       reviewDueAt: (input.at + current.reviewCadenceMs) as EpochMillis,

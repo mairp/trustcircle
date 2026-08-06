@@ -112,7 +112,9 @@ describe('GAR-004 — a pre-authorized low-risk plan is permitted only inside it
   // exercise a plan that IS shape-eligible but is denied by an EFFECT-TIME fact — GAR-004's other half.
 
   it('NEGATIVE — a human-mode plan is NOT_SHAPE_ELIGIBLE (never auto-executes)', () => {
-    const v = evaluateAutomaticRepair(ctx({ plan: plan({ authorizationMode: 'human', riskClass: 'medium' }) }));
+    const v = evaluateAutomaticRepair(
+      ctx({ plan: plan({ authorizationMode: 'human', riskClass: 'medium' }) }),
+    );
     expect(v.permitted).toBe(false);
     expect(v.denyReason).toBe('NOT_SHAPE_ELIGIBLE');
   });
@@ -133,7 +135,9 @@ describe('GAR-004 — a pre-authorized low-risk plan is permitted only inside it
   });
 
   it('NEGATIVE — a superseded policy version cannot authorize (POLICY_SUPERSEDED)', () => {
-    const v = evaluateAutomaticRepair(ctx({ currentPolicyVersionId: uuidFromSlug('policy-version-newer') }));
+    const v = evaluateAutomaticRepair(
+      ctx({ currentPolicyVersionId: uuidFromSlug('policy-version-newer') }),
+    );
     expect(v.denyReason).toBe('POLICY_SUPERSEDED');
   });
 

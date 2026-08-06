@@ -26,6 +26,8 @@
 // Runs under `vitest run --project migration` (wired by `test:migrations`). No live PostgreSQL.
 
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
   SUPPORTED_SCHEMA_VERSION,
@@ -121,16 +123,31 @@ const M = (id: string, name: string, kind: Migration['kind'], up: string): Migra
 
 // The "previous supported version" baseline schema (already applied in production).
 const PREVIOUS_SUPPORTED: readonly Migration[] = [
-  M('0001', 'baseline_inventory', 'expand', 'CREATE TABLE inventory_item (id uuid PRIMARY KEY, legacy_owner text)'),
+  M(
+    '0001',
+    'baseline_inventory',
+    'expand',
+    'CREATE TABLE inventory_item (id uuid PRIMARY KEY, legacy_owner text)',
+  ),
 ];
 
 // The next version's evolution of the SAME table, without a breaking window:
 const EVOLUTION: readonly Migration[] = [
   ...PREVIOUS_SUPPORTED,
   // EXPAND — add the new nullable column; old readers ignore it, new readers can populate it.
-  M('0002', 'add_owner_principal', 'expand', 'ALTER TABLE inventory_item ADD COLUMN owner_principal_id uuid NULL'),
+  M(
+    '0002',
+    'add_owner_principal',
+    'expand',
+    'ALTER TABLE inventory_item ADD COLUMN owner_principal_id uuid NULL',
+  ),
   // MIGRATE — backfill the new column from the legacy one.
-  M('0003', 'backfill_owner', 'migrate', 'UPDATE inventory_item SET owner_principal_id = legacy_owner::uuid WHERE legacy_owner IS NOT NULL'),
+  M(
+    '0003',
+    'backfill_owner',
+    'migrate',
+    'UPDATE inventory_item SET owner_principal_id = legacy_owner::uuid WHERE legacy_owner IS NOT NULL',
+  ),
   // CONTRACT — only after expand+migrate is the legacy column removed.
   M('0004', 'drop_legacy_owner', 'contract', 'ALTER TABLE inventory_item DROP COLUMN legacy_owner'),
 ];
@@ -176,17 +193,71 @@ describe('T278 · expand→migrate→verify→contract evolution from the previo
     await runMigrations(db, PREVIOUS_SUPPORTED);
     await expect(
       runMigrations(db, [
-        M('0001', 'baseline_inventory', 'expand', 'CREATE TABLE inventory_item (id bigint PRIMARY KEY)'),
+        M(
+          '0001',
+          'baseline_inventory',
+          'expand',
+          'CREATE TABLE inventory_item (id bigint PRIMARY KEY)',
+        ),
       ]),
     ).rejects.toBeInstanceOf(MigrationChecksumError);
   });
 
   it('NEGATIVE: an out-of-order migration id is refused', () => {
     expect(() =>
-      assertMigrationOrder([
-        M('0002', 'b', 'expand', 'x'),
-        M('0001', 'a', 'expand', 'y'),
-      ]),
+      assertMigrationOrder([M('0002', 'b', 'expand', 'x'), M('0001', 'a', 'expand', 'y')]),
     ).toThrow();
+  });
+});
+describe('Spec 004 additive API compatibility', () => {
+  const contract = readFileSync(
+    join(
+      process.cwd(),
+      'specs',
+      '004-governed-platform-continuation',
+      'contracts',
+      'governed-platform.openapi.yaml',
+    ),
+    'utf8',
+  );
+
+  it('retains the previous v1 governed paths while adding list and transition operations', () => {
+    const retainedPaths = [
+      '/review-snapshots:',
+      '/review-comparisons:',
+      '/register-records:',
+      '/governed-views:',
+      '/subscriptions:',
+      '/evidence-requests:',
+      '/evidence-packages:',
+      '/control-observations:',
+      '/monitoring-cases:',
+      '/impact-previews:',
+      '/change-publications:',
+      '/ai-use-cases:',
+      '/copilot/exchanges:',
+      '/connector-definitions:',
+      '/connector-certifications:',
+      '/connector-health:',
+      '/connector-reconciliations:',
+      '/improvement-hypotheses:',
+      '/entity-resolution-cases:',
+      '/framework-matrix:',
+    ];
+    for (const path of retainedPaths) expect(contract).toContain('  ' + path);
+    expect(contract.match(/^[ ]{2}\//gm)).toHaveLength(32);
+    expect(contract).toContain('operationId: listImprovementHypotheses');
+    expect(contract).toContain('operationId: transitionImprovementHypothesis');
+    expect(contract).toContain('operationId: listEntityResolutionCases');
+  });
+
+  it('keeps the server and schema major at v1 for old readers', () => {
+    expect(contract).toMatch(/^openapi: 3\.1\.0/m);
+    expect(contract).toMatch(/^[ ]{2}version: 1\.0\.0/m);
+    expect(contract).toContain('  - url: /v1');
+    const operationIds = [...contract.matchAll(/operationId:\s+([^\s]+)/g)].map(
+      (match) => match[1],
+    );
+    expect(new Set(operationIds).size).toBe(operationIds.length);
   });
 });

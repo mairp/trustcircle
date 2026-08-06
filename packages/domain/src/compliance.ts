@@ -38,13 +38,7 @@
 // in. This module owns the SHAPE and the fail-visible field vocabularies.
 
 import { createHash } from 'node:crypto';
-import {
-  isUuid,
-  PLATFORM_SCOPE,
-  type Uuid,
-  type EpochMillis,
-  type Reason,
-} from './primitives.ts';
+import { isUuid, PLATFORM_SCOPE, type Uuid, type EpochMillis, type Reason } from './primitives.ts';
 
 // ---------------------------------------------------------------------------
 // Shared assert helpers (mirror integrity.ts / decisions.ts: fail-visible, throw on violation).
@@ -174,12 +168,7 @@ export const APPLICABILITY_STATES = [
 export type ApplicabilityState = (typeof APPLICABILITY_STATES)[number];
 
 /** Independent-review action verbs (FR-053). */
-export const APPLICABILITY_ACTIONS = [
-  'approve',
-  'reject',
-  'request_changes',
-  'expire',
-] as const;
+export const APPLICABILITY_ACTIONS = ['approve', 'reject', 'request_changes', 'expire'] as const;
 export type ApplicabilityAction = (typeof APPLICABILITY_ACTIONS)[number];
 
 /**
@@ -327,7 +316,10 @@ export function publicationDutyClass(
 }
 
 /** True iff `next` is a well-formed supersession of `prior` (strictly newer registry version). */
-export function publicationSupersedes(prior: StandardPublication, next: StandardPublication): boolean {
+export function publicationSupersedes(
+  prior: StandardPublication,
+  next: StandardPublication,
+): boolean {
   return (
     next.identifier === prior.identifier &&
     next.registryVersion > prior.registryVersion &&
@@ -474,25 +466,32 @@ export function makeApplicabilityDecision(input: {
   if (input.reviewDecision !== undefined) {
     assertMember(input.reviewDecision, APPLICABILITY_ACTIONS, 'applicability.reviewDecision');
   }
-  if (input.reviewReason !== undefined) assertReasonValue(input.reviewReason, 'applicability.reviewReason');
-  if (input.effectiveFrom !== undefined) assertEpoch(input.effectiveFrom, 'applicability.effectiveFrom');
+  if (input.reviewReason !== undefined)
+    assertReasonValue(input.reviewReason, 'applicability.reviewReason');
+  if (input.effectiveFrom !== undefined)
+    assertEpoch(input.effectiveFrom, 'applicability.effectiveFrom');
   assertEpoch(input.reviewAt, 'applicability.reviewAt');
   const version = input.version ?? 1;
   assertVersion(version, 'applicability.version');
-  if (input.supersedesId !== undefined) assertUuid(input.supersedesId, 'applicability.supersedesId');
+  if (input.supersedesId !== undefined)
+    assertUuid(input.supersedesId, 'applicability.supersedesId');
   assertEpoch(input.createdAt, 'applicability.createdAt');
 
   // FR-053: an ACTIVE decision MUST carry an independent reviewer who approved it, and that reviewer
   // MUST be distinct from the proposer — activation without independent review is impossible.
   if (state === 'active') {
     if (input.reviewerPrincipalId === undefined) {
-      throw new TypeError('an active applicability decision requires an independent reviewer (FR-053)');
+      throw new TypeError(
+        'an active applicability decision requires an independent reviewer (FR-053)',
+      );
     }
     if (input.reviewerPrincipalId === input.proposerPrincipalId) {
       throw new TypeError('the reviewer must be distinct from the proposer (FR-053)');
     }
     if (input.reviewDecision !== 'approve') {
-      throw new TypeError('an active applicability decision requires an approve review decision (FR-053)');
+      throw new TypeError(
+        'an active applicability decision requires an approve review decision (FR-053)',
+      );
     }
   }
 
@@ -742,7 +741,13 @@ export const ASSESSMENT_KINDS = [
 ] as const;
 export type AssessmentKind = (typeof ASSESSMENT_KINDS)[number];
 
-export const ASSESSMENT_RESULTS = ['ready', 'not_ready', 'conforming', 'nonconforming', 'inconclusive'] as const;
+export const ASSESSMENT_RESULTS = [
+  'ready',
+  'not_ready',
+  'conforming',
+  'nonconforming',
+  'inconclusive',
+] as const;
 export type AssessmentResult = (typeof ASSESSMENT_RESULTS)[number];
 
 export interface Assessment {

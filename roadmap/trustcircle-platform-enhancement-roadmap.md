@@ -3,7 +3,7 @@
 **Prepared:** 2026-08-06  
 **Scope:** User experience, governance operations, platform capabilities, and product differentiation
 
-**Delivery status:** [Now tranche implemented; governed continuation recorded](./trustcircle-platform-enhancement-implementation-status.md)
+**Delivery status:** [Spec 003 workspace tranche and Spec 004 governed continuation implemented; composed release evidence remains authoritative](./trustcircle-platform-enhancement-implementation-status.md)
 
 ## Product direction
 
@@ -36,6 +36,22 @@ Key observations:
 4. Tailor the experience to the user's role and responsibilities.
 5. Prefer drill-down and progressive disclosure over increasingly dense overview cards.
 6. Treat accessibility, responsive behavior, and auditability as product requirements.
+
+## Implementation status by roadmap phase
+
+| Roadmap scope             | Status    | Governing implementation                                                                                                                         |
+| ------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Phase 1, outcomes 1-5     | Delivered | Spec 003 route workspaces, search/filter/sort, Asset 360, explainable status, responsive and accessible navigation                               |
+| Phase 1, outcome 6        | Delivered | Spec 003 human-readable identities plus Spec 004 reviewable, reversible entity resolution that preserves source identities                       |
+| Phase 2, outcomes 7-8     | Delivered | Spec 002 operational cases and attention foundations composed through Spec 003 role workspaces                                                   |
+| Phase 2, outcomes 9-11    | Delivered | Spec 004 signed review comparisons, governed registers/views/subscriptions, and fail-visible render-at-delivery collaboration                    |
+| Phase 2, outcome 12       | Delivered | Spec 004 truthful multi-framework matrix with applicability, duty, coverage, sufficiency, readiness, assessment, and certification kept distinct |
+| Phase 3, outcomes 13-15   | Delivered | Spec 004 no-false-pass monitoring, evidence assurance/packages, and non-mutating change-impact preview with rebuild/rollback evidence            |
+| Phase 3, outcomes 16-18   | Delivered | Spec 004 exact-component AI lifecycle, citation-bound abstaining copilot, and guided connector conformance/certification                         |
+| Build/deployment identity | Delivered | Spec 003 disclosure-safe version, commit, profile, schema, and release-drift surfaces                                                            |
+| Product analytics         | Delivered | Spec 003 bounded analytics plus Spec 004 privacy-thresholded improvement hypotheses and attributable outcomes                                    |
+
+The detailed [implementation status](./trustcircle-platform-enhancement-implementation-status.md) and Spec 004 [implementation audit](../specs/004-governed-platform-continuation/implementation-audit.md) define the exact delivered boundary. These status markers do not waive authority, evidence, compatibility, accessibility, or release gates.
 
 ## Phase 1 — Navigation and usability foundation
 
@@ -251,4 +267,3 @@ The checked-in web shell contains a richer product bar and theme control that we
 - Executives can understand posture changes and material risks without reading operational detail.
 - Deployed build identity is visible and verifiably matches the approved release.
 - AI-generated summaries cite governed records and cannot perform approvals or execution.
-

@@ -226,18 +226,23 @@ export interface ProvisionConnectorInput {
 export function provisionConnector(input: ProvisionConnectorInput): Connector {
   assertTenant(input.tenantId, 'provision.tenantId');
   if (input.tenantId === PLATFORM_SCOPE) {
-    throw new TypeError('a connector instance is tenant-scoped and cannot bind to the platform scope');
+    throw new TypeError(
+      'a connector instance is tenant-scoped and cannot bind to the platform scope',
+    );
   }
   assertUuid(input.definitionId, 'provision.definitionId');
   assertUuid(input.versionId, 'provision.versionId');
   assertUuid(input.ownerPrincipalId, 'provision.ownerPrincipalId');
   assertNonEmpty(input.sourceRef, 'provision.sourceRef');
   assertEpoch(input.at, 'provision.at');
-  if (input.credentialRef !== undefined) assertNonEmpty(input.credentialRef, 'provision.credentialRef');
+  if (input.credentialRef !== undefined)
+    assertNonEmpty(input.credentialRef, 'provision.credentialRef');
 
   const availabilityClass = input.availabilityClass ?? 'optional';
   if (!isConnectorAvailabilityClass(availabilityClass)) {
-    throw new TypeError(`provision.availabilityClass must be one of ${CONNECTOR_AVAILABILITY_CLASSES.join('|')}`);
+    throw new TypeError(
+      `provision.availabilityClass must be one of ${CONNECTOR_AVAILABILITY_CLASSES.join('|')}`,
+    );
   }
 
   // ENABLED CAPABILITIES ⊆ DECLARED. An undeclared request is refused (never silently granted).
@@ -287,7 +292,11 @@ export function setEnabledCapabilities(
 }
 
 /** Attach/replace the opaque credential reference. Refuses anything empty; NEVER holds a secret. */
-export function setCredentialRef(connector: Connector, credentialRef: string, at: EpochMillis): Connector {
+export function setCredentialRef(
+  connector: Connector,
+  credentialRef: string,
+  at: EpochMillis,
+): Connector {
   assertNonEmpty(credentialRef, 'setCredentialRef.credentialRef');
   assertEpoch(at, 'setCredentialRef.at');
   return Object.freeze({ ...connector, credentialRef, updatedAt: at });
@@ -297,7 +306,11 @@ export function setCredentialRef(connector: Connector, credentialRef: string, at
  * Advance the durable ingestion cursor. The sequence high-water mark is MONOTONIC — an advance to a
  * lower-or-equal sequence is refused (a rewind is a distinct deliberate act, not an accidental write).
  */
-export function advanceCursor(connector: Connector, next: ConnectorCursor, at: EpochMillis): Connector {
+export function advanceCursor(
+  connector: Connector,
+  next: ConnectorCursor,
+  at: EpochMillis,
+): Connector {
   assertNonEmpty(next.position, 'advanceCursor.position');
   assertEpoch(at, 'advanceCursor.at');
   if (typeof next.sequence !== 'number' || !Number.isInteger(next.sequence) || next.sequence < 0) {

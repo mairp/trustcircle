@@ -195,7 +195,10 @@ export interface ExpiryOracles {
 
 export interface ExpiryReadPorts {
   readonly dueDecisions: (now: number, limit: number) => Promise<readonly ExpirableDecision[]>;
-  readonly dueRequirements: (now: number, limit: number) => Promise<readonly ExpirableRequirement[]>;
+  readonly dueRequirements: (
+    now: number,
+    limit: number,
+  ) => Promise<readonly ExpirableRequirement[]>;
   readonly dueDelegations: (now: number, limit: number) => Promise<readonly ExpirableDelegation[]>;
   readonly dueBreakGlass: (now: number, limit: number) => Promise<readonly ExpirableBreakGlass[]>;
   readonly dueJoints: (now: number, limit: number) => Promise<readonly ExpirableJoint[]>;
@@ -250,7 +253,9 @@ export interface ExpiryItemResult {
 /** The aggregate result of one expiry sweep pass (per kind + overall). */
 export interface ExpiryPassResult {
   readonly scannedAt: number;
-  readonly perKind: Readonly<Record<ExpirableKind, { scanned: number; expired: number; failed: number }>>;
+  readonly perKind: Readonly<
+    Record<ExpirableKind, { scanned: number; expired: number; failed: number }>
+  >;
   readonly expired: number;
   readonly skipped: number;
   readonly deduplicated: number;
@@ -330,7 +335,12 @@ export class ExpiryWorker {
   readonly #owner: string;
   readonly #batchSize: number;
 
-  constructor(db: Database, ports: ExpiryReadPorts, oracles: ExpiryOracles, opts: ExpiryWorkerOptions) {
+  constructor(
+    db: Database,
+    ports: ExpiryReadPorts,
+    oracles: ExpiryOracles,
+    opts: ExpiryWorkerOptions,
+  ) {
     this.#db = db;
     this.#ports = ports;
     this.#oracles = oracles;
@@ -340,7 +350,8 @@ export class ExpiryWorker {
     this.#controlVersion = opts.controlVersion;
     this.#owner = opts.owner ?? DEFAULT_OWNER;
     const b = opts.batchSize ?? DEFAULT_BATCH_SIZE;
-    if (!Number.isInteger(b) || b <= 0) throw new RangeError('batchSize must be a positive integer');
+    if (!Number.isInteger(b) || b <= 0)
+      throw new RangeError('batchSize must be a positive integer');
     this.#batchSize = b;
   }
 
@@ -527,7 +538,12 @@ export class ExpiryWorker {
    */
   async #expireDelegation(g: ExpirableDelegation, now: number): Promise<ExpiryItemResult> {
     const key = expiryIdempotencyKey('delegation', g.tenantId, g.delegationId, g.expiresAt);
-    const correlationId = expiryCorrelationId('delegation', g.tenantId, g.delegationId, g.expiresAt);
+    const correlationId = expiryCorrelationId(
+      'delegation',
+      g.tenantId,
+      g.delegationId,
+      g.expiresAt,
+    );
     const reason = {
       code: 'delegation_expired',
       text: `delegation ${g.delegationId} from ${g.delegatorPrincipalId} to ${g.recipientPrincipalId} lapsed at expiresAt=${g.expiresAt}; expired (FR-014)`,
@@ -612,7 +628,12 @@ export class ExpiryWorker {
    * `revoked` and EVERY affected tenant is notified — without disclosing any tenant's evidence.
    */
   async #expireJoint(j: ExpirableJoint, now: number): Promise<ExpiryItemResult> {
-    const key = expiryIdempotencyKey('joint_decision_package', j.tenantId, j.id, j.underlyingExpiresAt);
+    const key = expiryIdempotencyKey(
+      'joint_decision_package',
+      j.tenantId,
+      j.id,
+      j.underlyingExpiresAt,
+    );
     const correlationId = expiryCorrelationId(
       'joint_decision_package',
       j.tenantId,
@@ -781,7 +802,10 @@ export class ExpiryWorker {
 // 8. Utilities
 // ===========================================================================
 
-function emptyPerKind(): Record<ExpirableKind, { scanned: number; expired: number; failed: number }> {
+function emptyPerKind(): Record<
+  ExpirableKind,
+  { scanned: number; expired: number; failed: number }
+> {
   return {
     decision_package: { scanned: 0, expired: 0, failed: 0 },
     decision_requirement: { scanned: 0, expired: 0, failed: 0 },

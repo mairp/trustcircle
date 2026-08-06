@@ -16,7 +16,10 @@
 import { describe, it, expect } from 'vitest';
 
 import {
+  createFrameworkMapping,
   reconstructCoverage,
+  reviewFrameworkMapping,
+  supersedeFrameworkMapping,
   coverageReferenceCount,
   type CoverageInputs,
   type CoverageResult,
@@ -106,7 +109,15 @@ describe('compliance coverage (T187) — reconstruct-at-instant over the real en
     const stale = coverageForScenario('stale');
     expect(gapKinds(stale)).toContain('stale_evidence');
     // Boundary is below 'ready' — the current operating state is not inferred from stale evidence.
-    const order = ['incomplete', 'design', 'implemented', 'operating', 'ready', 'assessed', 'certified'];
+    const order = [
+      'incomplete',
+      'design',
+      'implemented',
+      'operating',
+      'ready',
+      'assessed',
+      'certified',
+    ];
     expect(order.indexOf(stale.claimBoundary)).toBeLessThan(order.indexOf('ready'));
 
     // NEGATIVE CONTROL: READY (sufficient, in-date evidence) has NO stale_evidence gap.
@@ -153,7 +164,9 @@ describe('compliance coverage (T187) — reconstruct-at-instant over the real en
     expect(r.complete).toBe(true);
 
     // NEGATIVE CONTROL: reconstructing for OTHER_TENANT sees ITS obligation, not TENANT's.
-    const otherScope: CoverageScope = { tenantId: OTHER_TENANT as unknown as CoverageScope['tenantId'] };
+    const otherScope: CoverageScope = {
+      tenantId: OTHER_TENANT as unknown as CoverageScope['tenantId'],
+    };
     const other = reconstructCoverage({
       scope: otherScope,
       decisions: [DECISION_READY, DECISION_CROSS_TENANT],
@@ -163,8 +176,12 @@ describe('compliance coverage (T187) — reconstruct-at-instant over the real en
       certifications: [],
       at: NOW,
     });
-    expect(other.obligations.map((o) => String(o.obligationId))).toEqual([String(OBLIGATION_CROSS_TENANT.id)]);
-    expect(other.obligations.map((o) => String(o.obligationId))).not.toContain(String(OBLIGATION_READY.id));
+    expect(other.obligations.map((o) => String(o.obligationId))).toEqual([
+      String(OBLIGATION_CROSS_TENANT.id),
+    ]);
+    expect(other.obligations.map((o) => String(o.obligationId))).not.toContain(
+      String(OBLIGATION_READY.id),
+    );
   });
 
   // 7. Evidence windows / control effectiveness / shared responsibility.
@@ -214,7 +231,9 @@ describe('compliance coverage (T187) — reconstruct-at-instant over the real en
 
   // 9. Projector agreement with the engine + snapshot-digest stability (durable-effect witness).
   it('projector agrees with the engine and its snapshot digest is stable per (rows, at)', () => {
-    const projector = new ComplianceCoverageProjector({ tenantId: String(TENANT) as unknown as CoverageScope['tenantId'] });
+    const projector = new ComplianceCoverageProjector({
+      tenantId: String(TENANT) as unknown as CoverageScope['tenantId'],
+    });
     for (const d of DECISIONS) projector.ingestDecision(d);
     for (const o of OBLIGATIONS) projector.ingestObligation(o);
     for (const m of MAPPINGS) projector.ingestMapping(m);
@@ -240,14 +259,19 @@ describe('compliance coverage (T187) — reconstruct-at-instant over the real en
     expect(projector.snapshotDigest({}, (NOW + 1) as typeof NOW)).not.toBe(digest);
 
     // NEGATIVE CONTROL 2: ingesting a row from ANOTHER tenant is refused (tenant guard).
-    const foreignDecision = { ...DECISION_READY, tenantId: OTHER_TENANT as unknown as typeof DECISION_READY.tenantId };
+    const foreignDecision = {
+      ...DECISION_READY,
+      tenantId: OTHER_TENANT as unknown as typeof DECISION_READY.tenantId,
+    };
     expect(() => projector.ingestDecision(foreignDecision)).toThrow();
   });
 
   // The projector injects its tenant when the scope arg omits it — {} and an explicit systemId agree
   // on the tenant slice, and a systemId narrows the scope carried on the result.
   it('projector injects the tenant into the scope arg (Omit<CoverageScope,"tenantId">)', () => {
-    const projector = new ComplianceCoverageProjector({ tenantId: String(TENANT) as unknown as CoverageScope['tenantId'] });
+    const projector = new ComplianceCoverageProjector({
+      tenantId: String(TENANT) as unknown as CoverageScope['tenantId'],
+    });
     for (const d of DECISIONS) projector.ingestDecision(d);
     for (const o of OBLIGATIONS) projector.ingestObligation(o);
     for (const m of MAPPINGS) projector.ingestMapping(m);
@@ -256,5 +280,155 @@ describe('compliance coverage (T187) — reconstruct-at-instant over the real en
     const scoped = projector.coverage({ systemId: IDS.SYSTEM_ID }, NOW);
     expect(String(scoped.coverage.scope.tenantId)).toBe(String(TENANT));
     expect(String(scoped.coverage.scope.systemId)).toBe(String(IDS.SYSTEM_ID));
+  });
+
+  describe('Spec004 truthful multi-framework matrix (FR-048/049)', () => {
+    const OWNER = '018f0000-0000-7000-8000-000000000010';
+    const REVIEWER = '018f0000-0000-7000-8000-000000000011';
+
+    function matrixMapping(
+      index: number,
+      mappingType:
+        | 'equivalent'
+        | 'partially_supports'
+        | 'conditional'
+        | 'conflicts'
+        | 'supersedes'
+        | 'not_applicable',
+      sourceMaterialType:
+        'requirement' | 'guidance' | 'draft' | 'organizational_duty' | 'external_certification',
+    ) {
+      const proposed = createFrameworkMapping({
+        id: '018f0000-0000-7000-8000-0000000002' + String(index).padStart(2, '0'),
+        tenantId: TENANT,
+        sourcePublicationId: IDS.PUB_42001_ID,
+        sourceClauseRef: 'M.' + index,
+        sourceMaterialType,
+        targetType: 'control',
+        targetRef: '/controls/matrix-' + index,
+        mappingType,
+        coverageExtent:
+          mappingType === 'partially_supports'
+            ? 'partial'
+            : mappingType === 'conditional'
+              ? 'conditional'
+              : mappingType === 'not_applicable'
+                ? 'none'
+                : mappingType === 'conflicts'
+                  ? 'disputed'
+                  : 'full',
+        conditions: mappingType === 'conditional' ? ['Production systems only'] : [],
+        applicabilityState:
+          mappingType === 'not_applicable'
+            ? 'not_applicable'
+            : mappingType === 'conditional'
+              ? 'conditional'
+              : 'applicable',
+        obligationOwnerPrincipalId: OWNER,
+        mappingOwnerPrincipalId: OWNER,
+        evidenceRefs: ['/evidence/matrix-' + index],
+        rationale: 'Keep each framework relationship and claim dimension explicit.',
+        confidenceBand: mappingType === 'conflicts' ? 'low' : 'high',
+        now: NOW,
+      });
+      return reviewFrameworkMapping({
+        mapping: proposed,
+        tenantId: TENANT,
+        expectedVersion: 1,
+        reviewerPrincipalId: REVIEWER,
+        authorityDecisionId: 'decision-matrix-' + index,
+        verdict: mappingType === 'conflicts' ? 'disputed' : 'active',
+        reason: { code: 'mapping.review', text: 'Review the typed matrix relationship.' },
+        now: NOW + 1,
+      });
+    }
+
+    it('preserves one-to-many, partial, conditional, disputed, superseded, and not-applicable rows', () => {
+      const projector = new ComplianceCoverageProjector({
+        tenantId: String(TENANT) as unknown as CoverageScope['tenantId'],
+      });
+      const equivalent = matrixMapping(1, 'equivalent', 'requirement');
+      const partial = matrixMapping(2, 'partially_supports', 'guidance');
+      const conditional = matrixMapping(3, 'conditional', 'draft');
+      const disputed = matrixMapping(4, 'conflicts', 'organizational_duty');
+      const superseding = matrixMapping(5, 'supersedes', 'external_certification');
+      const notApplicable = matrixMapping(6, 'not_applicable', 'requirement');
+      const superseded = supersedeFrameworkMapping({
+        mapping: superseding,
+        tenantId: TENANT,
+        expectedVersion: superseding.version,
+        successorMappingId: '018f0000-0000-7000-8000-000000000299',
+        actorPrincipalId: REVIEWER,
+        authorityDecisionId: 'decision-matrix-supersede',
+        reason: { code: 'mapping.superseded', text: 'Retain the replaced relationship.' },
+        now: NOW + 2,
+      });
+      for (const mapping of [
+        equivalent,
+        partial,
+        conditional,
+        disputed,
+        superseded,
+        notApplicable,
+      ]) {
+        projector.ingestFrameworkMapping(mapping);
+      }
+      projector.ingestFrameworkClaim({
+        mappingId: equivalent.id,
+        tenantId: TENANT,
+        controlCoverage: 'covered',
+        evidenceSufficiency: 'sufficient',
+        readiness: 'ready',
+        assessment: 'assessed',
+        certification: 'not_certified',
+        observedAt: NOW,
+        evidenceRefs: ['/evidence/matrix-1'],
+      });
+
+      const matrix = projector.frameworkMatrix({ publicationId: IDS.PUB_42001_ID }, NOW);
+      expect(matrix.rows).toHaveLength(6);
+      expect(
+        matrix.rows.filter((row) => row.sourceClauseRef === equivalent.sourceClauseRef),
+      ).toHaveLength(1);
+      expect(matrix.rows.find((row) => row.id === partial.id)?.controlCoverage).toBe('partial');
+      expect(matrix.rows.find((row) => row.id === conditional.id)?.applicability).toBe(
+        'conditional',
+      );
+      expect(matrix.rows.find((row) => row.id === disputed.id)?.mappingStatus).toBe('disputed');
+      expect(matrix.rows.find((row) => row.id === superseded.id)?.mappingStatus).toBe('superseded');
+      expect(matrix.rows.find((row) => row.id === notApplicable.id)?.applicability).toBe(
+        'not_applicable',
+      );
+      expect(matrix.metadata.partialCoverage).toBe(true);
+    });
+
+    it('keeps obligation, coverage, sufficiency, readiness, assessment, and certification distinct', () => {
+      const projector = new ComplianceCoverageProjector({
+        tenantId: String(TENANT) as unknown as CoverageScope['tenantId'],
+      });
+      const mapping = matrixMapping(7, 'equivalent', 'requirement');
+      projector.ingestFrameworkMapping(mapping);
+      projector.ingestFrameworkClaim({
+        mappingId: mapping.id,
+        tenantId: TENANT,
+        controlCoverage: 'covered',
+        evidenceSufficiency: 'sufficient',
+        readiness: 'ready',
+        assessment: 'assessed',
+        certification: 'not_certified',
+        observedAt: NOW,
+        evidenceRefs: ['/evidence/readiness-only'],
+      });
+      const row = projector.frameworkMatrix({}, NOW).rows[0]!;
+      expect(row.requirementType).toBe('requirement');
+      expect(row.applicability).toBe('applicable');
+      expect(row.duty).toBe('organizational_obligation');
+      expect(row.controlCoverage).toBe('covered');
+      expect(row.evidenceSufficiency).toBe('sufficient');
+      expect(row.readiness).toBe('ready');
+      expect(row.assessment).toBe('assessed');
+      expect(row.certification).toBe('not_certified');
+      expect(row.certification).not.toBe('certified');
+    });
   });
 });

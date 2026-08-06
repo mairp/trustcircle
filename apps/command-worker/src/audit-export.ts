@@ -220,7 +220,9 @@ export function authorizeReferences(
  * tamper-evident custody chain: link N's `chainDigest = sha256(link N-1 chainDigest ‖ link N identity)`.
  * Reordering or dropping any link changes every subsequent `chainDigest` (FR-052).
  */
-export function buildCustodyChain(references: readonly EvidenceReference[]): readonly CustodyLink[] {
+export function buildCustodyChain(
+  references: readonly EvidenceReference[],
+): readonly CustodyLink[] {
   const ordered = [...references].sort((a, b) =>
     a.recordedAt !== b.recordedAt
       ? a.recordedAt - b.recordedAt
@@ -385,10 +387,7 @@ export function assertTruthfulBoundary(body: AuditExportBody, request: AuditExpo
     );
   }
   // A readiness/internal boundary must never be relabelled — this is a copy check, not a re-derivation.
-  if (
-    !isInternalReadinessBoundary(body.claimBoundary) &&
-    body.claimBoundary !== 'certified'
-  ) {
+  if (!isInternalReadinessBoundary(body.claimBoundary) && body.claimBoundary !== 'certified') {
     throw new AuditExportError(`unexpected claim boundary "${body.claimBoundary}" in export body`);
   }
 }
@@ -485,7 +484,9 @@ export interface AuditExportPassResult {
 // ===========================================================================
 
 /** The stable identity basis for an export operation (tenant + scope + period + reason + requestId). */
-export function exportIdentityBasis(request: AuditExportRequest): Readonly<Record<string, unknown>> {
+export function exportIdentityBasis(
+  request: AuditExportRequest,
+): Readonly<Record<string, unknown>> {
   return {
     operationRequestId: request.operationRequestId,
     tenantId: request.tenantId,
@@ -498,15 +499,23 @@ export function exportIdentityBasis(request: AuditExportRequest): Readonly<Recor
 }
 
 export function exportOperationId(request: AuditExportRequest): string {
-  return 'audit-export-' + digest({ ...exportIdentityBasis(request), purpose: 'operation_id' }).slice(0, 32);
+  return (
+    'audit-export-' +
+    digest({ ...exportIdentityBasis(request), purpose: 'operation_id' }).slice(0, 32)
+  );
 }
 
 export function exportIdempotencyKey(request: AuditExportRequest): string {
-  return 'export-' + digest({ ...exportIdentityBasis(request), purpose: 'idempotency' }).slice(0, 40);
+  return (
+    'export-' + digest({ ...exportIdentityBasis(request), purpose: 'idempotency' }).slice(0, 40)
+  );
 }
 
 export function exportCorrelationId(request: AuditExportRequest): string {
-  return 'corr-export-' + digest({ ...exportIdentityBasis(request), purpose: 'correlation' }).slice(0, 32);
+  return (
+    'corr-export-' +
+    digest({ ...exportIdentityBasis(request), purpose: 'correlation' }).slice(0, 32)
+  );
 }
 
 // ===========================================================================
@@ -534,7 +543,8 @@ export class AuditExportWorker {
     this.#signingKey = opts.signingKey;
     this.#owner = opts.owner ?? DEFAULT_OWNER;
     const b = opts.batchSize ?? DEFAULT_BATCH_SIZE;
-    if (!Number.isInteger(b) || b <= 0) throw new RangeError('batchSize must be a positive integer');
+    if (!Number.isInteger(b) || b <= 0)
+      throw new RangeError('batchSize must be a positive integer');
     this.#batchSize = b;
   }
 

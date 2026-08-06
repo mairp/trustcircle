@@ -277,7 +277,11 @@ const OWNER = String(SOURCE_STEWARD);
 const TENANT_S = String(TENANT);
 const IDEMPOTENCY_KEY = 'op-outage-42';
 
-function obs(aggregateRef: string, sequence: number, extra: Partial<SourceObservation> = {}): SourceObservation {
+function obs(
+  aggregateRef: string,
+  sequence: number,
+  extra: Partial<SourceObservation> = {},
+): SourceObservation {
   return {
     dedupKey: `k-${aggregateRef}-${sequence}`,
     aggregateRef,
@@ -305,7 +309,12 @@ export function runConnectorResilience(): ResilienceObservations {
   // A terminal class STOPS — never retried.
   const retryTerminal = scheduleRetry({ ...retryBase, failureClass: 'unauthorized' });
   // An exhausted attempt budget STOPS (bounded — no retry storm).
-  const retryExhausted = scheduleRetry({ ...retryBase, failureClass: 'transient', attempt: 5, maxAttempts: 5 });
+  const retryExhausted = scheduleRetry({
+    ...retryBase,
+    failureClass: 'transient',
+    attempt: 5,
+    maxAttempts: 5,
+  });
 
   // ── DEAD LETTER (FR-030) ────────────────────────────────────────────────────────────────────
   const deadLetter = toDeadLetter({
@@ -316,7 +325,9 @@ export function runConnectorResilience(): ResilienceObservations {
     dedupKey: 'k-terminal-7',
     failureClass: 'unsupported_contract',
     originalPayload: { seq: 7, status: 'unknown-future-status' },
-    attempts: [{ attempt: 1, failureClass: 'unsupported_contract', error: 'schema major drift', at: NOW }],
+    attempts: [
+      { attempt: 1, failureClass: 'unsupported_contract', error: 'schema major drift', at: NOW },
+    ],
     terminalError: 'contract major unsupported',
     businessImpact: 'engineering board event not projected',
     createdAt: NOW,
@@ -366,8 +377,20 @@ export function runConnectorResilience(): ResilienceObservations {
       desiredState: { version: KANBAN_MANIFEST.adapter_version, cursor: 'seq-0103' },
       currentState: { version: KANBAN_MANIFEST.adapter_version, cursor: 'seq-0101' },
       driftObservations: [
-        { driftClass: 'stale', subject: 'cursor:agg-1', desired: 'seq-0103', current: 'seq-0101', detail: 'cursor behind desired high-water' },
-        { driftClass: 'conflicting', subject: 'mapping:agg-1', desired: 'map-v1', current: 'map-v2', detail: 'source reports a different mapping version' },
+        {
+          driftClass: 'stale',
+          subject: 'cursor:agg-1',
+          desired: 'seq-0103',
+          current: 'seq-0101',
+          detail: 'cursor behind desired high-water',
+        },
+        {
+          driftClass: 'conflicting',
+          subject: 'mapping:agg-1',
+          desired: 'map-v1',
+          current: 'map-v2',
+          detail: 'source reports a different mapping version',
+        },
       ],
       cursorBefore: 'seq-0100',
       cursorAfter: 'seq-0101',
@@ -380,7 +403,14 @@ export function runConnectorResilience(): ResilienceObservations {
   // ── RECOVERY FINDINGS — duplicate / out-of-order / gap / mapping / source-identity. ──────────
   const prior = { sourceRef: 'src-A', mappingVersion: 'map-v1', highWater: { 'agg-1': 100 } };
   function bev(sequence: number, extra: Partial<BatchEvent> = {}): BatchEvent {
-    return { dedupKey: `k-${sequence}`, aggregateRef: 'agg-1', sequence, sourceRef: 'src-A', mappingVersion: 'map-v1', ...extra };
+    return {
+      dedupKey: `k-${sequence}`,
+      aggregateRef: 'agg-1',
+      sequence,
+      sourceRef: 'src-A',
+      mappingVersion: 'map-v1',
+      ...extra,
+    };
   }
   const recovery = detect(prior, [
     bev(102, { mappingVersion: 'map-v2', sourceRef: 'src-B' }), // gap (101 missing) + mapping + source drift
@@ -525,7 +555,8 @@ function evidenceFor(assertionRef: string, o: ResilienceObservations): EvidenceW
             `cleanRun: driftItems=${o.cleanRun.driftItems.length}|resolved=${o.cleanRun.resolved}|digest=${o.cleanRun.contentDigest.slice(0, 12)}…`,
             `driftedRun: driftItems=${o.driftedRun.driftItems.length}|resolved=${o.driftedRun.resolved}`,
             ...o.driftedRun.driftItems.map(
-              (d) => `drift: class=${d.driftClass}|subject=${d.subject}|ownerAction=${OWNER_ACTION_BY_KIND[d.driftClass]}`,
+              (d) =>
+                `drift: class=${d.driftClass}|subject=${d.subject}|ownerAction=${OWNER_ACTION_BY_KIND[d.driftClass]}`,
             ),
           ],
         },
@@ -545,7 +576,9 @@ function evidenceFor(assertionRef: string, o: ResilienceObservations): EvidenceW
   }
 }
 
-function successCriteria(o: ResilienceObservations): ConnectorResilienceManifest['successCriteria'] {
+function successCriteria(
+  o: ResilienceObservations,
+): ConnectorResilienceManifest['successCriteria'] {
   const sc011Met =
     o.onceDigest === o.twiceDigest &&
     o.twiceAccepted === 0 &&
@@ -576,7 +609,8 @@ export function emitConnectorResilienceManifest(
     ...gapRefsFromRecovery(o),
   ].sort((a, b) => (a.kind + a.subject).localeCompare(b.kind + b.subject));
 
-  const safeNextAction = o.deadLetter.replayState === 'held' ? 'await_owner_authorized_replay' : 'none';
+  const safeNextAction =
+    o.deadLetter.replayState === 'held' ? 'await_owner_authorized_replay' : 'none';
 
   const lines: ManifestLine[] = ACCEPTANCE.map((spec) => {
     const evidence = evidenceFor(spec.assertionRef, o);
@@ -637,7 +671,9 @@ export interface VerifyResult {
   readonly reasons: readonly string[];
 }
 
-export function verifyConnectorResilienceManifest(manifest: ConnectorResilienceManifest): VerifyResult {
+export function verifyConnectorResilienceManifest(
+  manifest: ConnectorResilienceManifest,
+): VerifyResult {
   const reasons: string[] = [];
 
   // (a) Pinned identity — reject a manifest bound to a different scenario / world.
@@ -706,7 +742,8 @@ export function verifyConnectorResilienceManifest(manifest: ConnectorResilienceM
     const hasExactlyOne = as3.evidence.some((e) =>
       e.witnessed.some((w) => /onceDigest===twiceDigest → true/.test(w)),
     );
-    if (!hasExactlyOne) reasons.push('US6-AS3 does not witness exactly-one-effect (digest equality)');
+    if (!hasExactlyOne)
+      reasons.push('US6-AS3 does not witness exactly-one-effect (digest equality)');
     const hasRebuild = as3.evidence.some((e) =>
       e.witnessed.some((w) => /forwardDigest===rebuiltDigest → true/.test(w)),
     );
@@ -719,7 +756,8 @@ export function verifyConnectorResilienceManifest(manifest: ConnectorResilienceM
     const conflictVisible = as4.evidence.some((e) =>
       e.witnessed.some((w) => /driftedRun:.*resolved=false/.test(w)),
     );
-    if (!conflictVisible) reasons.push('US6-AS4 does not witness the conflict staying visible (resolved=false)');
+    if (!conflictVisible)
+      reasons.push('US6-AS4 does not witness the conflict staying visible (resolved=false)');
   }
 
   // (g) Gap register — every surfaced anomaly / drift carries a specific owner action (nothing "looks

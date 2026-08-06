@@ -142,12 +142,7 @@ export const REQUIREMENT_GATE_TYPES = [
 ] as const;
 export type RequirementGateType = (typeof REQUIREMENT_GATE_TYPES)[number];
 
-export const REQUIREMENT_STATUSES = [
-  'pending',
-  'satisfied',
-  'failed',
-  'waived_forbidden',
-] as const;
+export const REQUIREMENT_STATUSES = ['pending', 'satisfied', 'failed', 'waived_forbidden'] as const;
 export type RequirementStatus = (typeof REQUIREMENT_STATUSES)[number];
 
 export interface DecisionRequirement {

@@ -81,3 +81,5 @@ export type {
   ComponentInput,
   ComponentActivation,
 } from './component-lifecycle.ts';
+
+export * from './governed-platform-worker.ts';

@@ -84,13 +84,13 @@ The five shipped named adapters are pinned, both by an expectation table and by 
 invariant, in `tests/contract/named-adapters.contract.test.ts` (T225) and driven end-to-end by
 `tests/e2e/scenarios/named-adapters.ts` (T271).
 
-| Adapter | Source class | Content access | Idempotency | Operation-risk range | Grants governance authority |
-|---|---|---|---|---|---|
-| `kanban` | `kanban` | `metadata_only` | `read_only_only` | `read_only` | **no** |
-| `workflow-orchestration` | `workflow_orchestration` | `scoped_content` | `read_only_only` | `read_only` | **no** |
-| `agentctl` | `agentctl` | `scoped_content` | `source_operation_id` | `read_only`, `consequential` | **no** |
-| `lisa` | `lisa` | `metadata_only` | `read_only_only` | `read_only` | **no** |
-| `wiggum` | `wiggum` | `metadata_only` | `read_only_only` | `read_only` | **no** |
+| Adapter                  | Source class             | Content access   | Idempotency           | Operation-risk range         | Grants governance authority |
+| ------------------------ | ------------------------ | ---------------- | --------------------- | ---------------------------- | --------------------------- |
+| `kanban`                 | `kanban`                 | `metadata_only`  | `read_only_only`      | `read_only`                  | **no**                      |
+| `workflow-orchestration` | `workflow_orchestration` | `scoped_content` | `read_only_only`      | `read_only`                  | **no**                      |
+| `agentctl`               | `agentctl`               | `scoped_content` | `source_operation_id` | `read_only`, `consequential` | **no**                      |
+| `lisa`                   | `lisa`                   | `metadata_only`  | `read_only_only`      | `read_only`                  | **no**                      |
+| `wiggum`                 | `wiggum`                 | `metadata_only`  | `read_only_only`      | `read_only`                  | **no**                      |
 
 **Scenario 9 — Kanban projection boundary.** The Kanban adapter reads through Kanban APIs/SSE and maps
 source columns to presentation stages while retaining raw status; card movement **cannot** approve,
@@ -201,7 +201,7 @@ NFR-010, SC-011, SC-024) to a durable fact observed through a real oracle. Their
   inventory**, no adapter lines).
 
 **Each of the four is a DISTINCT signed artifact — never a copy under another name.** Scenario 9,
-Scenario 10, and the profile are three *distinct journeys* projected from the single deterministic
+Scenario 10, and the profile are three _distinct journeys_ projected from the single deterministic
 named-adapters run via `projectJourneyManifest()` (`kind: journey-result-manifest`): each journey
 manifest carries a `journeyScope` discriminator and **only that journey's content** — Scenario 9 the
 Kanban line, Scenario 10 the workflow_orchestration + agentctl lines, the profile the core line plus
@@ -255,15 +255,15 @@ the existing `discovery` model.
 
 ## 5. Invariants at a glance
 
-| Invariant | Enforced by | Witnessed by |
-|---|---|---|
-| A connector is never granted governance authority | `manifest.ts` authority block; `APPROVAL_RE` | `named-adapters.ts`; `named-adapters.contract.test.ts` |
-| Credentials are never stored (opaque `credentialRef`) | `tests/fixtures/integrations.ts` `ConnectorSpec` | fixture + activation procedure (§2) |
-| Absence is never inferred as health (SC-024) | `readiness-service.ts`; `gapRegister` | `named-adapters.ts` profile facet |
-| At-least-once → exactly-one effect (SC-011) | `source-ingestion.ts` | `connector-resilience.ts` (US6-AS3) |
-| Order-independent projection rebuild | `source-ingestion.ts` | `connector-resilience.ts` (US6-AS3) |
-| Only core runs continuously (NFR-010) | `component-lifecycle.ts`; `readiness-service.ts` | `named-adapters.ts` profile facet |
-| Drift stays visible; automation pauses safely (FR-029) | `connector-reconciler.ts` | `connector-resilience.ts` (US6-AS4) |
-| Dead-letter preserved; authority-gated replay (FR-030) | `dead-letter-handler.ts` | `connector-resilience.ts` (US6-AS2) |
-| Bounded retry (no storm) | `retry-scheduler.ts` | `connector-resilience.ts` (US6-AS2) |
-| Contract-major drift refused (NS-005) | `manifest.ts` `isMajorSupported` | both runners |
+| Invariant                                              | Enforced by                                      | Witnessed by                                           |
+| ------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------ |
+| A connector is never granted governance authority      | `manifest.ts` authority block; `APPROVAL_RE`     | `named-adapters.ts`; `named-adapters.contract.test.ts` |
+| Credentials are never stored (opaque `credentialRef`)  | `tests/fixtures/integrations.ts` `ConnectorSpec` | fixture + activation procedure (§2)                    |
+| Absence is never inferred as health (SC-024)           | `readiness-service.ts`; `gapRegister`            | `named-adapters.ts` profile facet                      |
+| At-least-once → exactly-one effect (SC-011)            | `source-ingestion.ts`                            | `connector-resilience.ts` (US6-AS3)                    |
+| Order-independent projection rebuild                   | `source-ingestion.ts`                            | `connector-resilience.ts` (US6-AS3)                    |
+| Only core runs continuously (NFR-010)                  | `component-lifecycle.ts`; `readiness-service.ts` | `named-adapters.ts` profile facet                      |
+| Drift stays visible; automation pauses safely (FR-029) | `connector-reconciler.ts`                        | `connector-resilience.ts` (US6-AS4)                    |
+| Dead-letter preserved; authority-gated replay (FR-030) | `dead-letter-handler.ts`                         | `connector-resilience.ts` (US6-AS2)                    |
+| Bounded retry (no storm)                               | `retry-scheduler.ts`                             | `connector-resilience.ts` (US6-AS2)                    |
+| Contract-major drift refused (NS-005)                  | `manifest.ts` `isMajorSupported`                 | both runners                                           |

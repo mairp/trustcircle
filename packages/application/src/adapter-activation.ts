@@ -90,7 +90,13 @@ export function evaluateAdapterActivation(input: AdapterActivationInput): Adapte
 
   // Signature over the content digest.
   const signatureOk = verifySignature(manifest.contentDigest, manifest.signature);
-  add('signature', signatureOk, signatureOk ? 'manifest signature verifies' : 'manifest signature does not verify (tampered or unsigned)');
+  add(
+    'signature',
+    signatureOk,
+    signatureOk
+      ? 'manifest signature verifies'
+      : 'manifest signature does not verify (tampered or unsigned)',
+  );
 
   // Contract range must include the required protocol.
   const rangeOk =
@@ -98,30 +104,71 @@ export function evaluateAdapterActivation(input: AdapterActivationInput): Adapte
     Number.isInteger(manifest.protocolMax) &&
     manifest.protocolMin <= REQUIRED_ADAPTER_PROTOCOL &&
     manifest.protocolMax >= REQUIRED_ADAPTER_PROTOCOL;
-  add('contract-range', rangeOk, `required protocol ${REQUIRED_ADAPTER_PROTOCOL} within [${manifest.protocolMin},${manifest.protocolMax}]=${rangeOk}`);
+  add(
+    'contract-range',
+    rangeOk,
+    `required protocol ${REQUIRED_ADAPTER_PROTOCOL} within [${manifest.protocolMin},${manifest.protocolMax}]=${rangeOk}`,
+  );
 
   // Capabilities must be governable operation kinds.
   const unknownKinds = manifest.advertisedCapabilities.filter((k) => !OPERATION_KINDS.includes(k));
-  add('capabilities-valid', unknownKinds.length === 0, unknownKinds.length === 0 ? 'all advertised capabilities are governable operation kinds' : `unknown capabilities: ${unknownKinds.join(', ')}`);
+  add(
+    'capabilities-valid',
+    unknownKinds.length === 0,
+    unknownKinds.length === 0
+      ? 'all advertised capabilities are governable operation kinds'
+      : `unknown capabilities: ${unknownKinds.join(', ')}`,
+  );
 
   // Least privilege: the adapter may not advertise a capability the controller manifest does not
   // declare — the adapter cannot grant authority the controller version withheld.
-  const overreach = manifest.advertisedCapabilities.filter((k) => !declaresCapability(controllerVersion, k));
-  add('least-privilege', overreach.length === 0, overreach.length === 0 ? 'adapter advertises only controller-declared capabilities' : `adapter overreaches controller manifest: ${overreach.join(', ')}`);
+  const overreach = manifest.advertisedCapabilities.filter(
+    (k) => !declaresCapability(controllerVersion, k),
+  );
+  add(
+    'least-privilege',
+    overreach.length === 0,
+    overreach.length === 0
+      ? 'adapter advertises only controller-declared capabilities'
+      : `adapter overreaches controller manifest: ${overreach.join(', ')}`,
+  );
 
   // Conformance evidence.
-  const conformanceOk = manifest.conformancePassed === true && manifest.conformanceEvidenceId !== undefined;
-  add('conformance-evidence', conformanceOk, conformanceOk ? 'passing conformance-suite evidence cited' : 'no passing conformance evidence');
+  const conformanceOk =
+    manifest.conformancePassed === true && manifest.conformanceEvidenceId !== undefined;
+  add(
+    'conformance-evidence',
+    conformanceOk,
+    conformanceOk ? 'passing conformance-suite evidence cited' : 'no passing conformance evidence',
+  );
 
   // Health probe.
-  add('health-probe', manifest.declaresHealthProbe === true, manifest.declaresHealthProbe ? 'health/readiness probe declared' : 'no health/readiness probe declared');
+  add(
+    'health-probe',
+    manifest.declaresHealthProbe === true,
+    manifest.declaresHealthProbe
+      ? 'health/readiness probe declared'
+      : 'no health/readiness probe declared',
+  );
 
   // Failure semantics (timeout + idempotency + retry).
-  add('failure-semantics', manifest.declaresFailureSemantics === true, manifest.declaresFailureSemantics ? 'timeout/idempotency/retry semantics declared' : 'no failure semantics declared (lost acknowledgements would be guessed)');
+  add(
+    'failure-semantics',
+    manifest.declaresFailureSemantics === true,
+    manifest.declaresFailureSemantics
+      ? 'timeout/idempotency/retry semantics declared'
+      : 'no failure semantics declared (lost acknowledgements would be guessed)',
+  );
 
   // Activation approval.
   const approvalOk = input.approvalDecisionId !== undefined;
-  add('activation-approval', approvalOk, approvalOk ? 'activation approval decision present' : 'activation requires an approval decision');
+  add(
+    'activation-approval',
+    approvalOk,
+    approvalOk
+      ? 'activation approval decision present'
+      : 'activation requires an approval decision',
+  );
 
   const failed = checks.filter((c) => !c.passed).map((c) => c.check);
   return {

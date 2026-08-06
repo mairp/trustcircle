@@ -76,7 +76,13 @@ export interface RawKanbanEvent {
   readonly eventId: string;
   readonly boardId: string;
   readonly cardId: string;
-  readonly kind: 'card_created' | 'card_moved' | 'card_updated' | 'card_archived' | 'card_deleted' | 'card_restored';
+  readonly kind:
+    | 'card_created'
+    | 'card_moved'
+    | 'card_updated'
+    | 'card_archived'
+    | 'card_deleted'
+    | 'card_restored';
   readonly aggregateSequence: number | null;
   readonly occurredAt: number;
   /** The raw card snapshot carried by the event, if the source includes one. */
@@ -98,7 +104,10 @@ export interface KanbanApiPort {
   readonly listArchivedCards: (boardId: string) => Promise<readonly RawKanbanCard[]>;
   readonly getWorkflowLink: (cardId: string) => Promise<string | null>;
   /** Drain the change stream (SSE) as an already-collected ordered batch. */
-  readonly readEvents: (boardId: string, sinceSequence: number | null) => Promise<readonly RawKanbanEvent[]>;
+  readonly readEvents: (
+    boardId: string,
+    sinceSequence: number | null,
+  ) => Promise<readonly RawKanbanEvent[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -157,10 +166,16 @@ export function payloadDigest(value: unknown): string {
 // ---------------------------------------------------------------------------
 
 function seal<T>(env: Omit<ObservationEnvelope<T>, 'payloadDigest'>): ObservationEnvelope<T> {
-  return Object.freeze({ ...env, payloadDigest: payloadDigest(env.payload) }) as ObservationEnvelope<T>;
+  return Object.freeze({
+    ...env,
+    payloadDigest: payloadDigest(env.payload),
+  }) as ObservationEnvelope<T>;
 }
 
-function cardPayload(card: RawKanbanCard, workflowLink: string | null): KanbanCardObservationPayload {
+function cardPayload(
+  card: RawKanbanCard,
+  workflowLink: string | null,
+): KanbanCardObservationPayload {
   return {
     cardId: card.cardId,
     boardId: card.boardId,

@@ -141,7 +141,8 @@ export const DUTY_CLASS_LABELS = table<DutyClass>({
   },
   guidance: {
     label: 'Guidance',
-    explanation: 'Informative guidance. It advises how to proceed and imposes no conformity obligation.',
+    explanation:
+      'Informative guidance. It advises how to proceed and imposes no conformity obligation.',
   },
 }) satisfies Readonly<Record<DutyClass, ClaimLabel>>;
 
@@ -271,11 +272,13 @@ export function assertNoInternalCertificationMislabel(
 export const APPLICABILITY_RESULT_LABELS = table<ApplicabilityResult>({
   applicable: {
     label: 'Applicable',
-    explanation: 'This publication applies in full to this scope; its requirements are organizational duties.',
+    explanation:
+      'This publication applies in full to this scope; its requirements are organizational duties.',
   },
   partially_applicable: {
     label: 'Partially applicable',
-    explanation: 'Some clauses of this publication apply to this scope; the applicable subset is recorded.',
+    explanation:
+      'Some clauses of this publication apply to this scope; the applicable subset is recorded.',
   },
   not_applicable: {
     label: 'Not applicable',
@@ -284,7 +287,8 @@ export const APPLICABILITY_RESULT_LABELS = table<ApplicabilityResult>({
   },
   uncertain: {
     label: 'Applicability uncertain',
-    explanation: 'Applicability has not yet been resolved. Uncertain is not "not applicable" — it is an open question.',
+    explanation:
+      'Applicability has not yet been resolved. Uncertain is not "not applicable" — it is an open question.',
   },
 }) satisfies Readonly<Record<ApplicabilityResult, ClaimLabel>>;
 
@@ -295,11 +299,13 @@ export function applicabilityResultLabel(r: ApplicabilityResult): ClaimLabel {
 export const APPLICABILITY_STATE_LABELS = table<ApplicabilityState>({
   proposed: {
     label: 'Proposed',
-    explanation: 'A compliance owner proposed this decision. It is not active until an independent reviewer approves it.',
+    explanation:
+      'A compliance owner proposed this decision. It is not active until an independent reviewer approves it.',
   },
   active: {
     label: 'Active',
-    explanation: 'An independent reviewer approved this decision and it is currently in force for this scope.',
+    explanation:
+      'An independent reviewer approved this decision and it is currently in force for this scope.',
   },
   rejected: {
     label: 'Rejected',
@@ -307,15 +313,18 @@ export const APPLICABILITY_STATE_LABELS = table<ApplicabilityState>({
   },
   changes_requested: {
     label: 'Changes requested',
-    explanation: 'An independent reviewer requested changes; the proposer must revise and re-submit.',
+    explanation:
+      'An independent reviewer requested changes; the proposer must revise and re-submit.',
   },
   expired: {
     label: 'Expired',
-    explanation: 'This decision passed its review-by instant. If it was a non-applicability, its gap reopens.',
+    explanation:
+      'This decision passed its review-by instant. If it was a non-applicability, its gap reopens.',
   },
   superseded: {
     label: 'Superseded',
-    explanation: 'A newer version of this decision replaced it. The superseded version is retained for the audit trail.',
+    explanation:
+      'A newer version of this decision replaced it. The superseded version is retained for the audit trail.',
   },
 }) satisfies Readonly<Record<ApplicabilityState, ClaimLabel>>;
 
@@ -335,7 +344,8 @@ export const APPLICABILITY_ACTION_LABELS = table<ApplicabilityAction>({
   },
   expire: {
     label: 'Expire',
-    explanation: 'The decision is expired at its review-by instant; a non-applicability gap reopens.',
+    explanation:
+      'The decision is expired at its review-by instant; a non-applicability gap reopens.',
   },
 }) satisfies Readonly<Record<ApplicabilityAction, ClaimLabel>>;
 
@@ -360,7 +370,8 @@ export const ASSESSMENT_KIND_LABELS = table<AssessmentKind>({
   },
   external_assessment: {
     label: 'External assessment',
-    explanation: 'An assessment conducted by an external party — an external audit result, not a certification.',
+    explanation:
+      'An assessment conducted by an external party — an external audit result, not a certification.',
   },
 }) satisfies Readonly<Record<AssessmentKind, ClaimLabel>>;
 
@@ -371,12 +382,17 @@ export function assessmentKindLabel(k: AssessmentKind): ClaimLabel {
 export const ASSESSMENT_RESULT_LABELS = table<AssessmentResult>({
   ready: {
     label: 'Ready',
-    explanation: 'The assessed scope is ready. For an internal assessment this is internal readiness only, not certification.',
+    explanation:
+      'The assessed scope is ready. For an internal assessment this is internal readiness only, not certification.',
   },
-  not_ready: { label: 'Not ready', explanation: 'The assessed scope is not yet ready; gaps remain.' },
+  not_ready: {
+    label: 'Not ready',
+    explanation: 'The assessed scope is not yet ready; gaps remain.',
+  },
   conforming: {
     label: 'Conforming',
-    explanation: 'An external assessor found the scope conforming. This is an assessment result, not by itself a certification.',
+    explanation:
+      'An external assessor found the scope conforming. This is an assessment result, not by itself a certification.',
   },
   nonconforming: {
     label: 'Nonconforming',
@@ -395,7 +411,8 @@ export function assessmentResultLabel(r: AssessmentResult): ClaimLabel {
 export const CERTIFICATION_STATUS_LABELS = table<CertificationStatus>({
   valid: {
     label: 'Valid certification',
-    explanation: 'An accredited body issued this certification and it is within its validity window.',
+    explanation:
+      'An accredited body issued this certification and it is within its validity window.',
   },
   suspended: {
     label: 'Suspended certification',
@@ -407,7 +424,8 @@ export const CERTIFICATION_STATUS_LABELS = table<CertificationStatus>({
   },
   expired: {
     label: 'Expired certification',
-    explanation: 'The certification passed its validity window and is no longer displayable as current.',
+    explanation:
+      'The certification passed its validity window and is no longer displayable as current.',
   },
 }) satisfies Readonly<Record<CertificationStatus, ClaimLabel>>;
 
@@ -453,11 +471,13 @@ export type CoverageGapKindKey =
 export const COVERAGE_GAP_LABELS = table<CoverageGapKindKey>({
   unmapped_obligation: {
     label: 'Unmapped obligation',
-    explanation: 'An applicable obligation has no control mapped to it. It stays a visible gap until a control is mapped.',
+    explanation:
+      'An applicable obligation has no control mapped to it. It stays a visible gap until a control is mapped.',
   },
   no_evidence: {
     label: 'No evidence',
-    explanation: 'A mapped control has no evidence of operation. It cannot be reported as operating.',
+    explanation:
+      'A mapped control has no evidence of operation. It cannot be reported as operating.',
   },
   stale_evidence: {
     label: 'Stale evidence',
@@ -466,7 +486,8 @@ export const COVERAGE_GAP_LABELS = table<CoverageGapKindKey>({
   },
   deficient_control: {
     label: 'Deficient control',
-    explanation: 'The control was evaluated as deficient. The obligation is not covered until it is remediated.',
+    explanation:
+      'The control was evaluated as deficient. The obligation is not covered until it is remediated.',
   },
   reopened_non_applicability: {
     label: 'Reopened non-applicability',
@@ -475,7 +496,8 @@ export const COVERAGE_GAP_LABELS = table<CoverageGapKindKey>({
   },
   expired_applicability: {
     label: 'Expired applicability',
-    explanation: 'The applicability decision expired at its review-by instant and must be re-reviewed.',
+    explanation:
+      'The applicability decision expired at its review-by instant and must be re-reviewed.',
   },
 }) satisfies Readonly<Record<CoverageGapKindKey, ClaimLabel>>;
 

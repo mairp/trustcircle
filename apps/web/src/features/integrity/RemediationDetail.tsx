@@ -54,10 +54,7 @@ function esc(s: string): string {
 
 /** The four contract-defined action modes (mirrors REMEDIATION_MODES in the API route). */
 export type RemediationMode =
-  | 'recommend_only'
-  | 'simulate'
-  | 'request_approval'
-  | 'execute_if_pre_authorized';
+  'recommend_only' | 'simulate' | 'request_approval' | 'execute_if_pre_authorized';
 
 export const REMEDIATION_MODE_LABELS: Readonly<Record<RemediationMode, string>> = {
   recommend_only: 'Recommend only (no change)',
@@ -111,7 +108,11 @@ export interface VerificationResultVM {
   /** True iff EVERY one of the nine gates passed (the closure condition). */
   readonly allGatesPassed: boolean;
   /** Per-gate pass/fail (shown as words). */
-  readonly gates: readonly { readonly name: string; readonly passed: boolean; readonly detail: string }[];
+  readonly gates: readonly {
+    readonly name: string;
+    readonly passed: boolean;
+    readonly detail: string;
+  }[];
   /** True iff the case is verified-closed (allGatesPassed AND recorded closure). */
   readonly caseClosed: boolean;
   /** Why closure is not realized (empty ⇒ closed). */
@@ -200,7 +201,10 @@ function executeGate(m: RemediationDetailModel): ExecuteGate {
     };
   }
   if (m.ownershipGap) {
-    return { enabled: false, reason: 'Ownership gap — no owner to accept resolution; routed for assignment.' };
+    return {
+      enabled: false,
+      reason: 'Ownership gap — no owner to accept resolution; routed for assignment.',
+    };
   }
   return { enabled: true, reason: 'All steps are pre-authorized low-risk and reversible.' };
 }
@@ -261,14 +265,19 @@ function planRegion(m: RemediationDetailModel): string {
 // ── Action modes + controls region ──────────────────────────────────────────────────────────────
 
 function modeControls(m: RemediationDetailModel, gate: ExecuteGate): string {
-  const buttons = (['recommend_only', 'simulate', 'request_approval', 'execute_if_pre_authorized'] as const)
+  const buttons = (
+    ['recommend_only', 'simulate', 'request_approval', 'execute_if_pre_authorized'] as const
+  )
     .map((mode) => {
       const offered = m.availableModes.includes(mode);
       const isExecute = mode === 'execute_if_pre_authorized';
       const enabled = offered && (!isExecute || gate.enabled);
       const disabledAttr = enabled ? '' : ' disabled aria-disabled="true"';
-      const reason = isExecute && !enabled ? ` data-execute-blocked-reason="${esc(gate.reason)}"` : '';
-      const extra = isExecute ? ` data-execute-enabled="${enabled ? 'true' : 'false'}"${reason}` : '';
+      const reason =
+        isExecute && !enabled ? ` data-execute-blocked-reason="${esc(gate.reason)}"` : '';
+      const extra = isExecute
+        ? ` data-execute-enabled="${enabled ? 'true' : 'false'}"${reason}`
+        : '';
       return `
             <li>
               <button type="button" class="mode-btn" data-testid="remediation-mode"

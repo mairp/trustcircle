@@ -60,7 +60,12 @@ function record(seq: number, overrides: Record<string, unknown> = {}) {
     sequence: seq,
     eventType: 'controller.execute.approved',
     schemaVersion: '1.0.0',
-    actor: { principalId: `p-${seq}`, roleAssignmentId: 'ra-1', isSystem: false, automationId: null },
+    actor: {
+      principalId: `p-${seq}`,
+      roleAssignmentId: 'ra-1',
+      isSystem: false,
+      automationId: null,
+    },
     accountableOwnerPrincipalId: 'owner-1',
     reason: { code: 'APPROVED', text: 'meets policy' },
     state: {
@@ -71,7 +76,11 @@ function record(seq: number, overrides: Record<string, unknown> = {}) {
       targetStateDigest: `tgt-${seq}`,
       actualStateDigest: null,
     },
-    governance: { policyVersionIds: ['pol-1'], controlVersionIds: ['ctl-1'], evidenceManifestId: 'ev-1' },
+    governance: {
+      policyVersionIds: ['pol-1'],
+      controlVersionIds: ['ctl-1'],
+      evidenceManifestId: 'ev-1',
+    },
     scope: { requested: { tenants: [TENANT_A] }, actual: { tenants: [TENANT_A] } },
     timing: { occurredAt: 1000 + seq, recordedAt: 1500 + seq },
     correlation: { correlationId: `corr-${seq}`, causationId: null, traceId: `trace-${seq}` },
@@ -112,7 +121,9 @@ interface AuditIncident {
 function detectAndOpenIncident(
   tenantId: string,
   ledgerId: string,
-  records: readonly (typeof hc extends never ? never : Parameters<typeof verifyLedger>[2][number])[],
+  records: readonly (typeof hc extends never
+    ? never
+    : Parameters<typeof verifyLedger>[2][number])[],
   now: number,
 ): AuditIncident | null {
   const verdict = verifyLedger(tenantId, ledgerId, records);
@@ -175,9 +186,7 @@ test.describe('T280 · mutated audit field → detect → incident → freeze', 
   test('mutating a recorded field is detected by the independent verifier', () => {
     const ledger = buildLedger();
     // Tamper: alter the outcome of record #2 while keeping its stored digests (a silent rewrite).
-    const tampered = ledger.records.map((r, i) =>
-      i === 1 ? { ...r, outcome: 'failed' } : r,
-    );
+    const tampered = ledger.records.map((r, i) => (i === 1 ? { ...r, outcome: 'failed' } : r));
     const verdict = verifyLedger(TENANT_A, LEDGER, tampered);
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toBe('digest_mismatch');
@@ -230,7 +239,9 @@ test.describe('T280 · dropped/reordered record → detect → incident → free
     expect(verdict.ok).toBe(false);
     const incident = detectAndOpenIncident(TENANT_A, LEDGER, dropped, 4000);
     expect(incident?.severity).toBe('critical');
-    expect(actionAllowed({ tenantId: TENANT_A, kind: 'consequential' }, [incident!]).allowed).toBe(false);
+    expect(actionAllowed({ tenantId: TENANT_A, kind: 'consequential' }, [incident!]).allowed).toBe(
+      false,
+    );
   });
 
   test('reordering two records breaks the chain and opens an incident', () => {
@@ -253,7 +264,11 @@ test.describe('T280 · checkpoint-range tamper is tamper-evident', () => {
     const signedRoot = computeCheckpointRoot(TENANT_A, LEDGER, ledger.records).rootDigest;
 
     // Recompute over a genuinely different (shorter) range → a different root.
-    const shorterRoot = computeCheckpointRoot(TENANT_A, LEDGER, ledger.records.slice(0, 2)).rootDigest;
+    const shorterRoot = computeCheckpointRoot(
+      TENANT_A,
+      LEDGER,
+      ledger.records.slice(0, 2),
+    ).rootDigest;
     expect(shorterRoot).not.toBe(signedRoot);
 
     // A range whose content was tampered cannot even produce a checkpoint (it throws), so the signed

@@ -132,7 +132,12 @@ const PROPOSED_RESULTS: ReadonlySet<string> = new Set([
   'uncertain',
 ]);
 
-const REVIEW_ACTIONS: ReadonlySet<string> = new Set(['approve', 'reject', 'request_changes', 'expire']);
+const REVIEW_ACTIONS: ReadonlySet<string> = new Set([
+  'approve',
+  'reject',
+  'request_changes',
+  'expire',
+]);
 
 function problem(
   c: AppContext,
@@ -252,9 +257,17 @@ function validateReason(raw: unknown): GovernanceApiReason {
   const code = rec['code'];
   const text = rec['text'];
   if (typeof code !== 'string' || !REASON_CODE_RE.test(code)) {
-    throw new BodyError('invalid_reason', 'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.', 422);
+    throw new BodyError(
+      'invalid_reason',
+      'reason.code must match /^[a-z][a-z0-9_.-]{1,63}$/.',
+      422,
+    );
   }
-  if (typeof text !== 'string' || text.trim().length < REASON_TEXT_MIN || text.length > REASON_TEXT_MAX) {
+  if (
+    typeof text !== 'string' ||
+    text.trim().length < REASON_TEXT_MIN ||
+    text.length > REASON_TEXT_MAX
+  ) {
     throw new BodyError(
       'invalid_reason',
       `reason.text must be ${REASON_TEXT_MIN}..${REASON_TEXT_MAX} non-blank characters.`,
@@ -346,13 +359,19 @@ function parseProposal(raw: unknown): GovernanceApiApplicabilityProposal {
         : typeof owner === 'string' && isUuid(owner)
           ? { ...out, obligation_owner_principal_id: owner }
           : (() => {
-              throw new BodyError('invalid_owner', 'obligation_owner_principal_id must be a uuid or null.');
+              throw new BodyError(
+                'invalid_owner',
+                'obligation_owner_principal_id must be a uuid or null.',
+              );
             })();
   const eff = body['effective_from'];
   if (eff === undefined) return withOwner;
   if (eff === null) return { ...withOwner, effective_from: null };
   if (typeof eff !== 'string' || Number.isNaN(Date.parse(eff))) {
-    throw new BodyError('invalid_effective_from', 'effective_from must be an RFC3339 date-time or null.');
+    throw new BodyError(
+      'invalid_effective_from',
+      'effective_from must be an RFC3339 date-time or null.',
+    );
   }
   return { ...withOwner, effective_from: eff };
 }
@@ -366,7 +385,13 @@ function proposeApplicability(deps: ApplicabilityRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
 
     let raw: unknown;
@@ -381,7 +406,13 @@ function proposeApplicability(deps: ApplicabilityRouteDeps): RouteHandler {
       proposal = parseProposal(raw);
     } catch (e) {
       if (e instanceof BodyError) {
-        return problem(c, e.httpStatus, e.code, e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request', e.message);
+        return problem(
+          c,
+          e.httpStatus,
+          e.code,
+          e.httpStatus === 422 ? 'Unprocessable' : 'Bad Request',
+          e.message,
+        );
       }
       throw e;
     }
@@ -421,11 +452,23 @@ function reviewApplicability(deps: ApplicabilityRouteDeps): RouteHandler {
   return async (c) => {
     const tenantId = requireTenant(c);
     if (tenantId === undefined) {
-      return problem(c, 403, 'tenant_scope_required', 'Forbidden', 'A valid tenant scope is required.');
+      return problem(
+        c,
+        403,
+        'tenant_scope_required',
+        'Forbidden',
+        'A valid tenant scope is required.',
+      );
     }
     const applicabilityId = applicabilityIdOf(c);
     if (applicabilityId === undefined) {
-      return problem(c, 400, 'invalid_applicability_id', 'Bad Request', 'The applicability id path segment must be a uuid.');
+      return problem(
+        c,
+        400,
+        'invalid_applicability_id',
+        'Bad Request',
+        'The applicability id path segment must be a uuid.',
+      );
     }
 
     let raw: unknown;
@@ -435,7 +478,13 @@ function reviewApplicability(deps: ApplicabilityRouteDeps): RouteHandler {
       return problem(c, 400, 'invalid_body', 'Bad Request', 'The request body is not valid JSON.');
     }
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-      return problem(c, 400, 'invalid_body', 'Bad Request', 'The request body must be a JSON object.');
+      return problem(
+        c,
+        400,
+        'invalid_body',
+        'Bad Request',
+        'The request body must be a JSON object.',
+      );
     }
     const body = raw as Record<string, unknown>;
     for (const k of Object.keys(body)) {

@@ -42,7 +42,8 @@ function reqEpoch(v: unknown, label: string): EpochMillis {
   return v as EpochMillis;
 }
 function reqNonEmpty(v: unknown, label: string): string {
-  if (typeof v !== 'string' || v.trim().length === 0) throw new TypeError(`${label} must be a non-empty string`);
+  if (typeof v !== 'string' || v.trim().length === 0)
+    throw new TypeError(`${label} must be a non-empty string`);
   return v;
 }
 function sha256(canonical: string): string {
@@ -183,7 +184,8 @@ export class OperationalProjector {
   constructor(input: OperationalProjectorInput) {
     this.#tenantId = reqUuid(input.tenantId, 'projector.tenantId');
     const horizon = input.freshnessHorizonMs ?? DEFAULT_FRESHNESS_HORIZON_MS;
-    if (!Number.isInteger(horizon) || horizon < 0) throw new RangeError('freshnessHorizonMs must be >= 0');
+    if (!Number.isInteger(horizon) || horizon < 0)
+      throw new RangeError('freshnessHorizonMs must be >= 0');
     this.#freshnessHorizonMs = horizon;
   }
 
@@ -201,7 +203,9 @@ export class OperationalProjector {
       throw new TypeError(`subject.kind must be one of ${OPERATIONAL_SUBJECT_KINDS.join('|')}`);
     }
     if (!(OPERATIONAL_AVAILABILITY_CLASSES as readonly string[]).includes(row.availabilityClass)) {
-      throw new TypeError(`subject.availabilityClass must be one of ${OPERATIONAL_AVAILABILITY_CLASSES.join('|')}`);
+      throw new TypeError(
+        `subject.availabilityClass must be one of ${OPERATIONAL_AVAILABILITY_CLASSES.join('|')}`,
+      );
     }
     reqNonEmpty(row.version, 'subject.version');
     reqNonEmpty(row.lifecycleStatus, 'subject.lifecycleStatus');
@@ -209,7 +213,10 @@ export class OperationalProjector {
     this.#subjects.set(row.subjectId, row);
   }
 
-  #healthAt(row: OperationalSubjectInput, at: EpochMillis): { health: OperationalHealth; fromAbsence: boolean } {
+  #healthAt(
+    row: OperationalSubjectInput,
+    at: EpochMillis,
+  ): { health: OperationalHealth; fromAbsence: boolean } {
     const report = row.health;
     // ABSENCE / STALE ⇒ unknown (never infer current health from stale data).
     if (report === undefined || at - report.reportedAt > this.#freshnessHorizonMs) {
@@ -226,7 +233,8 @@ export class OperationalProjector {
     // Conservative, never widened. Order matters — the FIRST matching rule wins.
     if (row.lifecycleStatus === 'retired') return 'retire';
     // An on-demand subject that is not active must be activated before work flows to it.
-    if (row.availabilityClass === 'on-demand' && row.lifecycleStatus !== 'active') return 'await_activation';
+    if (row.availabilityClass === 'on-demand' && row.lifecycleStatus !== 'active')
+      return 'await_activation';
     // Stale/absent health ⇒ we must not act on an unproven positive; investigate first.
     if (fromAbsence || health === 'unknown') return 'investigate';
     if (health === 'unhealthy') return 'investigate';
@@ -242,7 +250,9 @@ export class OperationalProjector {
     const { health, fromAbsence } = this.#healthAt(row, at);
     const businessImpact = row.businessImpact ?? 'none';
     if (!(OPERATIONAL_BUSINESS_IMPACT as readonly string[]).includes(businessImpact)) {
-      throw new TypeError(`subject.businessImpact must be one of ${OPERATIONAL_BUSINESS_IMPACT.join('|')}`);
+      throw new TypeError(
+        `subject.businessImpact must be one of ${OPERATIONAL_BUSINESS_IMPACT.join('|')}`,
+      );
     }
     const view: OperationalSubjectView = {
       subjectId: row.subjectId,
@@ -283,7 +293,17 @@ export class OperationalProjector {
     return Object.freeze(
       [...this.#subjects.values()]
         .map((row) => this.#view(row, at))
-        .sort((a, b) => (a.kind !== b.kind ? (a.kind < b.kind ? -1 : 1) : a.subjectId < b.subjectId ? -1 : a.subjectId > b.subjectId ? 1 : 0)),
+        .sort((a, b) =>
+          a.kind !== b.kind
+            ? a.kind < b.kind
+              ? -1
+              : 1
+            : a.subjectId < b.subjectId
+              ? -1
+              : a.subjectId > b.subjectId
+                ? 1
+                : 0,
+        ),
     );
   }
 

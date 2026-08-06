@@ -34,7 +34,8 @@ function reqUuid(v: unknown, label: string): Uuid {
   return v;
 }
 function reqString(v: unknown, label: string): string {
-  if (typeof v !== 'string' || v.length === 0) throw new TypeError(`${label} must be a non-empty string`);
+  if (typeof v !== 'string' || v.length === 0)
+    throw new TypeError(`${label} must be a non-empty string`);
   return v;
 }
 function reqEpoch(v: unknown, label: string): EpochMillis {
@@ -357,8 +358,7 @@ export class DecisionQueueProjector {
 
     // The package state itself can void every action (terminal/invalidated/expired). When it does,
     // the actor's allowed actions collapse — except `expire`/`cancel` housekeeping on an expired item.
-    const stateBlocked =
-      TERMINAL_STATUSES.has(input.status) || input.status === 'invalidated';
+    const stateBlocked = TERMINAL_STATUSES.has(input.status) || input.status === 'invalidated';
     const expired = at >= input.expiresAt;
     let allowedActions: readonly QueueAction[] = stateBlocked ? [] : input.authority.allowedActions;
     if (expired && !stateBlocked) {

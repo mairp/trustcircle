@@ -148,7 +148,9 @@ export function detectCursorLoss(
   batch: readonly BatchEvent[],
 ): readonly CursorLossFinding[] {
   if (prior === undefined && batch.length > 0) {
-    return Object.freeze([Object.freeze({ kind: 'cursor_loss' as const, backlogSize: batch.length })]);
+    return Object.freeze([
+      Object.freeze({ kind: 'cursor_loss' as const, backlogSize: batch.length }),
+    ]);
   }
   return Object.freeze([]);
 }
@@ -168,7 +170,9 @@ export function detectBacklogGaps(
     byAggregate.set(e.aggregateRef, list);
   }
   const out: BacklogGapFinding[] = [];
-  for (const [aggregateRef, seqs] of [...byAggregate.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
+  for (const [aggregateRef, seqs] of [...byAggregate.entries()].sort(([a], [b]) =>
+    a < b ? -1 : 1,
+  )) {
     const sorted = [...new Set(seqs)].sort((a, b) => a - b);
     // A hole between the prior high-water mark and the first observed sequence.
     const priorHigh = prior?.highWater[aggregateRef];
@@ -277,7 +281,8 @@ export function detectMappingChanges(
 ): readonly MappingChangeFinding[] {
   if (prior === undefined) return Object.freeze([]);
   const observed = new Set<string>();
-  for (const e of batch) if (e.mappingVersion !== prior.mappingVersion) observed.add(e.mappingVersion);
+  for (const e of batch)
+    if (e.mappingVersion !== prior.mappingVersion) observed.add(e.mappingVersion);
   return Object.freeze(
     [...observed].sort().map((v) =>
       Object.freeze({
@@ -323,7 +328,10 @@ export interface CursorRecoveryReport {
  * Run every detector against (prior, batch) and return the full typed finding set. Pure and total —
  * validates each batch event's fields, then composes the individual detectors. Nothing is auto-repaired.
  */
-export function detect(prior: PriorCursor | undefined, batch: readonly BatchEvent[]): CursorRecoveryReport {
+export function detect(
+  prior: PriorCursor | undefined,
+  batch: readonly BatchEvent[],
+): CursorRecoveryReport {
   for (const e of batch) {
     assertNonEmpty(e.dedupKey, 'batchEvent.dedupKey');
     assertNonEmpty(e.aggregateRef, 'batchEvent.aggregateRef');
@@ -334,7 +342,8 @@ export function detect(prior: PriorCursor | undefined, batch: readonly BatchEven
   if (prior !== undefined) {
     assertNonEmpty(prior.sourceRef, 'priorCursor.sourceRef');
     assertNonEmpty(prior.mappingVersion, 'priorCursor.mappingVersion');
-    for (const [k, v] of Object.entries(prior.highWater)) assertSequence(v, `priorCursor.highWater[${k}]`);
+    for (const [k, v] of Object.entries(prior.highWater))
+      assertSequence(v, `priorCursor.highWater[${k}]`);
   }
 
   const findings: CursorFinding[] = [

@@ -100,7 +100,9 @@ export class RemediationPlanner {
         createdAt: input.createdAt,
         ...(input.riskClass !== undefined ? { riskClass: input.riskClass } : {}),
         ...(input.destructive !== undefined ? { destructive: input.destructive } : {}),
-        ...(input.authorizationMode !== undefined ? { authorizationMode: input.authorizationMode } : {}),
+        ...(input.authorizationMode !== undefined
+          ? { authorizationMode: input.authorizationMode }
+          : {}),
         ...(input.policyVersionId !== undefined ? { policyVersionId: input.policyVersionId } : {}),
         ...(input.proposedChange !== undefined ? { proposedChange: input.proposedChange } : {}),
         ...(input.expectedResult !== undefined ? { expectedResult: input.expectedResult } : {}),
@@ -108,7 +110,9 @@ export class RemediationPlanner {
         ...(input.preconditions !== undefined ? { preconditions: input.preconditions } : {}),
         ...(input.bounds !== undefined ? { bounds: input.bounds } : {}),
         ...(input.evidencePlan !== undefined ? { evidencePlan: input.evidencePlan } : {}),
-        ...(input.verificationPlan !== undefined ? { verificationPlan: input.verificationPlan } : {}),
+        ...(input.verificationPlan !== undefined
+          ? { verificationPlan: input.verificationPlan }
+          : {}),
         ...(input.stopConditions !== undefined ? { stopConditions: input.stopConditions } : {}),
         ...(input.rollbackPlan !== undefined ? { rollbackPlan: input.rollbackPlan } : {}),
         status: 'draft',
@@ -131,7 +135,8 @@ export class RemediationPlanner {
   recordSimulation(input: { planId: Uuid; simulationId: Uuid }): PlannerOutcome {
     const current = this.#byId.get(input.planId);
     if (current === undefined) return reject('UNKNOWN_PLAN');
-    if (current.status === 'expired' || current.status === 'superseded') return reject('TERMINAL_PLAN');
+    if (current.status === 'expired' || current.status === 'superseded')
+      return reject('TERMINAL_PLAN');
     const next = this.#rebuild(current, { status: 'simulated', simulationId: input.simulationId });
     if (next === null) return reject('INVARIANT_VIOLATION');
     this.#store(next);
@@ -142,7 +147,8 @@ export class RemediationPlanner {
   submitForApproval(input: { planId: Uuid }): PlannerOutcome {
     const current = this.#byId.get(input.planId);
     if (current === undefined) return reject('UNKNOWN_PLAN');
-    if (current.status === 'expired' || current.status === 'superseded') return reject('TERMINAL_PLAN');
+    if (current.status === 'expired' || current.status === 'superseded')
+      return reject('TERMINAL_PLAN');
     const next = this.#rebuild(current, { status: 'pending_approval' });
     if (next === null) return reject('INVARIANT_VIOLATION');
     this.#store(next);
@@ -153,7 +159,8 @@ export class RemediationPlanner {
   approve(input: { planId: Uuid; approvalDecisionId: Uuid }): PlannerOutcome {
     const current = this.#byId.get(input.planId);
     if (current === undefined) return reject('UNKNOWN_PLAN');
-    if (current.status === 'expired' || current.status === 'superseded') return reject('TERMINAL_PLAN');
+    if (current.status === 'expired' || current.status === 'superseded')
+      return reject('TERMINAL_PLAN');
     if (current.status === 'approved') return reject('NOT_APPROVABLE');
     const next = this.#rebuild(current, {
       status: 'approved',
@@ -224,7 +231,9 @@ export class RemediationPlanner {
         destructive: current.destructive,
         affectedScope: current.affectedScope as Record<string, unknown>,
         preconditions: current.preconditions as readonly Record<string, unknown>[],
-        ...(current.policyVersionId !== undefined ? { policyVersionId: current.policyVersionId } : {}),
+        ...(current.policyVersionId !== undefined
+          ? { policyVersionId: current.policyVersionId }
+          : {}),
         authorizationMode: current.authorizationMode,
         bounds: current.bounds as Record<string, unknown>,
         evidencePlan: current.evidencePlan as Record<string, unknown>,

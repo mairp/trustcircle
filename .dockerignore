@@ -1,6 +1,8 @@
 node_modules/
 .next/
 .git/
+Dockerfile*
+.dockerignore
 .agents/
 .specify/
 .tsbuild/

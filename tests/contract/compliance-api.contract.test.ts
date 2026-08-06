@@ -47,13 +47,7 @@ import { describe, expect, it } from 'vitest';
 
 import { SOURCE_CONTRACTS } from '../../packages/contracts/scripts/generate.ts';
 import { parseContract } from '../../packages/contracts/scripts/validate.ts';
-import {
-  PUBLICATION_42001,
-  AUDIT_EXPORT_REQUEST,
-  IDS,
-  iso,
-  NOW,
-} from '../fixtures/compliance.ts';
+import { PUBLICATION_42001, AUDIT_EXPORT_REQUEST, IDS, iso, NOW } from '../fixtures/compliance.ts';
 
 // ---------------------------------------------------------------------------
 // Load the committed governance-api OpenAPI document (contract source of truth).
@@ -393,7 +387,10 @@ const REVIEWED_DECISION_RESPONSE = {
 /** The reviewApplicability request body — a structured action + audit reason. */
 const REVIEW_REQUEST = {
   action: 'approve',
-  reason: { code: 'independent_review_approved', text: 'Independent reviewer approved applicability.' },
+  reason: {
+    code: 'independent_review_approved',
+    text: 'Independent reviewer approved applicability.',
+  },
 };
 
 /** A contract-valid audit-export command (scope / period{from,to} / reason{code,text}). */
@@ -417,7 +414,9 @@ const COVERAGE_RESPONSE = {
   tenant_id: TENANT_ID,
   scope: { system_id: String(IDS.SYSTEM_ID), publication_id: String(IDS.PUB_42001_ID) },
   publications: [WIRE_PUBLICATION],
-  obligations: [{ id: '018f0000-0000-7000-8000-0000000000f1', duty_class: 'organizational_obligation' }],
+  obligations: [
+    { id: '018f0000-0000-7000-8000-0000000000f1', duty_class: 'organizational_obligation' },
+  ],
   controls: [{ id: '018f0000-0000-7000-8000-0000000000f2', operating_state: 'operating' }],
   evidence: [{ id: EVIDENCE_A, sufficiency: 'sufficient' }],
   gaps: [{ kind: 'stale_evidence', obligation_id: '018f0000-0000-7000-8000-0000000000f3' }],
@@ -472,7 +471,10 @@ describe('compliance contract wiring', () => {
 
   it('reviewApplicability POST → 200 ApplicabilityDecision', () => {
     expect(
-      prop(prop(pathItem('/v1/applicability-decisions/{applicabilityId}/actions'), 'post'), 'operationId'),
+      prop(
+        prop(pathItem('/v1/applicability-decisions/{applicabilityId}/actions'), 'post'),
+        'operationId',
+      ),
     ).toBe('reviewApplicability');
     expect(() => responseSchema('reviewApplicability', '200')).not.toThrow();
   });
@@ -501,7 +503,9 @@ describe('compliance contract wiring', () => {
     expect(prop(prop(pathItem('/v1/evidence/{evidenceId}'), 'get'), 'operationId')).toBe(
       'getEvidenceMetadata',
     );
-    expect(prop(prop(pathItem('/v1/audit/exports'), 'post'), 'operationId')).toBe('requestAuditExport');
+    expect(prop(prop(pathItem('/v1/audit/exports'), 'post'), 'operationId')).toBe(
+      'requestAuditExport',
+    );
     const accepted = deref(responseSchema('requestAuditExport', '202'));
     expect(prop(accepted, 'required')).toEqual(
       expect.arrayContaining(['operation_id', 'status', 'correlation_id', 'audit_event_id']),
@@ -622,11 +626,19 @@ describe('proposeApplicability · applicability proposal + persisted decision', 
   });
 
   it('NEGATIVE CONTROL: an unknown extra field is rejected (additionalProperties:false)', () => {
-    expectInvalid(reqSchema, { ...PROPOSAL_REQUEST, sneaky: true }, /additional property "sneaky" is forbidden/);
+    expectInvalid(
+      reqSchema,
+      { ...PROPOSAL_REQUEST, sneaky: true },
+      /additional property "sneaky" is forbidden/,
+    );
   });
 
   it('NEGATIVE CONTROL: the persisted decision cannot omit its version (optimistic concurrency)', () => {
-    expectInvalid(respSchema, omit(DECISION_RESPONSE, 'version'), /missing required property "version"/);
+    expectInvalid(
+      respSchema,
+      omit(DECISION_RESPONSE, 'version'),
+      /missing required property "version"/,
+    );
   });
 });
 
@@ -733,7 +745,11 @@ describe('getComplianceCoverage · truthful claim boundary + honest gaps (SC-012
   });
 
   it('NEGATIVE CONTROL: a non-uuid tenant_id is contract-invalid', () => {
-    expectInvalid(covSchema, { ...COVERAGE_RESPONSE, tenant_id: 'tenant-home' }, /tenant_id: not a uuid/);
+    expectInvalid(
+      covSchema,
+      { ...COVERAGE_RESPONSE, tenant_id: 'tenant-home' },
+      /tenant_id: not a uuid/,
+    );
   });
 });
 
@@ -752,7 +768,9 @@ describe('getEvidenceMetadata · metadata-only evidence envelope (FR-034)', () =
   const ENVELOPE = JSON.parse(ENVELOPE_RAW) as Node;
 
   it('the 200 response wires to the external evidence-envelope schema', () => {
-    const schema = jsonSchemaOf(deref(prop(prop(findOperation('getEvidenceMetadata'), 'responses'), '200')));
+    const schema = jsonSchemaOf(
+      deref(prop(prop(findOperation('getEvidenceMetadata'), 'responses'), '200')),
+    );
     expect(prop(schema, '$ref')).toMatch(/evidence-envelope\.schema\.json$/);
   });
 
@@ -772,7 +790,15 @@ describe('getEvidenceMetadata · metadata-only evidence envelope (FR-034)', () =
       ]),
     );
     // It must NOT require any raw-material field an unauthorized caller could read.
-    for (const forbidden of ['body', 'raw', 'raw_body', 'plaintext', 'decrypted', 'bytes', 'payload']) {
+    for (const forbidden of [
+      'body',
+      'raw',
+      'raw_body',
+      'plaintext',
+      'decrypted',
+      'bytes',
+      'payload',
+    ]) {
       expect(required).not.toContain(forbidden);
     }
   });
@@ -781,7 +807,14 @@ describe('getEvidenceMetadata · metadata-only evidence envelope (FR-034)', () =
     const content = prop(prop(ENVELOPE, 'properties'), 'content');
     const contentRequired = prop(content, 'required') as string[];
     expect(contentRequired).toEqual(
-      expect.arrayContaining(['uri', 'storage_version_id', 'sha256', 'size_bytes', 'media_type', 'encrypted']),
+      expect.arrayContaining([
+        'uri',
+        'storage_version_id',
+        'sha256',
+        'size_bytes',
+        'media_type',
+        'encrypted',
+      ]),
     );
     // No inline-body property is even declared on the content descriptor.
     const contentProps = Object.keys((prop(content, 'properties') as Node) ?? {});
@@ -793,7 +826,9 @@ describe('getEvidenceMetadata · metadata-only evidence envelope (FR-034)', () =
   it('the envelope enforces tenant isolation on access (metadata cannot leak cross-tenant)', () => {
     const access = prop(prop(ENVELOPE, 'properties'), 'access');
     const accessRequired = prop(access, 'required') as string[];
-    expect(accessRequired).toEqual(expect.arrayContaining(['policy_id', 'tenant_isolated', 'allowed_purposes']));
+    expect(accessRequired).toEqual(
+      expect.arrayContaining(['policy_id', 'tenant_isolated', 'allowed_purposes']),
+    );
     // tenant_isolated is pinned true by the contract (a const), not merely present.
     expect(prop(prop(prop(access, 'properties'), 'tenant_isolated'), 'const')).toBe(true);
   });
@@ -851,10 +886,18 @@ describe('requestAuditExport · audited export command (FR-056 / SC-022)', () =>
   });
 
   it('NEGATIVE CONTROL: an unknown extra field on the export request is rejected (additionalProperties:false)', () => {
-    expectInvalid(reqSchema, { ...AUDIT_REQUEST, sneaky: true }, /additional property "sneaky" is forbidden/);
+    expectInvalid(
+      reqSchema,
+      { ...AUDIT_REQUEST, sneaky: true },
+      /additional property "sneaky" is forbidden/,
+    );
   });
 
   it('NEGATIVE CONTROL: an accepted-operation missing its audit handle is contract-invalid', () => {
-    expectInvalid(acceptedSchema, omit(ACCEPTED, 'audit_event_id'), /missing required property "audit_event_id"/);
+    expectInvalid(
+      acceptedSchema,
+      omit(ACCEPTED, 'audit_event_id'),
+      /missing required property "audit_event_id"/,
+    );
   });
 });

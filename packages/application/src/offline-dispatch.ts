@@ -67,7 +67,13 @@ export function isComponentAvailabilityClass(s: unknown): s is ComponentAvailabi
 }
 
 /** The dispositions — the closed set of bounded, honest outcomes. */
-export const DISPATCH_DISPOSITIONS = ['defer', 'reject', 'queue', 'expire', 'request_activation'] as const;
+export const DISPATCH_DISPOSITIONS = [
+  'defer',
+  'reject',
+  'queue',
+  'expire',
+  'request_activation',
+] as const;
 export type DispatchDisposition = (typeof DISPATCH_DISPOSITIONS)[number];
 
 // ===========================================================================
@@ -136,10 +142,14 @@ export function dispatch(input: DispatchInput): DispatchDecision {
   assertEpoch(input.expiresAt, 'dispatch.expiresAt');
   assertNonEmpty(input.work.workId, 'dispatch.work.workId');
   if (!isComponentRuntimeState(input.runtimeState)) {
-    throw new TypeError(`dispatch.runtimeState must be one of ${COMPONENT_RUNTIME_STATES.join('|')}`);
+    throw new TypeError(
+      `dispatch.runtimeState must be one of ${COMPONENT_RUNTIME_STATES.join('|')}`,
+    );
   }
   if (!isComponentAvailabilityClass(input.availabilityClass)) {
-    throw new TypeError(`dispatch.availabilityClass must be one of ${COMPONENT_AVAILABILITY_CLASSES.join('|')}`);
+    throw new TypeError(
+      `dispatch.availabilityClass must be one of ${COMPONENT_AVAILABILITY_CLASSES.join('|')}`,
+    );
   }
 
   const { runtimeState, availabilityClass, work, now, expiresAt } = input;
@@ -147,15 +157,27 @@ export function dispatch(input: DispatchInput): DispatchDecision {
 
   // 1. BOUNDED: past the deadline ⇒ expire (never an unbounded retry).
   if (expired) {
-    return decision('expire', `work ${work.workId} passed its expiry deadline (${now} > ${expiresAt})`, true);
+    return decision(
+      'expire',
+      `work ${work.workId} passed its expiry deadline (${now} > ${expiresAt})`,
+      true,
+    );
   }
 
   // A serving component can take the work now — deferrable work queues to drain in order, non-
   // deferrable work is dispatched by the caller (we do not reject a serving component here).
   if (SERVING_STATES.has(runtimeState)) {
     return work.deferrable
-      ? decision('queue', `component is ${runtimeState} (serving); deferrable work queued to drain in order`, false)
-      : decision('queue', `component is ${runtimeState} (serving); dispatch immediately then drain`, false);
+      ? decision(
+          'queue',
+          `component is ${runtimeState} (serving); deferrable work queued to drain in order`,
+          false,
+        )
+      : decision(
+          'queue',
+          `component is ${runtimeState} (serving); dispatch immediately then drain`,
+          false,
+        );
   }
 
   // 2. ON-DEMAND + inactive ⇒ request activation (the honest move; not a failure).
@@ -169,7 +191,11 @@ export function dispatch(input: DispatchInput): DispatchDecision {
 
   // 3. TRANSIENT impairment + deferrable ⇒ queue (drain when it recovers).
   if (TRANSIENT_STATES.has(runtimeState) && work.deferrable) {
-    return decision('queue', `component is transiently ${runtimeState}; deferrable work queued to drain on recovery`, false);
+    return decision(
+      'queue',
+      `component is transiently ${runtimeState}; deferrable work queued to drain on recovery`,
+      false,
+    );
   }
 
   // 4. INTENTIONALLY-INACTIVE + deferrable ⇒ defer (hold; no retry storm).
@@ -179,18 +205,34 @@ export function dispatch(input: DispatchInput): DispatchDecision {
 
   // 5. HARD-UNAVAILABLE / failed + non-deferrable ⇒ visible governed rejection.
   if (HARD_UNAVAILABLE_STATES.has(runtimeState) && !work.deferrable) {
-    return decision('reject', `component is ${runtimeState} and work is non-deferrable; visible governed rejection`, false);
+    return decision(
+      'reject',
+      `component is ${runtimeState} and work is non-deferrable; visible governed rejection`,
+      false,
+    );
   }
 
   // 6. Any remaining non-deferrable work against a non-serving component ⇒ reject (never fake success).
   if (!work.deferrable) {
-    return decision('reject', `component is ${runtimeState} (not serving) and work is non-deferrable; rejected`, false);
+    return decision(
+      'reject',
+      `component is ${runtimeState} (not serving) and work is non-deferrable; rejected`,
+      false,
+    );
   }
 
   // Remaining: deferrable work against a hard-unavailable component — queue for when it returns.
-  return decision('queue', `component is ${runtimeState}; deferrable work queued pending return to service`, false);
+  return decision(
+    'queue',
+    `component is ${runtimeState}; deferrable work queued pending return to service`,
+    false,
+  );
 }
 
-function decision(disposition: DispatchDisposition, reason: string, expired: boolean): DispatchDecision {
+function decision(
+  disposition: DispatchDisposition,
+  reason: string,
+  expired: boolean,
+): DispatchDecision {
   return Object.freeze({ disposition, reason, expired });
 }
