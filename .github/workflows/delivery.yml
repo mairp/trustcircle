@@ -12,7 +12,7 @@ on:
   workflow_run:
     workflows: [verify]
     types: [completed]
-    branches: [wsl-updated, main]
+    branches: [main]
   push:
     tags: ['v*.*.*']
   workflow_dispatch: {}

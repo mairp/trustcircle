@@ -25,9 +25,9 @@ name: verify
 
 on:
   pull_request:
-    branches: [main, wsl-updated]
+    branches: [main]
   push:
-    branches: [main, wsl-updated]
+    branches: [main]
   workflow_dispatch: {}
 
 # Never let two runs of the same ref fight; cancel superseded runs.

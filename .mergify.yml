@@ -8,7 +8,7 @@
 queue_rules:
   - name: default
     queue_conditions:
-      - base~=^(main|wsl-updated)$
+      - base=main
       - -draft
       - -conflict
       - '#approved-reviews-by>=1'
@@ -23,7 +23,7 @@ queue_rules:
 pull_request_rules:
   - name: auto-merge approved PRs when CI passes
     conditions:
-      - base~=^(main|wsl-updated)$
+      - base=main
     actions:
       queue:
         name: default

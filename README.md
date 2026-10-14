@@ -19,6 +19,14 @@ evidence, adapter, and projection seams; they do not create a second source of t
 > policy and separation-of-duties checks, an atomic canonical state and audit commit, and retained
 > evidence.
 
+## See it running
+
+![TrustCircleAI operator console tour: dashboard, search, operations queue, inventory, compliance, evidence, trends, dark theme](docs/media/trustcircle-ui-tour.gif)
+
+A 47-second tour of the operator console on a fresh `scripts/provision.sh --target compose`
+instance, in read-only local preview. Full-quality video:
+[docs/media/trustcircle-ui-tour.mp4](docs/media/trustcircle-ui-tour.mp4).
+
 ## ISO/IEC 42001 alignment
 
 TrustCircleAI is designed to support ISO/IEC 42001 AI management system implementation and audit
