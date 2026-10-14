@@ -11,7 +11,7 @@
 //
 // The generated type surface (src/generated/governance-events.ts) is the
 // *compile-time* contract derived from the canonical AsyncAPI source
-// (specs/.../contracts/governance-events.asyncapi.yaml). Types alone cannot
+// (contracts/governance-control-plane/governance-events.asyncapi.yaml). Types alone cannot
 // enforce the oracle at runtime: a redelivered event, an out-of-order aggregate
 // version, or a payload with a stray field is still a `GovernanceEventsEventEnvelope`
 // to the compiler. This module is the *runtime* half of the contract. It makes

@@ -48,3 +48,6 @@ packages/contracts/src/generated/
 # their authors, not by the formatter.
 specs/
 testautomation/
+
+# Source contracts are kept byte-identical to their published form.
+contracts/

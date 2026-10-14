@@ -1,7 +1,7 @@
 // @trustcircle/api — INVENTORY & DISCOVERY ROUTES (Phase 73).
 //
 // Mounts the three governance-inventory operations from the OpenAPI contract
-// (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml,
+// (contracts/governance-control-plane/governance-api.openapi.yaml,
 // mirrored in packages/contracts/src/generated/governance-api.ts) onto the
 // dependency-free Hono-compatible `App` from ../server.ts:
 //

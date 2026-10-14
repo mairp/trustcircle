@@ -1,0 +1,1329 @@
+openapi: 3.1.0
+info:
+  title: TrustCircleAI Governance Control Plane API
+  version: 1.0.0
+  description: >
+    Canonical command and query API. PostgreSQL governance records and committed audit
+    events are authoritative. Dashboard and health responses explicitly expose freshness
+    and partial coverage.
+servers:
+  - url: https://governance.example.invalid
+    description: Deployment-specific control-plane endpoint
+security:
+  - oidc: []
+tags:
+  - name: Inventory
+  - name: Decisions
+  - name: Integrity
+  - name: Controllers
+  - name: Evidence
+  - name: Compliance
+  - name: Integrations
+  - name: Dashboards
+  - name: Health
+paths:
+  /v1/inventory/sources:
+    get:
+      tags: [Inventory]
+      operationId: listSources
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Authorized source catalog page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceCatalogPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/inventory/discovery-runs:
+    post:
+      tags: [Inventory]
+      operationId: startDiscovery
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [boundary_version_id, reason]
+              properties:
+                boundary_version_id:
+                  type: string
+                  format: uuid
+                source_classes:
+                  type: array
+                  uniqueItems: true
+                  items: { type: string }
+                reason:
+                  $ref: '#/components/schemas/Reason'
+      responses:
+        '202':
+          $ref: '#/components/responses/OperationAccepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/inventory/assets:
+    get:
+      tags: [Inventory]
+      operationId: listGovernedAssets
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: asset_type
+          in: query
+          schema: { type: string }
+        - name: risk_tier
+          in: query
+          schema: { type: string }
+        - name: coverage_state
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Authorized governed-asset page with projection metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernedAssetPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/decisions:
+    get:
+      tags: [Decisions]
+      operationId: listDecisionQueue
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: assigned_to_me
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Prioritized decision queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionPage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Decisions]
+      operationId: createDecisionRequest
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDecisionRequest'
+      responses:
+        '201':
+          description: Decision request created with required gates
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionRequest'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/decisions/{decisionId}:
+    get:
+      tags: [Decisions]
+      operationId: getDecisionRequest
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: Complete current decision package
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionRequest'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/decisions/{decisionId}/actions:
+    post:
+      tags: [Decisions]
+      operationId: actOnDecision
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/DecisionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionAction'
+      responses:
+        '200':
+          description: Accepted decision action and current package
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [decision, record, audit_event_id]
+                properties:
+                  decision:
+                    $ref: '#/components/schemas/DecisionRequest'
+                  record:
+                    $ref: '#/components/schemas/DecisionRecord'
+                  audit_event_id:
+                    type: string
+                    format: uuid
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/delegations:
+    post:
+      tags: [Decisions]
+      operationId: createDelegation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DelegationRequest'
+      responses:
+        '201':
+          description: Non-expanding delegation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Delegation'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/integrity-cases:
+    get:
+      tags: [Integrity]
+      operationId: listIntegrityCases
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: state
+          in: query
+          schema: { type: string }
+        - name: problem_class
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Integrity queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrityCasePage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/integrity-cases/{caseId}:
+    get:
+      tags: [Integrity]
+      operationId: getIntegrityCase
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Integrity case with original, quarantine, plan, attempts, and verification
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrityCase'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/integrity-cases/{caseId}/remediations:
+    post:
+      tags: [Integrity]
+      operationId: proposeOrExecuteRemediation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemediationCommand'
+      responses:
+        '202':
+          $ref: '#/components/responses/OperationAccepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/integrity-cases/{caseId}/verification:
+    post:
+      tags: [Integrity]
+      operationId: verifyIntegrityCase
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationCommand'
+      responses:
+        '200':
+          description: Verification result; failed gates do not close the case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationRecord'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/controllers:
+    get:
+      tags: [Controllers]
+      operationId: listControllers
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: health
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Controller registry with desired and observed state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControllerPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/controller-operations:
+    post:
+      tags: [Controllers]
+      operationId: createControllerOperation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateControllerOperation'
+      responses:
+        '202':
+          $ref: '#/components/responses/OperationAccepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/controller-operations/{operationId}:
+    get:
+      tags: [Controllers]
+      operationId: getControllerOperation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/OperationId'
+      responses:
+        '200':
+          description: Current governed operation, evidence, and reconciliation state
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ControllerOperation'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/controller-operations/{operationId}/actions:
+    post:
+      tags: [Controllers]
+      operationId: actOnControllerOperation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/OperationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, reason]
+              properties:
+                action:
+                  enum: [inspect, simulate, approve, execute, pause, resume, reconcile, rollback, collect_evidence, cancel]
+                reason:
+                  $ref: '#/components/schemas/Reason'
+                decision_request_id:
+                  type: [string, 'null']
+                  format: uuid
+      responses:
+        '202':
+          $ref: '#/components/responses/OperationAccepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/evidence/{evidenceId}:
+    get:
+      tags: [Evidence]
+      operationId: getEvidenceMetadata
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: evidenceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Authorized evidence envelope; content access may be a separate signed URL
+          content:
+            application/json:
+              schema:
+                $ref: './evidence-envelope.schema.json'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/audit/exports:
+    post:
+      tags: [Evidence]
+      operationId: requestAuditExport
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [scope, period, reason]
+              properties:
+                scope: { type: object }
+                period:
+                  type: object
+                  required: [from, to]
+                  properties:
+                    from: { type: string, format: date-time }
+                    to: { type: string, format: date-time }
+                reason:
+                  $ref: '#/components/schemas/Reason'
+      responses:
+        '202':
+          $ref: '#/components/responses/OperationAccepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/standards/publications:
+    get:
+      tags: [Compliance]
+      operationId: listStandardsPublications
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Global versioned publication facts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardPublicationPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/applicability-decisions:
+    post:
+      tags: [Compliance]
+      operationId: proposeApplicability
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicabilityProposal'
+      responses:
+        '201':
+          description: Applicability proposal awaiting independent review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicabilityDecision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/applicability-decisions/{applicabilityId}/actions:
+    post:
+      tags: [Compliance]
+      operationId: reviewApplicability
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: applicabilityId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, reason]
+              properties:
+                action:
+                  enum: [approve, reject, request_changes, expire]
+                reason:
+                  $ref: '#/components/schemas/Reason'
+      responses:
+        '200':
+          description: Independently reviewed applicability decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicabilityDecision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/compliance/coverage:
+    get:
+      tags: [Compliance]
+      operationId: getComplianceCoverage
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: system_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: publication_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: at
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Scoped coverage with applicability, controls, evidence, gaps, and claim boundary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceCoverage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/adapters:
+    post:
+      tags: [Integrations]
+      operationId: registerAdapterVersion
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './adapter-manifest.schema.json'
+      responses:
+        '201':
+          description: Adapter version registered in proposed state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [adapter_version_id, status, manifest_digest]
+                properties:
+                  adapter_version_id: { type: string, format: uuid }
+                  status: { const: proposed }
+                  manifest_digest: { type: string }
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/connectors:
+    get:
+      tags: [Integrations]
+      operationId: listConnectors
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Connectors with contract, health, freshness, retries, and next action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/connectors/{connectorId}/reconciliation-runs:
+    post:
+      tags: [Integrations]
+      operationId: reconcileConnector
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: connectorId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [mode, reason]
+              properties:
+                mode:
+                  enum: [compare, repair_projection, full_rebuild]
+                reason:
+                  $ref: '#/components/schemas/Reason'
+      responses:
+        '202':
+          $ref: '#/components/responses/OperationAccepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/dashboards/{view}:
+    get:
+      tags: [Dashboards]
+      operationId: getDashboard
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: view
+          in: path
+          required: true
+          schema:
+            enum: [operational, executive, compliance, auditor, decision_queue]
+        - name: scope_id
+          in: query
+          schema: { type: string }
+        - name: at
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Authorized role-specific read model
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/health:
+    get:
+      tags: [Health]
+      operationId: getPlatformHealth
+      security: []
+      responses:
+        '200':
+          description: Non-sensitive liveness summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, observed_at]
+                properties:
+                  status:
+                    enum: [healthy, degraded, unavailable]
+                  observed_at:
+                    type: string
+                    format: date-time
+        '503':
+          description: Platform unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /v1/readiness:
+    get:
+      tags: [Health]
+      operationId: getPlatformReadiness
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Authorized dependency and governance readiness
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthDetail'
+        '503':
+          description: Not ready; body identifies blocked capabilities and safe actions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthDetail'
+components:
+  securitySchemes:
+    oidc:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://identity.example.invalid/authorize
+          tokenUrl: https://identity.example.invalid/token
+          scopes:
+            governance.read: Read authorized governance state
+            governance.decide: Submit authorized decisions
+            governance.operate: Submit governed operations
+            governance.audit: Export authorized audit evidence
+  parameters:
+    TenantId:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      description: Requested tenant; current principal authority is evaluated independently.
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+        pattern: '^[\x21-\x7E]+$'
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 100
+    DecisionId:
+      name: decisionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OperationId:
+      name: operationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Problem:
+      description: Problem response; governed rejection attempts include an audit event ID.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    OperationAccepted:
+      description: Canonical operation accepted or prior idempotent result returned
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OperationAccepted'
+  schemas:
+    Reason:
+      type: object
+      additionalProperties: false
+      required: [code, text]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+        text:
+          type: string
+          minLength: 3
+          maxLength: 4000
+    ProjectionMetadata:
+      type: object
+      additionalProperties: false
+      required: [generated_at, source_cursor, freshness, partial_coverage]
+      properties:
+        generated_at: { type: string, format: date-time }
+        source_cursor: { type: string }
+        freshness: { enum: [current, aging, stale, unknown] }
+        partial_coverage: { type: boolean }
+        coverage_gaps:
+          type: array
+          items: { type: string, format: uuid }
+    PageMetadata:
+      allOf:
+        - $ref: '#/components/schemas/ProjectionMetadata'
+        - type: object
+          properties:
+            next_cursor: { type: [string, 'null'] }
+    CoverageGapDetail:
+      # A still-VISIBLE coverage gap rendered with its full enumerated content (AC2 component gaps /
+      # AC6 governed-source gaps): reason, age, impact, the required owner action, and — for a
+      # governed-source gap — a review or expiry deadline. Never reduced to a bare id.
+      type: object
+      additionalProperties: false
+      required: [gap_id, gap_class, reason, impact, age_millis, required_action]
+      properties:
+        gap_id: { type: string, format: uuid }
+        gap_class: { enum: [component, governed_source] }
+        reason: { type: string }
+        impact: { enum: [low, medium, high, critical, unknown] }
+        age_millis: { type: integer, minimum: 0 }
+        required_action: { type: string }
+        required_owner: { type: [string, 'null'], format: uuid }
+        review_at: { type: [string, 'null'], format: date-time }
+        expires_at: { type: [string, 'null'], format: date-time }
+    SourceStatusDifference:
+      # An AC3 per-field STATUS DIFFERENCE across a source's DISTINCT correlated records: the field
+      # and each distinct observed value with the record ids that reported it.
+      type: object
+      additionalProperties: false
+      required: [field, values]
+      properties:
+        field: { type: string }
+        values:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [value, record_ids]
+            properties:
+              value: {}
+              record_ids:
+                type: array
+                items: { type: string, format: uuid }
+    SourceDependency:
+      # An AC3 DEPENDENCY edge (`depends_on`) anchored on this source.
+      type: object
+      additionalProperties: false
+      required: [relationship_id, from_id, to_id]
+      properties:
+        relationship_id: { type: string, format: uuid }
+        from_id: { type: string, format: uuid }
+        to_id: { type: string, format: uuid }
+        field_name: { type: [string, 'null'] }
+    SourceCatalogEntry:
+      type: object
+      required: [id, tenant_id, source_class, onboarding_state, access_state, health_state, sensitivity, first_seen_at, last_seen_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        source_class: { type: string }
+        observed_locations:
+          type: array
+          items: { type: string }
+        owner_principal_id: { type: [string, 'null'], format: uuid }
+        onboarding_state: { type: string }
+        access_state: { type: string }
+        health_state: { type: string }
+        # AC5 sensitivity facet: the discovered source's data-sensitivity classification, so an operator
+        # can triage an ungoverned sensitive/restricted source ahead of a normal one. Governed vocabulary.
+        sensitivity: { enum: [normal, sensitive, restricted] }
+        # AC5 discovery-evidence facet: the id of the discovery observation that surfaced this source
+        # (the where-from provenance for a discovered-but-not-yet-onboarded source). Absent when unknown.
+        discovery_evidence: { type: string, format: uuid }
+        # AC1 evidence-state facet: current / stale / absent — how fresh the registry's knowledge is.
+        evidence_state: { enum: [current, stale, absent] }
+        # AC1 unresolved-issues facet: count of still-visible coverage gaps for this source.
+        unresolved_issues: { type: integer, minimum: 0 }
+        # AC4 confidence ∈ [0,1] in this row's currency (1 only when fresh; decays as it goes stale).
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        coverage_gap_ids:
+          type: array
+          items: { type: string, format: uuid }
+        # AC6: the still-visible governed-source gaps rendered with full content, not bare ids.
+        coverage_gaps:
+          type: array
+          items: { $ref: '#/components/schemas/CoverageGapDetail' }
+        # AC3: per-field status differences across this source's distinct correlated records.
+        correlation:
+          type: array
+          items: { $ref: '#/components/schemas/SourceStatusDifference' }
+        # AC3: this source's dependency edges.
+        dependencies:
+          type: array
+          items: { $ref: '#/components/schemas/SourceDependency' }
+        first_seen_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+    SourceCatalogPage:
+      type: object
+      required: [items, metadata]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SourceCatalogEntry' }
+        metadata: { $ref: '#/components/schemas/PageMetadata' }
+    GovernedAsset:
+      type: object
+      required: [id, tenant_id, asset_type, name, lifecycle_state, risk_tier, health, coverage, version]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        asset_type: { type: string }
+        name: { type: string }
+        owner_principal_id: { type: [string, 'null'], format: uuid }
+        lifecycle_state: { type: string }
+        risk_tier: { type: string }
+        health: { type: string }
+        coverage: { type: string }
+        # AC1 evidence-state facet: current / stale / incomplete — how fresh this row's evidence is.
+        evidence_state: { enum: [current, stale, incomplete] }
+        # AC1 unresolved-issues facet: count of open correlation cases for this asset.
+        unresolved_issues: { type: integer, minimum: 0 }
+        # AC4 confidence ∈ [0,1] in this row's currency (1 only when every record is fresh).
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        # AC2: the still-visible component gaps rendered with full content (reason/age/impact/action).
+        coverage_gaps:
+          type: array
+          items: { $ref: '#/components/schemas/CoverageGapDetail' }
+        last_observed_at: { type: string, format: date-time }
+        version: { type: integer, minimum: 1 }
+    GovernedAssetPage:
+      type: object
+      required: [items, metadata]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/GovernedAsset' }
+        metadata: { $ref: '#/components/schemas/PageMetadata' }
+    CreateDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [work_item_id, requested_action, action_class, risk_tier, scope, business_impact, risks, alternatives, expected_result, expires_at]
+      properties:
+        work_item_id: { type: string, format: uuid }
+        requested_action: { type: string }
+        action_class: { type: string }
+        risk_tier: { type: string }
+        scope: { type: object }
+        business_impact: { type: object }
+        risks: { type: array, items: { type: object } }
+        alternatives: { type: array, items: { type: object } }
+        expected_result: { type: object }
+        evidence_manifest_id: { type: [string, 'null'], format: uuid }
+        simulation_id: { type: [string, 'null'], format: uuid }
+        affected_tenant_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, format: uuid }
+        expires_at: { type: string, format: date-time }
+    DecisionRequirement:
+      type: object
+      required: [id, gate_type, tenant_id, status, minimum_distinct_principals]
+      properties:
+        id: { type: string, format: uuid }
+        gate_type: { type: string }
+        tenant_id: { type: [string, 'null'], format: uuid }
+        status: { type: string }
+        minimum_distinct_principals: { type: integer, minimum: 1 }
+        incompatible_relationships:
+          type: array
+          items: { type: string }
+    DecisionRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateDecisionRequest'
+        - type: object
+          required: [id, tenant_id, requester_principal_id, status, requirements, version, created_at]
+          properties:
+            id: { type: string, format: uuid }
+            tenant_id: { type: string, format: uuid }
+            requester_principal_id: { type: string, format: uuid }
+            status: { type: string }
+            requirements:
+              type: array
+              items: { $ref: '#/components/schemas/DecisionRequirement' }
+            version: { type: integer, minimum: 1 }
+            created_at: { type: string, format: date-time }
+    DecisionAction:
+      type: object
+      additionalProperties: false
+      required: [action, reason]
+      properties:
+        action:
+          enum: [approve, deny, delegate, request_changes, escalate, expire, cancel]
+        reason:
+          $ref: '#/components/schemas/Reason'
+        delegation:
+          $ref: '#/components/schemas/DelegationRequest'
+        evidence_manifest_id:
+          type: [string, 'null']
+          format: uuid
+    DecisionRecord:
+      type: object
+      required: [id, actor_principal_id, action, reason, status, decided_at, audit_event_id]
+      properties:
+        id: { type: string, format: uuid }
+        actor_principal_id: { type: string, format: uuid }
+        authority_assignment_id: { type: string, format: uuid }
+        action: { type: string }
+        reason: { $ref: '#/components/schemas/Reason' }
+        status: { type: string }
+        decided_at: { type: string, format: date-time }
+        audit_event_id: { type: string, format: uuid }
+    DecisionPage:
+      type: object
+      required: [items, metadata]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/DecisionRequest' }
+        metadata: { $ref: '#/components/schemas/PageMetadata' }
+    DelegationRequest:
+      type: object
+      additionalProperties: false
+      required: [recipient_principal_id, authority_assignment_id, scope, actions, reason, valid_from, expires_at]
+      properties:
+        recipient_principal_id: { type: string, format: uuid }
+        authority_assignment_id: { type: string, format: uuid }
+        scope: { type: object }
+        actions:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string }
+        reason: { $ref: '#/components/schemas/Reason' }
+        valid_from: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+    Delegation:
+      allOf:
+        - $ref: '#/components/schemas/DelegationRequest'
+        - type: object
+          required: [id, tenant_id, delegator_principal_id, status]
+          properties:
+            id: { type: string, format: uuid }
+            tenant_id: { type: string, format: uuid }
+            delegator_principal_id: { type: string, format: uuid }
+            status: { type: string }
+    IntegrityCase:
+      type: object
+      required: [id, tenant_id, problem_class, severity, original_evidence_id, state, version]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        problem_class:
+          enum: [malformed, corrupted, duplicated, stale, conflicting, orphaned]
+        severity: { type: string }
+        original_evidence_id: { type: string, format: uuid }
+        quarantine_id: { type: [string, 'null'], format: uuid }
+        remediation_plan_id: { type: [string, 'null'], format: uuid }
+        verification_id: { type: [string, 'null'], format: uuid }
+        state: { type: string }
+        version: { type: integer, minimum: 1 }
+    IntegrityCasePage:
+      type: object
+      required: [items, metadata]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/IntegrityCase' }
+        metadata: { $ref: '#/components/schemas/PageMetadata' }
+    RemediationCommand:
+      type: object
+      additionalProperties: false
+      required: [mode, plan, reason]
+      properties:
+        mode:
+          enum: [recommend_only, simulate, request_approval, execute_if_pre_authorized]
+        plan:
+          type: object
+          required: [proposed_change, expected_result, preconditions, evidence_plan, verification_plan, stop_conditions, rollback_plan]
+          properties:
+            proposed_change: { type: object }
+            expected_result: { type: object }
+            preconditions: { type: array, items: { type: object } }
+            evidence_plan: { type: object }
+            verification_plan: { type: object }
+            stop_conditions: { type: array, items: { type: object } }
+            rollback_plan: { type: object }
+        reason: { $ref: '#/components/schemas/Reason' }
+    VerificationCommand:
+      type: object
+      additionalProperties: false
+      required: [expected_state, evidence_manifest_id, reason]
+      properties:
+        expected_state: { type: object }
+        evidence_manifest_id: { type: string, format: uuid }
+        reconciliation_run_id: { type: string, format: uuid }
+        residual_risk_exception_id: { type: [string, 'null'], format: uuid }
+        reason: { $ref: '#/components/schemas/Reason' }
+    VerificationRecord:
+      type: object
+      required: [id, verifier_principal_id, result, gate_results, evidence_manifest_id, verified_at]
+      properties:
+        id: { type: string, format: uuid }
+        verifier_principal_id: { type: string, format: uuid }
+        result: { enum: [passed, failed, indeterminate] }
+        gate_results:
+          type: array
+          items:
+            type: object
+            required: [gate, result]
+            properties:
+              gate: { type: string }
+              result: { enum: [passed, failed, indeterminate] }
+              detail: { type: string }
+        evidence_manifest_id: { type: string, format: uuid }
+        verified_at: { type: string, format: date-time }
+    Controller:
+      type: object
+      required: [id, tenant_id, controller_version, desired_state, observed_state, health, next_permitted_actions]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        controller_version: { type: string }
+        owner_principal_id: { type: string, format: uuid }
+        desired_state: { type: object }
+        desired_version: { type: integer }
+        observed_state: { type: object }
+        observed_version: { type: string }
+        observed_at: { type: string, format: date-time }
+        health: { type: string }
+        failure_detail: { type: [object, 'null'] }
+        next_permitted_actions:
+          type: array
+          items: { type: string }
+    ControllerPage:
+      type: object
+      required: [items, metadata]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Controller' }
+        metadata: { $ref: '#/components/schemas/PageMetadata' }
+    CreateControllerOperation:
+      type: object
+      additionalProperties: false
+      required: [controller_id, operation_type, expected_observed_version, target_state, scope, reason]
+      properties:
+        controller_id: { type: string, format: uuid }
+        operation_type:
+          enum: [discover, inspect, simulate, execute, pause, resume, reconcile, rollback, collect_evidence]
+        expected_observed_version: { type: string }
+        target_state: { type: object }
+        scope: { type: object }
+        simulation_id: { type: [string, 'null'], format: uuid }
+        decision_request_id: { type: [string, 'null'], format: uuid }
+        reason: { $ref: '#/components/schemas/Reason' }
+    ControllerOperation:
+      allOf:
+        - $ref: '#/components/schemas/CreateControllerOperation'
+        - type: object
+          required: [id, tenant_id, status, outcome, policy_decision_id, version, created_at]
+          properties:
+            id: { type: string, format: uuid }
+            tenant_id: { type: string, format: uuid }
+            status: { type: string }
+            outcome:
+              enum: [none, confirmed, duplicate, pending_reconciliation, conflict, failed, rolled_back, rollback_failed]
+            policy_decision_id: { type: string, format: uuid }
+            continuity_lease_expires_at: { type: [string, 'null'], format: date-time }
+            reconciliation_run_id: { type: [string, 'null'], format: uuid }
+            evidence_manifest_id: { type: [string, 'null'], format: uuid }
+            version: { type: integer, minimum: 1 }
+            created_at: { type: string, format: date-time }
+    OperationAccepted:
+      type: object
+      required: [operation_id, status, correlation_id, audit_event_id]
+      properties:
+        operation_id: { type: string, format: uuid }
+        status: { type: string }
+        correlation_id: { type: string, format: uuid }
+        audit_event_id: { type: string, format: uuid }
+        idempotent_replay: { type: boolean, default: false }
+    StandardPublication:
+      type: object
+      required: [id, publisher, identifier, exact_title, edition, publication_date, status, material_type, source_uri, registry_version]
+      properties:
+        id: { type: string, format: uuid }
+        publisher: { type: string }
+        identifier: { type: string }
+        exact_title: { type: string }
+        edition: { type: string }
+        publication_date: { type: string, format: date }
+        status: { type: string }
+        material_type: { type: string }
+        source_uri: { type: string, format: uri }
+        registry_version: { type: integer, minimum: 1 }
+    StandardPublicationPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/StandardPublication' }
+        next_cursor: { type: [string, 'null'] }
+    ApplicabilityProposal:
+      type: object
+      additionalProperties: false
+      required: [clause_version_id, system_id, jurisdiction, use_case, proposed_result, rationale, evidence_ids, review_at]
+      properties:
+        clause_version_id: { type: string, format: uuid }
+        system_id: { type: string, format: uuid }
+        jurisdiction: { type: string }
+        use_case: { type: object }
+        proposed_result:
+          enum: [applicable, partially_applicable, not_applicable, uncertain]
+        rationale: { type: string, minLength: 3 }
+        evidence_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        obligation_owner_principal_id: { type: [string, 'null'], format: uuid }
+        effective_from: { type: [string, 'null'], format: date-time }
+        review_at: { type: string, format: date-time }
+    ApplicabilityDecision:
+      allOf:
+        - $ref: '#/components/schemas/ApplicabilityProposal'
+        - type: object
+          required: [id, tenant_id, proposer_principal_id, status, version]
+          properties:
+            id: { type: string, format: uuid }
+            tenant_id: { type: string, format: uuid }
+            proposer_principal_id: { type: string, format: uuid }
+            reviewer_principal_id: { type: [string, 'null'], format: uuid }
+            review_decision: { type: [string, 'null'] }
+            status: { type: string }
+            version: { type: integer, minimum: 1 }
+    ComplianceCoverage:
+      type: object
+      required: [tenant_id, scope, publications, obligations, controls, evidence, gaps, claim_boundary, metadata]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        scope: { type: object }
+        publications: { type: array, items: { $ref: '#/components/schemas/StandardPublication' } }
+        obligations: { type: array, items: { type: object } }
+        controls: { type: array, items: { type: object } }
+        evidence: { type: array, items: { type: object } }
+        gaps: { type: array, items: { type: object } }
+        claim_boundary:
+          enum: [design, implemented, operating, ready, assessed, certified, incomplete]
+        metadata: { $ref: '#/components/schemas/ProjectionMetadata' }
+    Connector:
+      type: object
+      required: [id, tenant_id, adapter_version, contract_version, health, freshness, retry_state, next_permitted_action]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        adapter_version: { type: string }
+        contract_version: { type: string }
+        health: { type: string }
+        freshness: { type: string }
+        last_cursor: { type: [string, 'null'] }
+        retry_state: { type: object }
+        failure_detail: { type: [object, 'null'] }
+        next_permitted_action: { type: string }
+    ConnectorPage:
+      type: object
+      required: [items, metadata]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Connector' }
+        metadata: { $ref: '#/components/schemas/PageMetadata' }
+    DashboardResponse:
+      type: object
+      required: [view, data, metadata]
+      properties:
+        view: { type: string }
+        data: { type: object }
+        metadata: { $ref: '#/components/schemas/ProjectionMetadata' }
+    HealthDetail:
+      type: object
+      required: [status, observed_at, components, blocked_capabilities, safe_next_actions]
+      properties:
+        status: { enum: [healthy, degraded, unavailable, unknown] }
+        observed_at: { type: string, format: date-time }
+        components:
+          type: array
+          items:
+            type: object
+            required: [name, owner, version, status, last_attempt, last_success, evidence, failure, retry]
+            properties:
+              name: { type: string }
+              owner: { type: string }
+              version: { type: string }
+              status: { type: string }
+              last_attempt: { type: [string, 'null'], format: date-time }
+              last_success: { type: [string, 'null'], format: date-time }
+              evidence: { type: array, items: { type: string, format: uuid } }
+              failure: { type: [object, 'null'] }
+              retry: { type: object }
+        blocked_capabilities:
+          type: array
+          items: { type: string }
+        safe_next_actions:
+          type: array
+          items: { type: string }
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, detail, correlation_id, retryable, safe_next_actions]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        code: { type: string }
+        detail: { type: string }
+        correlation_id: { type: string, format: uuid }
+        audit_event_id: { type: [string, 'null'], format: uuid }
+        retryable: { type: boolean }
+        safe_next_actions:
+          type: array
+          items: { type: string }

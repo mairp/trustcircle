@@ -7,7 +7,7 @@ data and secrets out of the validation path, and the **standard commands** used 
 development and the release/PR gates.
 
 It is grounded in and consistent with the executable acceptance contract in
-[`specs/001-governance-control-plane/quickstart.md`](../../specs/001-governance-control-plane/quickstart.md)
+[`docs/development/quickstart.md`](../../docs/development/quickstart.md)
 and in the real `package.json` script surface. The standard-command table below is a
 **supported consumer surface** (`VO-ec575c4ce42b548bfb4d`): every command it names must
 resolve to a real, defined npm script, and changes to it must preserve consumers or ship
@@ -130,7 +130,7 @@ and mirror the quickstart's fixture and teardown contract:
    teardown.
 4. **Retained fixtures are checked in and governed.** Golden/contract test fixtures that
    _are_ retained (under `tests/**/fixtures/**`, `**/*.fixture.*`, `**/*.golden.*`, the
-   canonical contracts under `specs/**`, and the signed `evidence/manifest.json`) are
+   canonical contracts under `contracts/**`, and the signed `evidence/manifest.json`) are
    explicitly **re-included** by `.gitignore` so no broad disposable pattern can sweep them
    out. They are a supported consumer surface — treat changes to them under the change
    discipline in Section 6.

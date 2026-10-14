@@ -12,7 +12,7 @@ import {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 
-const manifest = JSON.parse(read('specs/002-operations-command-center/evidence-manifest.json'));
+const manifest = JSON.parse(read('evidence/operations-command-center/evidence-manifest.json'));
 assert.equal(manifest.feature, '002-operations-command-center');
 assert.equal(manifest.inventoryDigest, sha256(canonical(manifest)));
 assert.deepEqual(manifest, buildOperationsManifest());
@@ -26,7 +26,7 @@ for (const control of [
   assert.ok(manifest.controls[control], `missing control version: ${control}`);
 }
 
-const audit = read('specs/002-operations-command-center/implementation-audit.md');
+const audit = read('evidence/operations-command-center/implementation-audit.md');
 for (let i = 1; i <= 20; i += 1) {
   assert.match(audit, new RegExp(`FR-${String(i).padStart(3, '0')}\\b`));
 }

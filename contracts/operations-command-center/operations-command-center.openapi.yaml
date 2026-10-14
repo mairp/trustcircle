@@ -1,0 +1,542 @@
+openapi: 3.1.0
+info:
+  title: TrustCircle Operations Command Center API
+  version: 1.0.0
+  description: >-
+    Additive tenant-scoped operational prioritization and case-management API. Existing domain APIs
+    remain authoritative. Queue priority and case closure are operational states, not compliance,
+    certification, conformity, accreditation, or control-effectiveness claims.
+servers:
+  - url: /v1
+security:
+  - trustCircleIdentity: []
+tags:
+  - name: Operations
+paths:
+  /operations/attention:
+    get:
+      operationId: listAttention
+      tags: [Operations]
+      summary: Read the authorized prioritized attention queue
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - name: domain
+          in: query
+          schema: { $ref: '#/components/schemas/AttentionDomain' }
+        - name: severity
+          in: query
+          schema: { $ref: '#/components/schemas/Severity' }
+        - name: ownership
+          in: query
+          schema: { $ref: '#/components/schemas/OwnerPosture' }
+        - name: time_posture
+          in: query
+          schema: { $ref: '#/components/schemas/TimePosture' }
+        - name: freshness
+          in: query
+          schema: { $ref: '#/components/schemas/Freshness' }
+        - name: assignment
+          in: query
+          schema: { type: string, enum: [mine, any] }
+      responses:
+        '200':
+          description: Authorized queue page and per-domain coverage
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttentionPage' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409':
+          description: Snapshot changed; restart traversal
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /operations/cases:
+    get:
+      operationId: listOperationalCases
+      tags: [Operations]
+      summary: List operational cases visible to the verified role scope
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/CaseStatus' }
+        - name: owner
+          in: query
+          schema: { type: string, maxLength: 160 }
+        - name: priority
+          in: query
+          schema: { $ref: '#/components/schemas/CasePriority' }
+      responses:
+        '200':
+          description: Stable case page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OperationalCasePage' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409':
+          description: Snapshot changed; restart traversal
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+    post:
+      operationId: createOperationalCase
+      tags: [Operations]
+      summary: Create a governed case from an attention item or source references
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCaseRequest' }
+      responses:
+        '201':
+          description: Case created
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommandResult' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /operations/cases/{caseId}:
+    get:
+      operationId: getOperationalCase
+      tags: [Operations]
+      summary: Read one current case and transition history
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Current case
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OperationalCaseDetail' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /operations/cases/{caseId}/transitions:
+    post:
+      operationId: transitionOperationalCase
+      tags: [Operations]
+      summary: Submit an authorized optimistic-concurrency case transition
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TransitionCaseRequest' }
+      responses:
+        '200':
+          description: Transition accepted or duplicate result reconciled
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommandResult' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '412': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /operations/cases/{caseId}/sla-evaluations:
+    post:
+      operationId: evaluateOperationalCaseSla
+      tags: [Operations]
+      summary: Evaluate service levels and open bounded idempotent escalations
+      description: Requires an authorized operator or workload identity; never assigns or closes a case.
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SlaEvaluationRequest' }
+      responses:
+        '200':
+          description: Evaluation recorded; duplicate levels are not reopened
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommandResult' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '412': { $ref: '#/components/responses/Problem' }
+components:
+  securitySchemes:
+    trustCircleIdentity:
+      type: http
+      scheme: bearer
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string, maxLength: 4096 }
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 8, maxLength: 128, pattern: '^[A-Za-z0-9._-]+$' }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string, pattern: '^"oc-[1-9][0-9]*-[A-Fa-f0-9]{16,128}"$' }
+  headers:
+    ETag:
+      schema: { type: string, pattern: '^"oc-[1-9][0-9]*-[A-Fa-f0-9]{16,128}"$' }
+  responses:
+    Problem:
+      description: Disclosure-safe problem
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    AttentionDomain:
+      type: string
+      enum: [decision, integrity, inventory, source, controller, compliance, evidence, connector, runtime, coverage]
+    Severity:
+      type: string
+      enum: [critical, high, medium, low, unknown]
+    Impact:
+      type: string
+      enum: [blocking, material, limited, unknown]
+    TimePosture:
+      type: string
+      enum: [breached, imminent, due, none, unknown]
+    OwnerPosture:
+      type: string
+      enum: [assigned_to_me, assigned, unowned, unknown]
+    Freshness:
+      type: string
+      enum: [current, stale, degraded, unknown]
+    ReadQuality:
+      type: string
+      enum: [current, stale, partial, degraded, unavailable, unknown, verified_empty]
+    SourceReference:
+      type: object
+      additionalProperties: false
+      required: [domain, record_type, record_id, href, observed_at, resolved]
+      properties:
+        domain: { $ref: '#/components/schemas/AttentionDomain' }
+        record_type: { type: string, minLength: 1, maxLength: 96 }
+        record_id: { type: string, minLength: 1, maxLength: 256 }
+        record_version: { type: string, maxLength: 160 }
+        href: { type: string, pattern: '^/v1/' }
+        observed_at: { type: string, format: date-time }
+        source_owner_id: { type: string, maxLength: 160 }
+        resolved: { oneOf: [{ type: boolean }, { type: string, const: unknown }] }
+    SafeNextAction:
+      type: object
+      additionalProperties: false
+      required: [label]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 320 }
+        href: { type: string, pattern: '^/v1/' }
+    RankingFactor:
+      type: object
+      additionalProperties: false
+      required: [code, label, value, contribution, provenance]
+      properties:
+        code: { type: string, pattern: '^[a-z0-9_]{2,64}$' }
+        label: { type: string, minLength: 1, maxLength: 120 }
+        value: {}
+        contribution: { type: integer, minimum: 0 }
+        provenance: { type: string, minLength: 1, maxLength: 256 }
+    RankingExplanation:
+      type: object
+      additionalProperties: false
+      required: [version, evaluated_at, vector, factors, display_score, tie_breaker]
+      properties:
+        version: { type: string, const: attention-ranking/v1 }
+        evaluated_at: { type: string, format: date-time }
+        vector:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items: { type: integer }
+        factors:
+          type: array
+          items: { $ref: '#/components/schemas/RankingFactor' }
+        display_score: { type: integer, minimum: 0 }
+        tie_breaker: { type: string, minLength: 1, maxLength: 512 }
+    AttentionItem:
+      type: object
+      additionalProperties: false
+      required: [id, domain, title, sources, severity, impact, time_posture, owner_posture, freshness, confidence, ranking, observed_at, safe_next_action]
+      properties:
+        id: { type: string, minLength: 16, maxLength: 128 }
+        domain: { $ref: '#/components/schemas/AttentionDomain' }
+        title: { type: string, minLength: 1, maxLength: 320 }
+        sources:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/SourceReference' }
+        severity: { $ref: '#/components/schemas/Severity' }
+        impact: { $ref: '#/components/schemas/Impact' }
+        time_posture: { $ref: '#/components/schemas/TimePosture' }
+        owner_posture: { $ref: '#/components/schemas/OwnerPosture' }
+        freshness: { $ref: '#/components/schemas/Freshness' }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        ranking: { $ref: '#/components/schemas/RankingExplanation' }
+        observed_at: { type: string, format: date-time }
+        due_at: { type: string, format: date-time }
+        safe_next_action: { $ref: '#/components/schemas/SafeNextAction' }
+        case_id: { type: string, format: uuid }
+    AttentionCoverage:
+      type: object
+      additionalProperties: false
+      required: [domain, quality]
+      properties:
+        domain: { $ref: '#/components/schemas/AttentionDomain' }
+        quality: { $ref: '#/components/schemas/ReadQuality' }
+        observed_at: { type: string, format: date-time }
+        candidate_count: { type: integer, minimum: 0 }
+        source_cursor: { type: string, maxLength: 1024 }
+        failure_code: { type: string, pattern: '^[a-z0-9_]{2,64}$' }
+        safe_next_action: { type: string, minLength: 1, maxLength: 512 }
+    AttentionSummary:
+      type: object
+      additionalProperties: false
+      required: [total, critical, overdue, unowned, stale, assigned_to_me]
+      properties:
+        total: { type: integer, minimum: 0 }
+        critical: { type: integer, minimum: 0 }
+        overdue: { type: integer, minimum: 0 }
+        unowned: { type: integer, minimum: 0 }
+        stale: { type: integer, minimum: 0 }
+        assigned_to_me: { type: integer, minimum: 0 }
+    AttentionPage:
+      type: object
+      additionalProperties: false
+      required: [items, coverage, summary, quality, snapshot_cursor, next_cursor, ranking_version]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AttentionItem' }
+        coverage:
+          type: array
+          items: { $ref: '#/components/schemas/AttentionCoverage' }
+        summary: { $ref: '#/components/schemas/AttentionSummary' }
+        quality: { $ref: '#/components/schemas/ReadQuality' }
+        snapshot_cursor: { type: string, minLength: 16, maxLength: 4096 }
+        next_cursor: { type: [string, 'null'], maxLength: 4096 }
+        ranking_version: { type: string, const: attention-ranking/v1 }
+        safe_next_action: { type: string, maxLength: 512 }
+    CasePriority:
+      type: string
+      enum: [critical, high, medium, low]
+    CaseStatus:
+      type: string
+      enum: [open, acknowledged, in_progress, awaiting_verification, escalated, resolved, closed]
+    OperationalCase:
+      type: object
+      additionalProperties: false
+      required: [id, tenant_id, source_references, title, priority, status, creator_id, rationale, opened_at, acknowledgement_target_at, resolution_target_at, service_level_policy_id, service_level_policy_version, escalation_level, breach_types, evidence_references, version, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        attention_item_id: { type: string, maxLength: 128 }
+        source_references:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/SourceReference' }
+        title: { type: string, minLength: 1, maxLength: 320 }
+        priority: { $ref: '#/components/schemas/CasePriority' }
+        status: { $ref: '#/components/schemas/CaseStatus' }
+        creator_id: { type: string, minLength: 1, maxLength: 160 }
+        owner_id: { type: string, minLength: 1, maxLength: 160 }
+        source_owner_ids:
+          type: array
+          items: { type: string, maxLength: 160 }
+        rationale: { type: string, minLength: 8, maxLength: 2000 }
+        opened_at: { type: string, format: date-time }
+        acknowledged_at: { type: string, format: date-time }
+        acknowledgement_target_at: { type: string, format: date-time }
+        resolution_target_at: { type: string, format: date-time }
+        verification_target_at: { type: string, format: date-time }
+        service_level_policy_id: { type: string, minLength: 1, maxLength: 120 }
+        service_level_policy_version: { type: string, minLength: 1, maxLength: 64 }
+        escalation_level: { type: integer, minimum: 0 }
+        breach_types:
+          type: array
+          items: { type: string, enum: [unowned, acknowledgement, resolution, verification] }
+        evidence_references:
+          type: array
+          items: { type: string, maxLength: 256 }
+        verification: { $ref: '#/components/schemas/ClosureVerification' }
+        version: { type: integer, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ClosureVerification:
+      type: object
+      additionalProperties: false
+      required: [verifier_id, verified_at, reason, source_versions, evidence_references, closure_control_version, service_level_outcome]
+      properties:
+        verifier_id: { type: string, minLength: 1, maxLength: 160 }
+        verified_at: { type: string, format: date-time }
+        reason: { type: string, minLength: 8, maxLength: 2000 }
+        source_versions:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/SourceReference' }
+        evidence_references:
+          type: array
+          minItems: 1
+          items: { type: string, maxLength: 256 }
+        closure_control_version: { type: string, const: operational-case-closure/v1 }
+        service_level_outcome: { type: string, enum: [met, acknowledgement_breached, resolution_breached, verification_breached, multiple_breaches] }
+    CaseTransition:
+      type: object
+      additionalProperties: false
+      required: [id, case_id, command, actor_id, reason, idempotency_key, correlation_id, outcome, occurred_at]
+      properties:
+        id: { type: string, format: uuid }
+        case_id: { type: string, format: uuid }
+        command: { type: string, enum: [create, assign, acknowledge, progress, submit_verification, verify, close, evaluate_sla] }
+        from_status: { $ref: '#/components/schemas/CaseStatus' }
+        to_status: { $ref: '#/components/schemas/CaseStatus' }
+        actor_id: { type: string, maxLength: 160 }
+        reason: { type: string, minLength: 8, maxLength: 2000 }
+        expected_version: { type: integer, minimum: 1 }
+        actual_version: { type: integer, minimum: 1 }
+        idempotency_key: { type: string, minLength: 8, maxLength: 128 }
+        correlation_id: { type: string, minLength: 8, maxLength: 128 }
+        outcome: { type: string, enum: [accepted, rejected, duplicate, conflict, uncertain] }
+        rejection_code: { type: string, maxLength: 64 }
+        safe_next_action: { type: string, maxLength: 512 }
+        occurred_at: { type: string, format: date-time }
+    EscalationRecord:
+      type: object
+      additionalProperties: false
+      required: [id, case_id, policy_version, level, breach_type, target_role, opened_at, status]
+      properties:
+        id: { type: string, format: uuid }
+        case_id: { type: string, format: uuid }
+        policy_version: { type: string, maxLength: 64 }
+        level: { type: integer, minimum: 1 }
+        breach_type: { type: string, enum: [unowned, acknowledgement, resolution, verification] }
+        target_role: { type: string, maxLength: 96 }
+        opened_at: { type: string, format: date-time }
+        status: { type: string, enum: [open, acknowledged, resolved] }
+    OperationalCaseDetail:
+      type: object
+      additionalProperties: false
+      required: [case, transitions, escalations]
+      properties:
+        case: { $ref: '#/components/schemas/OperationalCase' }
+        transitions:
+          type: array
+          items: { $ref: '#/components/schemas/CaseTransition' }
+        escalations:
+          type: array
+          items: { $ref: '#/components/schemas/EscalationRecord' }
+    OperationalCasePage:
+      type: object
+      additionalProperties: false
+      required: [tenant_id, observed_at, items, snapshot_cursor, next_cursor]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        observed_at: { type: string, format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OperationalCase' }
+        snapshot_cursor: { type: string, maxLength: 4096 }
+        next_cursor: { type: [string, 'null'], maxLength: 4096 }
+    CreateCaseRequest:
+      type: object
+      additionalProperties: false
+      required: [source_references, title, priority, rationale, service_level_policy_id, service_level_policy_version]
+      properties:
+        attention_item_id: { type: string, maxLength: 128 }
+        source_references:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: '#/components/schemas/SourceReference' }
+        title: { type: string, minLength: 1, maxLength: 320 }
+        priority: { $ref: '#/components/schemas/CasePriority' }
+        owner_id: { type: string, minLength: 1, maxLength: 160 }
+        rationale: { type: string, minLength: 8, maxLength: 2000 }
+        service_level_policy_id: { type: string, minLength: 1, maxLength: 120 }
+        service_level_policy_version: { type: string, minLength: 1, maxLength: 64 }
+    TransitionCaseRequest:
+      type: object
+      additionalProperties: false
+      required: [command, reason, expected_version]
+      properties:
+        command: { type: string, enum: [assign, acknowledge, progress, submit_verification, verify, close] }
+        reason: { type: string, minLength: 8, maxLength: 2000 }
+        expected_version: { type: integer, minimum: 1 }
+        owner_id: { type: string, minLength: 1, maxLength: 160 }
+        evidence_references:
+          type: array
+          maxItems: 100
+          items: { type: string, maxLength: 256 }
+        source_versions:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/SourceReference' }
+        target_status: { $ref: '#/components/schemas/CaseStatus' }
+    SlaEvaluationRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, evaluated_at, reason]
+      properties:
+        expected_version: { type: integer, minimum: 1 }
+        evaluated_at: { type: string, format: date-time }
+        reason: { type: string, minLength: 8, maxLength: 2000 }
+    CommandResult:
+      type: object
+      additionalProperties: false
+      required: [outcome, case, transition]
+      properties:
+        outcome: { type: string, enum: [accepted, duplicate] }
+        case: { $ref: '#/components/schemas/OperationalCase' }
+        transition: { $ref: '#/components/schemas/CaseTransition' }
+        reconciled: { type: boolean, default: false }
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, detail, correlation_id, retryable, safe_next_actions]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string, pattern: '^[a-z0-9_]{2,64}$' }
+        detail: { type: string }
+        correlation_id: { type: string, minLength: 8, maxLength: 128 }
+        retryable: { type: boolean }
+        safe_next_actions:
+          type: array
+          items: { type: string, maxLength: 512 }

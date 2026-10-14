@@ -100,11 +100,14 @@ evidence/*.tmp
 evidence/*.local.json
 
 # Canonical contract fixtures (OpenAPI / AsyncAPI / JSON Schema source-of-truth)
-# and their published specs — the supported consumer surface of the type
-# generator. Fixtures are retained even though `dist/`, `build/`, `*.local`, etc.
-# above are ignored.
-!specs/
-!specs/**
+# — the supported consumer surface of the type generator. Fixtures are retained
+# even though `dist/`, `build/`, `*.local`, etc. above are ignored.
+!contracts/
+!contracts/**
+
+# Feature specifications (Spec Kit working set) are maintained privately and are
+# never published with this repository.
+specs/
 
 # Integration manifests (Speckit / Codex) — governed fixtures, not local scratch.
 !.specify/

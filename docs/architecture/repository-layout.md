@@ -22,7 +22,7 @@ listed here are a supported consumer surface. A companion test
 (`tests/tooling/repository-layout.test.mjs`, run via `npm run test:tooling`)
 verifies this map against the real repository so it stays truthful.
 
-## Structure Decision (from `specs/001-governance-control-plane/plan.md`)
+## Structure Decision
 
 A TypeScript monorepo with **one transactional governance core** and
 **independently deployable edge/process boundaries**. Domain code stays
@@ -152,11 +152,10 @@ tests/recovery | qa/core | planned | Vitest `recovery` project
 tests/accessibility | qa/accessibility | present | Hermetic current-state WCAG 2.2 AA spec (`current-state.spec.ts`) + fixture (`support/current-state-view.ts`), run by the `accessibility-current-state` Playwright project
 .github/workflows | platform/ci | present | Pull-request validation gate (contracts/generated/lint/types/tests/migrations/evidence)
 scripts/ci | platform/ci | present | CI helper scripts (evidence-manifest builder/verifier, guarded step runner)
-scripts/spec | governance/spec | present | Spec tooling: deterministic traceability-matrix generator/drift-checker
 evidence | platform/ci | present | Machine-readable evidence manifest (tamper-evident supported-contract inventory)
 .gitignore | platform/ci | present | Version-control ignore contract: disposable data ignored, signed manifests + fixtures retained
 docs/development | docs/onboarding | present | Developer bootstrap guide: WSL setup, test prerequisites, safe fixture rules, standard commands
-specs/001-governance-control-plane | governance/spec | present | Feature specification, plan, data-model, tasks, and the FR/GAR/AR/NFR/SC-to-task-to-test-to-evidence traceability matrix
+contracts | governance/contracts | present | Machine-readable source contracts (OpenAPI, AsyncAPI, JSON Schema) that packages/contracts generates types from and the contract tests validate against
 ```
 
 ## Source-contract artifact ownership
@@ -168,8 +167,6 @@ evidence (GAR-010). Paths marked `planned` are owned/reserved here now and land
 in the phase that implements their capability.
 
 ```contracts
-specs/001-governance-control-plane/spec.md | present | VO-52d0780c11bcc6fd7583 | Requirement catalog (FR/GAR/AR/NFR/SC) — the source-of-truth grounding surface the traceability matrix parses; sha256-pinned so its 108 governed requirements cannot silently drift
-specs/001-governance-control-plane/tasks.md | present | VO-52d0780c11bcc6fd7583 | Task breakdown (T001..) with task→requirement links — the source-of-truth grounding surface for every task ID cited by the traceability matrix; sha256-pinned so cited task IDs remain verifiable
 packages/domain/src/primitives.ts | present | VO-34d9f9fb2a6a39e2d62c | UUIDv7 stable identifiers, source/observation/recorded time types, structured reasons, tenant-scoped governed-entity primitives (version/owner/lifecycle/tests/monitoring/failure/exceptions/evidence)
 packages/domain/src/state-machine.ts | present | VO-34d9f9fb2a6a39e2d62c | Reusable guarded state-machine transitions: governed-entity machines, optimistic-version concurrency, guard-recorded rejections, terminal-history preservation (append-only, terminal states are sinks)
 packages/domain/src/outcomes.ts | present | VO-34d9f9fb2a6a39e2d62c | Canonical outcome codes, RFC 9457 problem+json envelopes, bounded retryability, and total safe-next-action mapping; the outcome vocabulary is a governed mapping entity carrying all nine GAR-005 facets
@@ -217,7 +214,7 @@ scripts/ci/evidence-manifest.mjs | present | VO-ec575c4ce42b548bfb4d | Tamper-ev
 scripts/ci/run-if-present.mjs | present | VO-ec575c4ce42b548bfb4d | Guarded PR-validation runner: present⇒run, absent⇒visible skip (never silent pass)
 .gitignore | present | VO-ec575c4ce42b548bfb4d | Ignore disposable local data; retain signed validation manifest (evidence/manifest.json) + contract/test fixtures
 docs/development/bootstrap.md | present | VO-ec575c4ce42b548bfb4d | Developer bootstrap: WSL setup, test prerequisites, safe fixture rules, standard-command surface (script-drift enforced)
-specs/001-governance-control-plane/traceability.md | present | VO-52d0780c11bcc6fd7583 | FR/GAR/AR/NFR/SC-to-task-to-test-to-evidence traceability matrix: every spec requirement mapped to its governing tasks.md task(s), on-disk implementing artifact/test, and independently observable evidence; the versioned-&-validated-source-contract + correlated/deduplicated/reconcilable/retry-bounded/safe-outcome obligation clauses mapped to genuine built artifacts (persistence runMutation/reconcileMutation, contracts validate.ts, migration runner); deterministically generated + drift-checked by scripts/spec/build-traceability.mjs
+docs/governance/traceability.md | present | VO-52d0780c11bcc6fd7583 | FR/GAR/AR/NFR/SC-to-task-to-test-to-evidence traceability matrix: every spec requirement mapped to its governing tasks.md task(s), on-disk implementing artifact/test, and independently observable evidence; the versioned-&-validated-source-contract + correlated/deduplicated/reconcilable/retry-bounded/safe-outcome obligation clauses mapped to genuine built artifacts (persistence runMutation/reconcileMutation, contracts validate.ts, migration runner); deterministically generated + drift-checked by scripts/spec/build-traceability.mjs
 ```
 
 ## Change discipline (compatibility obligation)

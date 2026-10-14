@@ -31,7 +31,7 @@
 //                 terminal dead-letter stream that is NOT auto-retried.
 //
 // Grounding sources (parsed, not asserted from memory):
-//   - specs/001-governance-control-plane/contracts/governance-events.asyncapi.yaml
+//   - contracts/governance-control-plane/governance-events.asyncapi.yaml
 //     (the subject taxonomy every stream/consumer must cover, no fabricated domains)
 //   - db/migrations/0004_delivery.sql (the delivery substrate the topology mirrors)
 //
@@ -47,7 +47,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rel = (p) => join(ROOT, p);
 const TOPOLOGY = 'deploy/nats/topology.json';
 const SCHEMA = 'deploy/nats/topology.schema.json';
-const ASYNCAPI = 'specs/001-governance-control-plane/contracts/governance-events.asyncapi.yaml';
+const ASYNCAPI = 'contracts/governance-control-plane/governance-events.asyncapi.yaml';
 const DELIVERY = 'db/migrations/0004_delivery.sql';
 const BUNDLE = '36GCYGDJ15PTYP60F91QWRAY2M';
 const SEMANTIC_HASH = 'af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b';

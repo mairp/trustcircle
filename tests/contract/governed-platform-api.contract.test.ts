@@ -15,8 +15,7 @@ import {
   requireGovernedIfMatch,
 } from '../../packages/contracts/src/governed-platform-api.ts';
 
-const API_PATH =
-  'specs/004-governed-platform-continuation/contracts/governed-platform.openapi.yaml';
+const API_PATH = 'contracts/governed-platform-continuation/governed-platform.openapi.yaml';
 
 describe('governed platform authored OpenAPI contract', () => {
   const document = yaml.load(readFileSync(API_PATH, 'utf8')) as {

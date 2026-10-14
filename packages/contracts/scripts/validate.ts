@@ -7,7 +7,7 @@
  * which — if violated — would silently break a supported consumer:
  *
  *   1. CONTRACT VALIDATION. Every canonical source contract
- *      (specs/001-governance-control-plane/contracts/*) MUST parse and satisfy
+ *      (contracts/governance-control-plane/*) MUST parse and satisfy
  *      the structural invariants supported consumers rely on: a stable document
  *      kind + version, the declared identity/version fields, non-empty component
  *      surface, and no dangling local `$ref` (a dangling ref is a broken export).
@@ -55,7 +55,7 @@ const load = (yaml as { load: (s: string) => unknown }).load;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..', '..');
-const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', 'contracts');
+const CONTRACTS_DIR = join(REPO_ROOT, 'contracts', 'governance-control-plane');
 
 // ---------------------------------------------------------------------------
 // Finding model

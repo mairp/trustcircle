@@ -1,0 +1,110 @@
+{
+  "manifestVersion": 1,
+  "feature": "002-operations-command-center",
+  "controls": {
+    "attentionRanking": "attention-ranking/v1",
+    "caseLifecycle": "operational-case-lifecycle/v1",
+    "serviceLevelPolicy": "governance-{priority}/1.0.0",
+    "authorityPlan": "operations-authority/v1",
+    "apiContract": "operations-command-center.openapi/1.0.0"
+  },
+  "artifacts": [
+    {
+      "path": "apps/api/src/operations-runtime.ts",
+      "digest": "8686f26cc0ad3dda53d955d458975c943c1e483be772f5c081df760cf2bae506"
+    },
+    {
+      "path": "apps/api/src/routes/operations-command-center.ts",
+      "digest": "1e8ea7b6bec3a5d15a0812c7e8c567eadfb760d4d0315f5e16ef291220b0edf0"
+    },
+    {
+      "path": "apps/web/src/features/operations/AttentionQueue.tsx",
+      "digest": "8a08d178c042fec32510304a2a100358fc8ee57d9b516fc944f9c093144a6eaa"
+    },
+    {
+      "path": "apps/web/src/features/operations/CaseWorkspace.tsx",
+      "digest": "404133ad2e7c161b4b60d07d233aedad86ed40f8b27009737b5d26911a0677ea"
+    },
+    {
+      "path": "apps/web/src/lib/operations-loader.ts",
+      "digest": "f44bc263b2135cfca0e0486f1e52313650001b305007f71b0924e934c1422a6d"
+    },
+    {
+      "path": "contracts/operations-command-center/operations-command-center.openapi.yaml",
+      "digest": "16d29ae97982acff9183ecf421cbcc8e5f7fa9ef2ec5987ededce857bfcd8ca3"
+    },
+    {
+      "path": "db/migrations/0070_operations_command_center.sql",
+      "digest": "315ffff02172088c5a867c0393de734f52df558c81d8c3a47baaa1dd3de0c1fe"
+    },
+    {
+      "path": "docs/runbooks/operations-command-center.md",
+      "digest": "ccf91f7e1aa393f5ab27b18707996dc0065660b8c30348121b1fc370d8c01e61"
+    },
+    {
+      "path": "packages/application/src/attention-queue.ts",
+      "digest": "6d40a1ed25671bc2bb1f1d54b8166b6dc4d214f8d9191e7b7e25b4f069c29ad8"
+    },
+    {
+      "path": "packages/application/src/operational-case-service.ts",
+      "digest": "5b0d2245c48e102c1c06bfb8a5c4dee254c8a185f4aee46d3ea8886ce98f5c84"
+    },
+    {
+      "path": "packages/application/src/operations-authority.ts",
+      "digest": "cc9c1bd7f40a1d61b01ebc3cc3c2219d21a9a7348bc3e8c51ede29f2c35628c8"
+    },
+    {
+      "path": "packages/contracts/src/operations-api.ts",
+      "digest": "49ad9e7bd4deff5c09920872ee2cc09b692feed9103434d8277d19128059bbf3"
+    },
+    {
+      "path": "packages/domain/src/operations.ts",
+      "digest": "3083b6b2834f177b5e5ff704611b3d3ce1f4a16e3c3a629471c9363e48e1a20a"
+    },
+    {
+      "path": "packages/persistence/src/operational-case-repository.ts",
+      "digest": "62f42781c0734f82eca01cf1c59e6ca54f03902517d67cc46a879bc0b5893596"
+    },
+    {
+      "path": "tests/contract/operations-api.contract.test.ts",
+      "digest": "5ff1b62f812f9ca9e81240fca58b9af897da6a8451e79f4fd8bf3340696b69dc"
+    },
+    {
+      "path": "tests/e2e/operations-command-center.spec.ts",
+      "digest": "4215b494dc5aa4ba0db65cece109c815bf8302d6f3ca89508e6d8acbc9ce62a6"
+    },
+    {
+      "path": "tests/evidence/audit-readiness/operations-command-center.mjs",
+      "digest": "5992ea4900a5e0322a553464dbde751065dc39109cb874baacc34a92cba1e9ba"
+    },
+    {
+      "path": "tests/integration/operational-case-audit.test.ts",
+      "digest": "cce82a1f3162f6f1c3da454ba6c92594ff6675543657fb96e1563801a9e5858a"
+    },
+    {
+      "path": "tests/integration/operations-command-center-rollback.test.ts",
+      "digest": "0ab3b6dcfc45a292ceb66f8fbf00022a87241b8b9b5b0590872de1b6272f44ac"
+    },
+    {
+      "path": "tests/integration/operations-command-center-runtime.test.ts",
+      "digest": "6a44580a80a8c5168dfec9968994c1372074bf3d1fe6469872cac1cb101360aa"
+    },
+    {
+      "path": "tests/performance/operations-command-center.performance.test.ts",
+      "digest": "f00cdf3e356c7847d0c158c154b69707a26c5bbe62f38fa160feb0ab4f68c6fa"
+    },
+    {
+      "path": "tests/security/operations-command-center-access.test.ts",
+      "digest": "e2ecccb5357594951ba47db42bd2d8470762be8d8525314865445c0d93634fe2"
+    },
+    {
+      "path": "tests/unit/operations-command-center.test.ts",
+      "digest": "6bf2556cbf5a7207ab9220cccce71a3104fdd4150555427388b705f625bf57ec"
+    },
+    {
+      "path": "tests/unit/operations-workspace.unit.test.ts",
+      "digest": "9984e98fb5e09ac465a9ed01126e9f7dbba6b4bdbc594962f5fa3f6e7838d306"
+    }
+  ],
+  "inventoryDigest": "e2d8665b6efab5822f0efbc48520d2a3643b25f58286c26bd3f065db21955885"
+}

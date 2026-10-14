@@ -62,8 +62,8 @@ export const REVIEWS: readonly DisciplineReview[] = [
     reviewerRole: 'Governance Officer',
     decision: 'approve',
     evidence: [
-      'specs/001-governance-control-plane/checklists/release-review.md',
-      'specs/001-governance-control-plane/traceability.md',
+      'docs/governance/release-review.md',
+      'docs/governance/traceability.md',
       'tests/usability/primary-journeys.md',
     ],
     conditions: [],

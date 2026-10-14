@@ -42,7 +42,7 @@ const load = (yaml as { load: (s: string) => unknown }).load;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..', '..');
-const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', 'contracts');
+const CONTRACTS_DIR = join(REPO_ROOT, 'contracts', 'governance-control-plane');
 const OUT_DIR = join(REPO_ROOT, 'packages', 'contracts', 'src', 'generated');
 
 /** Kind of source contract; drives the extraction strategy. */
@@ -341,7 +341,7 @@ function provenanceHeader(contract: SourceContract, sourceHash: string): string 
     '/**',
     ` * ${GENERATED_HEADER_MARK} by packages/contracts/scripts/generate.ts — DO NOT EDIT.`,
     ` *`,
-    ` * Source contract : specs/001-governance-control-plane/contracts/${contract.file}`,
+    ` * Source contract : contracts/governance-control-plane/${contract.file}`,
     ` * Contract kind   : ${contract.kind}`,
     ` * Source sha256   : ${sourceHash}`,
     ` *`,

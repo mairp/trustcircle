@@ -2,7 +2,7 @@
 // and Audit Readiness / FR-031, FR-051, FR-052, SC-013).
 //
 // Mounts the two applicability operations from the OpenAPI contract
-// (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml):
+// (contracts/governance-control-plane/governance-api.openapi.yaml):
 //
 //   POST /v1/applicability-decisions                        → proposeApplicability → ApplicabilityDecision (201)
 //   POST /v1/applicability-decisions/{applicabilityId}/actions → reviewApplicability → ApplicabilityDecision (200)

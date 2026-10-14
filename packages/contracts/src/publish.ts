@@ -5,8 +5,8 @@
 //
 // This module is the PUBLISH step of the contract lifecycle. It does NOT re-declare the API — it
 // LOADS the two canonical, authoritative specs
-//   specs/001-governance-control-plane/contracts/governance-api.openapi.yaml   (OpenAPI 3.1)
-//   specs/001-governance-control-plane/contracts/governance-events.asyncapi.yaml (AsyncAPI 3.0)
+//   contracts/governance-control-plane/governance-api.openapi.yaml   (OpenAPI 3.1)
+//   contracts/governance-control-plane/governance-events.asyncapi.yaml (AsyncAPI 3.0)
 // and derives, deterministically:
 //   1. a VERSIONED TypeScript client package for each spec — package.json descriptor pinned to the
 //      spec's `info.version`, plus a typed client surface (one method per OpenAPI operation, one
@@ -35,7 +35,7 @@ const loadYaml = yaml.load;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..', '..');
-const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', 'contracts');
+const CONTRACTS_DIR = join(REPO_ROOT, 'contracts', 'governance-control-plane');
 export const OPENAPI_PATH = join(CONTRACTS_DIR, 'governance-api.openapi.yaml');
 export const ASYNCAPI_PATH = join(CONTRACTS_DIR, 'governance-events.asyncapi.yaml');
 

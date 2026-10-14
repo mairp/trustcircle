@@ -13,7 +13,7 @@ register (`docs/security/threat-model.md` §6), the compatibility policy's excep
 tiers in the release/validation manifests.
 
 **Review cadence:** every entry is reviewed at each release via the release-review checklist
-(`specs/001-governance-control-plane/checklists/release-review.md`) and no later than its stated
+(`docs/governance/release-review.md`) and no later than its stated
 review date. Dates are illustrative first-release targets and are re-stamped at each review.
 
 ---

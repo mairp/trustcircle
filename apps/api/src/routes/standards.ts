@@ -2,7 +2,7 @@
 // and Audit Readiness / FR-031, FR-051, FR-055, FR-056, SC-012).
 //
 // Mounts the global, versioned standards-publication registry surface from the OpenAPI contract
-// (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml):
+// (contracts/governance-control-plane/governance-api.openapi.yaml):
 //
 //   GET  /v1/standards/publications         → StandardPublicationPage  (global versioned publication FACTS)
 //   POST /v1/standards/publications/import  → StandardsImportAccepted   (admit a FUTURE 4200x edition)

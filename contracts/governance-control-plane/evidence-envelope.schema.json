@@ -1,0 +1,463 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trustcircle.ai/contracts/evidence-envelope/v1.0.0",
+  "title": "TrustCircleAI Evidence Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "tenant_id",
+    "evidence_type",
+    "content",
+    "provenance",
+    "classification",
+    "access",
+    "retention",
+    "integrity",
+    "custody",
+    "created_at",
+    "created_by"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "evidence_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "evidence_type": {
+      "enum": [
+        "original",
+        "derived",
+        "redacted",
+        "simulation",
+        "policy_decision",
+        "control_result",
+        "repair_result",
+        "rollback_result",
+        "verification",
+        "audit_checkpoint",
+        "export_manifest",
+        "disposition"
+      ]
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uri",
+        "storage_version_id",
+        "sha256",
+        "size_bytes",
+        "media_type",
+        "encrypted"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "storage_version_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "encrypted": {
+          "type": "boolean"
+        },
+        "encryption_key_ref": {
+          "type": ["string", "null"]
+        },
+        "compression": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_type",
+        "source_id",
+        "observed_at",
+        "method",
+        "producer_principal_id"
+      ],
+      "properties": {
+        "source_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_instance_id": {
+          "type": ["string", "null"]
+        },
+        "source_revision": {
+          "type": ["string", "null"]
+        },
+        "source_occurred_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "producer_principal_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "adapter_id": {
+          "type": ["string", "null"]
+        },
+        "adapter_version": {
+          "type": ["string", "null"]
+        },
+        "mapping_version": {
+          "type": ["string", "null"]
+        },
+        "correlation_id": {
+          "anyOf": [
+            { "$ref": "#/$defs/uuid" },
+            { "type": "null" }
+          ]
+        },
+        "causation_id": {
+          "anyOf": [
+            { "$ref": "#/$defs/uuid" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "parents": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["evidence_id", "relationship", "sha256"],
+        "properties": {
+          "evidence_id": {
+            "$ref": "#/$defs/uuid"
+          },
+          "relationship": {
+            "enum": [
+              "derived_from",
+              "redacted_from",
+              "repair_of",
+              "rollback_of",
+              "verified_by",
+              "export_contains"
+            ]
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "transformation_method": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "categories", "classified_by", "classified_at"],
+      "properties": {
+        "level": {
+          "enum": ["public", "internal", "confidential", "restricted"]
+        },
+        "categories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "classified_by": {
+          "$ref": "#/$defs/uuid"
+        },
+        "classified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "redaction_required": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "tenant_isolated", "allowed_purposes"],
+      "properties": {
+        "policy_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "tenant_isolated": {
+          "const": true
+        },
+        "allowed_purposes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "cross_tenant_authorization_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/uuid" }
+        }
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "policy_version",
+        "resolved_at",
+        "retain_until",
+        "legal_hold"
+      ],
+      "properties": {
+        "policy_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retain_until": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "basis": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "organizational_policy",
+              "legal_or_regulatory",
+              "contractual",
+              "legal_hold"
+            ]
+          }
+        },
+        "legal_hold": {
+          "type": "boolean"
+        },
+        "legal_hold_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/uuid" }
+        },
+        "disposition_action": {
+          "enum": ["review", "retain", "delete", "anonymize", "transfer"]
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "digest", "status", "verified_at"],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "status": {
+          "enum": ["verified", "failed", "unknown"]
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verified_by": {
+          "type": ["string", "null"]
+        },
+        "signature": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["algorithm", "key_id", "value"],
+          "properties": {
+            "algorithm": { "const": "Ed25519" },
+            "key_id": { "type": "string", "minLength": 1 },
+            "value": { "type": "string", "minLength": 43 }
+          }
+        }
+      }
+    },
+    "custody": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "action",
+          "principal_id",
+          "purpose",
+          "occurred_at",
+          "outcome"
+        ],
+        "properties": {
+          "event_id": {
+            "$ref": "#/$defs/uuid"
+          },
+          "action": {
+            "enum": [
+              "created",
+              "observed",
+              "read",
+              "exported",
+              "transformed",
+              "redacted",
+              "verified",
+              "held",
+              "released",
+              "disposed"
+            ]
+          },
+          "principal_id": {
+            "$ref": "#/$defs/uuid"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "outcome": {
+            "enum": ["succeeded", "denied", "failed"]
+          },
+          "audit_event_id": {
+            "anyOf": [
+              { "$ref": "#/$defs/uuid" },
+              { "type": "null" }
+            ]
+          }
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "$ref": "#/$defs/uuid"
+    },
+    "status": {
+      "enum": ["pending", "committed", "quarantined", "superseded", "disposed"],
+      "default": "committed"
+    },
+    "disposition": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "disposition_record_id",
+        "decision_id",
+        "method",
+        "executed_at",
+        "verified_at"
+      ],
+      "properties": {
+        "disposition_record_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "decision_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "manifest_evidence_id": {
+          "$ref": "#/$defs/uuid"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "disposed" }
+        }
+      },
+      "then": {
+        "required": ["disposition"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "retention": {
+            "properties": {
+              "legal_hold": { "const": true }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "retention": {
+            "properties": {
+              "legal_hold_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

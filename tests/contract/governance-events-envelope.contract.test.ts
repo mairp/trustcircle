@@ -50,9 +50,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
 const ASYNCAPI = join(
   REPO_ROOT,
-  'specs',
-  '001-governance-control-plane',
   'contracts',
+  'governance-control-plane',
   'governance-events.asyncapi.yaml',
 );
 

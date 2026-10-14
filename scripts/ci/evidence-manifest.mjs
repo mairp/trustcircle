@@ -51,7 +51,7 @@ const BUNDLE = {
   contentHash: 'af120e10497d6ffe411b9756b3b341a5f812514c8ee10158c6dcd6e3298b014b',
 };
 
-const OPERATIONS_MANIFEST = 'specs/002-operations-command-center/evidence-manifest.json';
+const OPERATIONS_MANIFEST = 'evidence/operations-command-center/evidence-manifest.json';
 const OPERATIONS_CONTROL_VERSIONS = {
   attentionRanking: 'attention-ranking/v1',
   caseLifecycle: 'operational-case-lifecycle/v1',
@@ -60,9 +60,7 @@ const OPERATIONS_CONTROL_VERSIONS = {
   apiContract: 'operations-command-center.openapi/1.0.0',
 };
 const OPERATIONS_EVIDENCE_PATHS = [
-  'specs/002-operations-command-center/spec.md',
-  'specs/002-operations-command-center/plan.md',
-  'specs/002-operations-command-center/contracts/operations-command-center.openapi.yaml',
+  'contracts/operations-command-center/operations-command-center.openapi.yaml',
   'packages/domain/src/operations.ts',
   'packages/application/src/attention-queue.ts',
   'packages/application/src/operational-case-service.ts',

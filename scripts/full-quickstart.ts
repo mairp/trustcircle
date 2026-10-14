@@ -4,7 +4,7 @@
 // aggregate signed result in artifacts/validation/full-quickstart/manifest.json."
 //
 // This runner enumerates EVERY command and scenario declared in
-// specs/001-governance-control-plane/quickstart.md and executes each guide obligation on THIS host,
+// docs/development/quickstart.md and executes each guide obligation on THIS host,
 // then writes a SINGLE aggregate manifest, HMAC-signed over its canonical body, to
 // artifacts/validation/full-quickstart/manifest.json.
 //
@@ -732,7 +732,7 @@ export function buildManifest(
     counts.hostRunnableFailed > 0 ? 'failed' : counts.hostRunnableHeld > 0 ? 'held' : 'passed';
   const body = {
     kind: 'full-quickstart-validation' as const,
-    guide: 'specs/001-governance-control-plane/quickstart.md',
+    guide: 'docs/development/quickstart.md',
     host: { hasInfra: opts.hasInfra, hasBrowser: opts.hasBrowser },
     status,
     counts,

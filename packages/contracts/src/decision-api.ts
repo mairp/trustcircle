@@ -4,7 +4,7 @@
 // This module is the executable form of the phase objective: "Validate decision, action, and
 // delegation REQUESTS, HEADERS, ETags, IDEMPOTENCY, ERRORS, and RESPONSES against the API
 // contract." It does NOT re-declare the contract in code — it LOADS the canonical
-// `specs/001-governance-control-plane/contracts/governance-api.openapi.yaml`, resolves the
+// `contracts/governance-control-plane/governance-api.openapi.yaml`, resolves the
 // decision / action / delegation operations and their `$ref` schemas, and validates payloads and
 // protocol metadata against those loaded definitions. If the OpenAPI contract changes, every
 // verdict here changes with it; the validator can never silently drift from the published API.
@@ -41,9 +41,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..', '..');
 export const GOVERNANCE_API_PATH = join(
   REPO_ROOT,
-  'specs',
-  '001-governance-control-plane',
   'contracts',
+  'governance-control-plane',
   'governance-api.openapi.yaml',
 );
 

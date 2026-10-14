@@ -2,7 +2,7 @@
 // FR-022, SC-006, SC-009).
 //
 // Mounts the two READ operations of the containment/repair surface from the OpenAPI contract
-// (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml) onto the dependency-free
+// (contracts/governance-control-plane/governance-api.openapi.yaml) onto the dependency-free
 // Hono-compatible `App` from ../server.ts:
 //
 //   GET /v1/integrity-cases            → listIntegrityCases → IntegrityCasePage (the damaged-work queue)

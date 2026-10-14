@@ -2,7 +2,7 @@
 // FR-027, FR-028, FR-050).
 //
 // Mounts the controller-operations surface from the OpenAPI contract
-// (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml) onto the dependency-free
+// (contracts/governance-control-plane/governance-api.openapi.yaml) onto the dependency-free
 // Hono-compatible `App` from ../server.ts:
 //
 //   GET  /v1/controllers                          → the controller registry (desired/observed + drift)

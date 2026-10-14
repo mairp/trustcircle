@@ -213,9 +213,8 @@ describe('Spec 004 additive API compatibility', () => {
   const contract = readFileSync(
     join(
       process.cwd(),
-      'specs',
-      '004-governed-platform-continuation',
       'contracts',
+      'governed-platform-continuation',
       'governed-platform.openapi.yaml',
     ),
     'utf8',

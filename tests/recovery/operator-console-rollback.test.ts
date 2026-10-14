@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 describe('web-only rollback contract', () => {
-  const plan = readFileSync('specs/c00a3659-463d-44fb-96c0-f5f3efab97d8/rollback.md', 'utf8');
+  const plan = readFileSync('docs/runbooks/operator-console-rollback.md', 'utf8');
   const fallback = readFileSync('deploy/compose/web-server.mjs', 'utf8');
 
   it('preserves API, stores, volumes, evidence and adjacent stacks', () => {

@@ -9,9 +9,9 @@
  *   - `getEvidenceMetadata` (a metadata-only evidence envelope),
  *   - `requestAuditExport` (an audited export command, FR-056 / SC-022)
  * against the governance API contract
- *   specs/001-governance-control-plane/contracts/governance-api.openapi.yaml
+ *   contracts/governance-control-plane/governance-api.openapi.yaml
  * (and, for the evidence envelope, its sibling
- *   specs/001-governance-control-plane/contracts/evidence-envelope.schema.json).
+ *   contracts/governance-control-plane/evidence-envelope.schema.json).
  *
  * Requirements exercised: FR-031..035, FR-053, FR-056, SC-012, SC-022.
  *
@@ -55,7 +55,7 @@ import { PUBLICATION_42001, AUDIT_EXPORT_REQUEST, IDS, iso, NOW } from '../fixtu
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
-const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', 'contracts');
+const CONTRACTS_DIR = join(REPO_ROOT, 'contracts', 'governance-control-plane');
 
 const GOV_API = SOURCE_CONTRACTS.find((c) => c.id === 'governance-api')!;
 const RAW = readFileSync(join(CONTRACTS_DIR, GOV_API.file), 'utf8');

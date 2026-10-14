@@ -70,7 +70,7 @@ obligation:
   grounding:
     domainModel: 'packages/domain/src/component-profile.ts'
     coreComposeProfile: 'deploy/compose/control-plane.yml'
-    spec: 'specs/001-governance-control-plane/spec.md#nfr-010'
+    spec: 'deploy/compose/control-plane.yml#nfr-010'
 
 # -----------------------------------------------------------------------------
 # Closed vocabularies. These MUST mirror the domain model

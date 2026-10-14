@@ -18,7 +18,7 @@ becomes an entry there.
 - Each item carries a stable **ID** (`CI-nnn`), a **version/first-seen release**, a **status**, an
   **owner**, and a **priority**, so an item can be traced across releases.
 - The backlog is reviewed at **each release** via the release-review checklist
-  (`specs/001-governance-control-plane/checklists/release-review.md`) and on the standing cadence in
+  (`docs/governance/release-review.md`) and on the standing cadence in
   §5. Closed items are retained (not deleted) for audit.
 
 ## Intake — the six input streams

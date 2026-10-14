@@ -2,7 +2,7 @@
 // FR-019, FR-020, FR-021, FR-022, GAR-004, SC-007, SC-008, SC-009).
 //
 // Mounts the two STATE-CHANGING operations of the containment/repair surface from the OpenAPI
-// contract (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml) onto the
+// contract (contracts/governance-control-plane/governance-api.openapi.yaml) onto the
 // dependency-free Hono-compatible `App` from ../server.ts:
 //
 //   POST /v1/integrity-cases/{caseId}/remediations → proposeOrExecuteRemediation → OperationAccepted

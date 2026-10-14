@@ -4,7 +4,7 @@
  * Phase-primary obligation: validate `listSources`, `startDiscovery`,
  * `listGovernedAssets`, and the current-state response metadata against the
  * governance API contract
- *   specs/001-governance-control-plane/contracts/governance-api.openapi.yaml.
+ *   contracts/governance-control-plane/governance-api.openapi.yaml.
  *
  * WHY THIS IS A NON-VACUOUS ORACLE
  * --------------------------------
@@ -61,7 +61,7 @@ import { parseContract } from '../../packages/contracts/scripts/validate.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
-const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', 'contracts');
+const CONTRACTS_DIR = join(REPO_ROOT, 'contracts', 'governance-control-plane');
 
 const GOV_API = SOURCE_CONTRACTS.find((c) => c.id === 'governance-api')!;
 const RAW = readFileSync(join(CONTRACTS_DIR, GOV_API.file), 'utf8');

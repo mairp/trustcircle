@@ -87,17 +87,18 @@ const MUST_BE_IGNORED = [
   '.env.production',
   'config.local',
   '.lisa/state.json',
+  'specs/001-governance-control-plane/spec.md', // private feature specifications
 ];
 
 // The signed validation manifests + fixtures that MUST be retained (tracked).
 const MUST_BE_RETAINED = [
   'evidence/manifest.json', // the signed validation manifest
   '.env.example', // env template (no secret value)
-  'specs/001-governance-control-plane/contracts/adapter-manifest.schema.json',
-  'specs/001-governance-control-plane/contracts/evidence-envelope.schema.json',
-  'specs/001-governance-control-plane/contracts/governance-api.openapi.yaml',
-  'specs/001-governance-control-plane/contracts/governance-events.asyncapi.yaml',
-  'specs/001-governance-control-plane/contracts/adapter-protocol.openapi.yaml',
+  'contracts/governance-control-plane/adapter-manifest.schema.json',
+  'contracts/governance-control-plane/evidence-envelope.schema.json',
+  'contracts/governance-control-plane/governance-api.openapi.yaml',
+  'contracts/governance-control-plane/governance-events.asyncapi.yaml',
+  'contracts/governance-control-plane/adapter-protocol.openapi.yaml',
   '.specify/integrations/speckit.manifest.json',
   '.specify/integrations/codex.manifest.json',
   'testautomation/TEST_PLAN.md',
@@ -157,7 +158,7 @@ test('.gitignore documents the retain contract + GAR-010 discipline', () => {
   assert.match(src, /VO-ec575c4ce42b548bfb4d/, 'must cite the compatibility obligation');
   assert.match(src, /RETAINED/i, 'must have a RETAINED section');
   assert.match(src, /!evidence\//, 'must re-include the evidence manifest directory');
-  assert.match(src, /!specs\//, 'must re-include the contract fixtures');
+  assert.match(src, /!contracts\//, 'must re-include the contract fixtures');
 });
 
 // ---- Negative controls (prove the oracle is non-vacuous) --------------------
@@ -212,19 +213,21 @@ test('NEG-CONTROL B: a broad rule with the retain removed WOULD ignore the manif
   assert.equal(isIgnored('evidence/manifest.json'), false, 'restored: manifest retained again');
 });
 
-test('NEG-CONTROL C: dropping the specs re-include + broad ignore hides a fixture', () => {
+test('NEG-CONTROL C: dropping the contracts re-include + broad ignore hides a fixture', () => {
   withMutatedGitignore(
-    (src) => src.replace(/^!specs\/\*\*$/m, '').replace(/^!specs\/$/m, '') + '\nspecs/**/*.yaml\n',
+    (src) =>
+      src.replace(/^!contracts\/\*\*$/m, '').replace(/^!contracts\/$/m, '') +
+      '\ncontracts/**/*.yaml\n',
     () => {
       assert.equal(
-        isIgnored('specs/001-governance-control-plane/contracts/governance-api.openapi.yaml'),
+        isIgnored('contracts/governance-control-plane/governance-api.openapi.yaml'),
         true,
-        'a broad specs/**/*.yaml rule without the retain re-include hides a contract fixture',
+        'a broad contracts/**/*.yaml rule without the retain re-include hides a contract fixture',
       );
     },
   );
   assert.equal(
-    isIgnored('specs/001-governance-control-plane/contracts/governance-api.openapi.yaml'),
+    isIgnored('contracts/governance-control-plane/governance-api.openapi.yaml'),
     false,
     'restored: contract fixture retained again',
   );

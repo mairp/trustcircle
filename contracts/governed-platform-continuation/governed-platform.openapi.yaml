@@ -1,0 +1,847 @@
+openapi: 3.1.0
+info:
+  title: TrustCircle Governed Platform Continuation API
+  version: 1.0.0
+  description: >
+    Additive v1 contract for signed review history, governed registers and views,
+    evidence assurance, continuous monitoring, impact preview, AI governance,
+    connector certification, improvement feedback, entity resolution, and the
+    multi-framework matrix. Tenant identity is derived from authenticated context.
+servers:
+  - url: /v1
+security:
+  - oidc: []
+tags:
+  - name: Reviews
+  - name: Registers
+  - name: Collaboration
+  - name: Evidence
+  - name: Monitoring
+  - name: Change
+  - name: AI
+  - name: Connectors
+  - name: Improvement
+  - name: Resolution
+  - name: Compliance
+paths:
+  /review-snapshots:
+    get:
+      tags: [Reviews]
+      operationId: listReviewSnapshots
+      parameters:
+        - $ref: '#/components/parameters/Scope'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Reviews]
+      operationId: signReviewSnapshot
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        '409':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+  /review-comparisons:
+    post:
+      tags: [Reviews]
+      operationId: compareReviewSnapshots
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [baseline_snapshot_id, target_snapshot_id]
+              properties:
+                baseline_snapshot_id:
+                  $ref: '#/components/schemas/Uuid'
+                target_snapshot_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          $ref: '#/components/responses/Resource'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+  /register-records:
+    get:
+      tags: [Registers]
+      operationId: listRegisterRecords
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            $ref: '#/components/schemas/RegisterKind'
+        - name: status
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Registers]
+      operationId: createRegisterRecord
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /register-records/{recordId}/transitions:
+    post:
+      tags: [Registers]
+      operationId: transitionRegisterRecord
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        $ref: '#/components/requestBodies/Transition'
+      responses:
+        '200':
+          $ref: '#/components/responses/Resource'
+        '409':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+  /governed-views:
+    get:
+      tags: [Collaboration]
+      operationId: listGovernedViews
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Collaboration]
+      operationId: createGovernedView
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /subscriptions:
+    post:
+      tags: [Collaboration]
+      operationId: createSubscription
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /delivery-attempts:
+    get:
+      tags: [Collaboration]
+      operationId: listDeliveryAttempts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DeliveryStatus'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /evidence-requests:
+    get:
+      tags: [Evidence]
+      operationId: listEvidenceRequests
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Evidence]
+      operationId: issueEvidenceRequest
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /evidence-requests/{recordId}/attestations:
+    post:
+      tags: [Evidence]
+      operationId: attestEvidence
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/SignedCommand'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /evidence-requests/{recordId}/sufficiency-decisions:
+    post:
+      tags: [Evidence]
+      operationId: decideEvidenceSufficiency
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Transition'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /evidence-packages:
+    post:
+      tags: [Evidence]
+      operationId: requestEvidencePackage
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /evidence-packages/{recordId}/verify:
+    post:
+      tags: [Evidence]
+      operationId: verifyEvidencePackage
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /control-observations:
+    post:
+      tags: [Monitoring]
+      operationId: ingestControlObservation
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /monitoring-cases:
+    get:
+      tags: [Monitoring]
+      operationId: listMonitoringCases
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /impact-previews:
+    post:
+      tags: [Change]
+      operationId: createImpactPreview
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /change-publications:
+    post:
+      tags: [Change]
+      operationId: publishGovernedChange
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Transition'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '409':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+  /ai-use-cases:
+    get:
+      tags: [AI]
+      operationId: listAiUseCases
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [AI]
+      operationId: createAiUseCase
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /ai-use-cases/{recordId}/transitions:
+    post:
+      tags: [AI]
+      operationId: transitionAiUseCase
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        $ref: '#/components/requestBodies/Transition'
+      responses:
+        '200':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /ai-use-cases/{recordId}/evaluations:
+    post:
+      tags: [AI]
+      operationId: recordAiEvaluation
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /ai-use-cases/{recordId}/incidents:
+    post:
+      tags: [AI]
+      operationId: reportAiIncident
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /copilot/exchanges:
+    post:
+      tags: [AI]
+      operationId: createCopilotExchange
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '200':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /connector-definitions:
+    post:
+      tags: [Connectors]
+      operationId: createConnectorDefinition
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /connector-definitions/{recordId}/conformance-runs:
+    post:
+      tags: [Connectors]
+      operationId: runConnectorConformance
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /connector-certifications:
+    get:
+      tags: [Connectors]
+      operationId: listConnectorCertifications
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Connectors]
+      operationId: certifyConnectorVersion
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /connector-certifications/{recordId}/transitions:
+    post:
+      tags: [Connectors]
+      operationId: transitionConnectorCertification
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        $ref: '#/components/requestBodies/Transition'
+      responses:
+        '200':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /connector-health:
+    get:
+      tags: [Connectors]
+      operationId: listConnectorHealth
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /connector-reconciliations:
+    post:
+      tags: [Connectors]
+      operationId: requestConnectorReconciliation
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /improvement-hypotheses:
+    get:
+      tags: [Improvement]
+      operationId: listImprovementHypotheses
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Improvement]
+      operationId: createImprovementHypothesis
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /improvement-hypotheses/{recordId}/transitions:
+    post:
+      tags: [Improvement]
+      operationId: transitionImprovementHypothesis
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        $ref: '#/components/requestBodies/Transition'
+      responses:
+        '200':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /entity-resolution-cases:
+    get:
+      tags: [Resolution]
+      operationId: listEntityResolutionCases
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Resolution]
+      operationId: createEntityResolutionCase
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        $ref: '#/components/requestBodies/Command'
+      responses:
+        '201':
+          $ref: '#/components/responses/Resource'
+        default:
+          $ref: '#/components/responses/Problem'
+  /entity-resolution-cases/{recordId}/transitions:
+    post:
+      tags: [Resolution]
+      operationId: decideEntityResolution
+      parameters:
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ExpectedVersion'
+      requestBody:
+        $ref: '#/components/requestBodies/Transition'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        default:
+          $ref: '#/components/responses/Problem'
+  /framework-matrix:
+    get:
+      tags: [Compliance]
+      operationId: getFrameworkMatrix
+      parameters:
+        - name: publication_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: at
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourcePage'
+        default:
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    oidc:
+      type: openIdConnect
+      openIdConnectUrl: https://identity.invalid/.well-known/openid-configuration
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    ExpectedVersion:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: '^"[0-9]+"$'
+    RecordId:
+      name: recordId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    Scope:
+      name: scope
+      in: query
+      schema:
+        type: string
+        maxLength: 512
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+        maxLength: 2048
+  requestBodies:
+    Command:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GovernedCommand'
+    SignedCommand:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/GovernedCommand'
+              - type: object
+                required: [signature]
+                properties:
+                  signature:
+                    $ref: '#/components/schemas/Signature'
+    Transition:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [transition, reason, authority_decision_id]
+            properties:
+              transition:
+                type: string
+                minLength: 2
+                maxLength: 64
+              reason:
+                $ref: '#/components/schemas/Reason'
+              authority_decision_id:
+                $ref: '#/components/schemas/Uuid'
+              input:
+                type: object
+                additionalProperties: true
+  responses:
+    Resource:
+      description: Authorized governed resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GovernedResource'
+    ResourcePage:
+      description: Authorized, fail-visible resource page
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourcePage'
+    Accepted:
+      description: Governed asynchronous operation accepted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AcceptedOperation'
+    Problem:
+      description: Disclosure-safe failure
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    RegisterKind:
+      type: string
+      enum: [risk, gap, exception, improvement]
+    DeliveryStatus:
+      type: string
+      enum: [pending, accepted, delivered, retryable, pending_reconciliation, terminal, revoked, suppressed]
+    Reason:
+      type: object
+      additionalProperties: false
+      required: [code, text]
+      properties:
+        code:
+          type: string
+          pattern: '^[a-z][a-z0-9_.-]{1,63}$'
+        text:
+          type: string
+          minLength: 3
+          maxLength: 4000
+    Signature:
+      type: object
+      additionalProperties: false
+      required: [algorithm, key_id, digest, value]
+      properties:
+        algorithm:
+          type: string
+        key_id:
+          type: string
+        digest:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        value:
+          type: string
+    GovernedCommand:
+      type: object
+      additionalProperties: false
+      required: [schema_version, reason, input]
+      properties:
+        schema_version:
+          type: integer
+          minimum: 1
+        reason:
+          $ref: '#/components/schemas/Reason'
+        authority_decision_id:
+          $ref: '#/components/schemas/Uuid'
+        input:
+          type: object
+          additionalProperties: true
+    GovernedResource:
+      type: object
+      additionalProperties: true
+      required: [id, tenant_id, kind, schema_version, resource_version, status, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        tenant_id:
+          $ref: '#/components/schemas/Uuid'
+        kind:
+          type: string
+        schema_version:
+          type: integer
+          minimum: 1
+        resource_version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        freshness:
+          type: string
+          enum: [current, aging, stale, unknown]
+        partial_coverage:
+          type: boolean
+        safe_next_actions:
+          type: array
+          items:
+            type: string
+    ResourcePage:
+      type: object
+      additionalProperties: false
+      required: [items, metadata]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovernedResource'
+        next_cursor:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: false
+          required: [generated_at, freshness, partial_coverage, source_cursor]
+          properties:
+            generated_at:
+              type: string
+              format: date-time
+            freshness:
+              type: string
+              enum: [current, aging, stale, unknown]
+            partial_coverage:
+              type: boolean
+            source_cursor:
+              type: string
+            coverage_gaps:
+              type: array
+              items:
+                type: string
+    AcceptedOperation:
+      type: object
+      additionalProperties: false
+      required: [operation_id, status, correlation_id, idempotent_replay]
+      properties:
+        operation_id:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          enum: [accepted, pending_reconciliation]
+        correlation_id:
+          type: string
+        idempotent_replay:
+          type: boolean
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, correlation_id, retryable, safe_next_actions]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        detail:
+          type: string
+        correlation_id:
+          type: string
+        retryable:
+          type: boolean
+        safe_next_actions:
+          type: array
+          items:
+            type: string

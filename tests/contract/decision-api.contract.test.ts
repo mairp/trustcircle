@@ -3,7 +3,7 @@
 //
 // CONTRACT-LEVEL validation of the DECISION / ACTION / DELEGATION surface: requests, headers,
 // ETags, idempotency, errors, and responses are validated against the CANONICAL API contract
-// (`specs/001-governance-control-plane/contracts/governance-api.openapi.yaml`) via the runtime
+// (`contracts/governance-control-plane/governance-api.openapi.yaml`) via the runtime
 // module `@trustcircle/contracts/decision-api`. That module LOADS the contract and resolves the
 // operations + $ref schemas, so every assertion below is coupled to the published API — not to a
 // hand-copied shape. The permitted/refused VERDICTS come from the REAL @trustcircle/authz oracles

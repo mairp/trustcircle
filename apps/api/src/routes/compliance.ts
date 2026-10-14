@@ -2,7 +2,7 @@
 // Demonstrate Compliance and Audit Readiness / FR-031..035, FR-053..056, SC-012, SC-013, SC-022).
 //
 // Mounts the three remaining User-Story-5 operations from the OpenAPI contract
-// (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml):
+// (contracts/governance-control-plane/governance-api.openapi.yaml):
 //
 //   GET  /v1/compliance/coverage        → getComplianceCoverage → ComplianceCoverage (200)
 //   GET  /v1/evidence/{evidenceId}       → getEvidenceMetadata   → EvidenceEnvelope   (200)

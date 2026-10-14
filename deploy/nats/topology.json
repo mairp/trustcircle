@@ -11,9 +11,9 @@
     "vo": "VO-52d0780c11bcc6fd7583",
     "oracle": "Every onboarded source contract MUST be versioned and validated; mutating operations MUST be correlated, deduplicated, reconcilable, retry-bounded, and safe under duplicate, delayed, partial, conflicting, and uncertain outcomes.",
     "grounding": {
-      "subjectTaxonomy": "specs/001-governance-control-plane/contracts/governance-events.asyncapi.yaml",
+      "subjectTaxonomy": "contracts/governance-control-plane/governance-events.asyncapi.yaml",
       "deliverySubstrate": "db/migrations/0004_delivery.sql",
-      "retentionPolicy": "specs/001-governance-control-plane/research.md#decision-9-evidence-retention"
+      "retentionPolicy": "packages/evidence/src/retention.ts"
     }
   },
   "conventions": {

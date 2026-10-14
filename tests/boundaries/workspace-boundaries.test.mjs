@@ -49,7 +49,7 @@ test('root enforces the Node.js 22 engine constraint', () => {
 });
 
 // ---- Deterministic package script surface ---------------------------------
-// These names are fixed by specs/001-governance-control-plane/quickstart.md and tasks.md.
+// These names are fixed by docs/development/quickstart.md and tasks.md.
 // Removing or renaming one is a breaking change to a supported consumer (the acceptance
 // contract), which GAR-010 forbids without migration/deprecation evidence.
 const REQUIRED_SCRIPTS = [

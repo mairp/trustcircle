@@ -9,7 +9,7 @@
 // MANIFEST-FIRST contract: a signed, versioned document declaring its contract range, source classes,
 // capabilities, authority, security posture, schemas, delivery semantics, limits, retry policy,
 // reconciliation, rollback, evidence, health, and lifecycle. This module is the canonical TypeScript
-// mirror of specs/001-governance-control-plane/contracts/adapter-manifest.schema.json — the platform
+// mirror of contracts/governance-control-plane/adapter-manifest.schema.json — the platform
 // validates a manifest, negotiates a compatible protocol version, and signs/verifies its canonical
 // form here, so the manifest the adapter ships and the manifest the platform trusts are ONE artifact
 // with ONE digest.

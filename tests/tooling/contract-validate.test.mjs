@@ -30,7 +30,7 @@ import assert from 'node:assert/strict';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
 const SCRIPT = join(REPO_ROOT, 'packages', 'contracts', 'scripts', 'validate.ts');
-const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', 'contracts');
+const CONTRACTS_DIR = join(REPO_ROOT, 'contracts', 'governance-control-plane');
 const EE = join(CONTRACTS_DIR, 'evidence-envelope.schema.json');
 const GEN = join(REPO_ROOT, 'packages', 'contracts', 'src', 'generated', 'evidence-envelope.ts');
 

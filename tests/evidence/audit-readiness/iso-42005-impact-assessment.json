@@ -31,7 +31,7 @@
       "clause": "mitigation-and-residual",
       "obligationParaphrase": "Record mitigations and accepted residual impact.",
       "finding": "Residual risks accepted at documented level; reviewed each release.",
-      "evidencePointer": "specs/001-governance-control-plane/checklists/release-review.md"
+      "evidencePointer": "docs/governance/release-review.md"
     }
   ]
 }

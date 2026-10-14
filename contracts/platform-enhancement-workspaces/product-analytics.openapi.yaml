@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info:
+  title: TrustCircle Disclosure-Safe Product Analytics
+  version: 1.0.0
+  description: Aggregate workflow telemetry only. Governed record content and identifiers are forbidden.
+paths:
+  /api/product-analytics:
+    post:
+      operationId: recordProductAnalytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductAnalyticsEvent'
+      responses:
+        '202':
+          description: Aggregate event accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [accepted]
+                properties:
+                  accepted: { type: boolean, const: true }
+        '400':
+          description: Invalid or disclosure-unsafe event
+        '413':
+          description: Body exceeds 2048 UTF-8 bytes
+        '415':
+          description: Content-Type is not application/json
+components:
+  schemas:
+    ProductAnalyticsEvent:
+      type: object
+      additionalProperties: false
+      required: [event, route]
+      properties:
+        event:
+          type: string
+          enum: [page_view, search_outcome, saved_view_created, workflow_feedback]
+        route:
+          type: string
+          enum: [/, /posture, /operations, /inventory, /assets, /gaps, /decisions, /integrity, /registers, /controllers, /runtime, /integrations, /compliance, /evidence, /trends, /automation, /ai-governance, /copilot, /search]
+        resultCount:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        durationBucket:
+          type: string
+          enum: [under-10s, 10s-60s, 1m-5m, over-5m]
+        feedback:
+          type: string
+          enum: [helpful, not_helpful]

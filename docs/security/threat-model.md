@@ -164,4 +164,4 @@ verifiable, not aspirational.
 | RR-5 | Policy misconfiguration → EoP      | Governance product owner | Policy tests, change control, SoD                             |
 
 All residual risks are accepted at the documented level and reviewed at each release via the
-release-review checklist (`specs/001-governance-control-plane/checklists/release-review.md`, T274).
+release-review checklist (`docs/governance/release-review.md`, T274).

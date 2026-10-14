@@ -26,7 +26,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
 const SCRIPT = join(REPO_ROOT, 'packages', 'contracts', 'scripts', 'generate.ts');
 const GEN_DIR = join(REPO_ROOT, 'packages', 'contracts', 'src', 'generated');
-const CONTRACTS_DIR = join(REPO_ROOT, 'specs', '001-governance-control-plane', 'contracts');
+const CONTRACTS_DIR = join(REPO_ROOT, 'contracts', 'governance-control-plane');
 
 /** Run the generator CLI; returns {status, stdout, stderr}. Never throws on exit code. */
 function runCli(args) {

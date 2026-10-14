@@ -102,7 +102,7 @@ export const ALL_SERVICE_CLASSES: readonly ServiceClass[] = [
 
 /**
  * The approved workload authentication modes, mirroring
- * specs/.../contracts/adapter-manifest.schema.json `security.identity_mode`.
+ * contracts/governance-control-plane/adapter-manifest.schema.json `security.identity_mode`.
  * `mtls` is the canonical mode; the others are the "approved equivalents" of
  * contracts/README.md and MUST still be cryptographically bound (see {@link verifyWorkloadBinding}).
  */

@@ -1,0 +1,372 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trustcircle.ai/contracts/adapter-manifest/v1.0.0",
+  "title": "TrustCircleAI Adapter Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "adapter_id",
+    "name",
+    "vendor",
+    "adapter_version",
+    "contract_range",
+    "source_classes",
+    "capabilities",
+    "authority",
+    "security",
+    "schemas",
+    "delivery",
+    "limits",
+    "retry",
+    "reconciliation",
+    "evidence",
+    "health",
+    "lifecycle"
+  ],
+  "properties": {
+    "manifest_version": {
+      "const": "1.0.0"
+    },
+    "adapter_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{2,127}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "vendor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "adapter_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "contract_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": { "$ref": "#/$defs/semver" },
+        "maximum": { "$ref": "#/$defs/semver" }
+      }
+    },
+    "source_classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9._-]{1,127}$"
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "discover",
+          "inspect",
+          "snapshot",
+          "subscribe",
+          "simulate",
+          "execute",
+          "pause",
+          "resume",
+          "reconcile",
+          "rollback",
+          "collect_evidence",
+          "quarantine",
+          "restore"
+        ]
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authoritative_fields", "forbidden_inferences", "operation_risk"],
+      "properties": {
+        "authoritative_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "forbidden_inferences": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "operation_risk": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": ["read_only", "low", "consequential", "destructive"]
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity_mode",
+        "tenant_mode",
+        "credential_reference_mode",
+        "network_egress",
+        "required_scopes"
+      ],
+      "properties": {
+        "identity_mode": {
+          "enum": ["mtls", "oauth2_client_credentials", "signed_workload", "local_socket"]
+        },
+        "tenant_mode": {
+          "enum": ["single_tenant_instance", "tenant_context_per_request"]
+        },
+        "credential_reference_mode": {
+          "const": "external_secret_reference"
+        },
+        "network_egress": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "required_scopes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "content_access": {
+          "enum": ["metadata_only", "scoped_content", "full_content"]
+        }
+      }
+    },
+    "schemas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation", "command", "result", "health"],
+      "properties": {
+        "observation": { "$ref": "#/$defs/schemaRef" },
+        "command": { "$ref": "#/$defs/schemaRef" },
+        "result": { "$ref": "#/$defs/schemaRef" },
+        "health": { "$ref": "#/$defs/schemaRef" },
+        "source_extensions": { "$ref": "#/$defs/schemaRef" }
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordering",
+        "idempotency",
+        "supports_operation_lookup",
+        "supports_tombstones"
+      ],
+      "properties": {
+        "ordering": {
+          "enum": [
+            "aggregate_sequence",
+            "source_revision",
+            "cursor",
+            "timestamp_with_uncertainty",
+            "none"
+          ]
+        },
+        "idempotency": {
+          "enum": ["required_key", "source_operation_id", "read_only_only", "unsupported"]
+        },
+        "supports_operation_lookup": { "type": "boolean" },
+        "supports_tombstones": { "type": "boolean" },
+        "maximum_event_bytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 10485760
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requests_per_minute",
+        "maximum_concurrency",
+        "maximum_batch_size",
+        "operation_timeout_seconds"
+      ],
+      "properties": {
+        "requests_per_minute": { "type": "integer", "minimum": 1 },
+        "maximum_concurrency": { "type": "integer", "minimum": 1 },
+        "maximum_batch_size": { "type": "integer", "minimum": 1 },
+        "operation_timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 3600 }
+      }
+    },
+    "retry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retryable_classes",
+        "terminal_classes",
+        "maximum_attempts",
+        "initial_backoff_ms",
+        "maximum_backoff_ms",
+        "jitter"
+      ],
+      "properties": {
+        "retryable_classes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["rate_limited", "transient", "dependency_unavailable", "timeout_before_dispatch"]
+          }
+        },
+        "terminal_classes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "unauthenticated",
+              "unauthorized",
+              "invalid_request",
+              "unsupported_contract",
+              "precondition_failed",
+              "policy_denied"
+            ]
+          }
+        },
+        "maximum_attempts": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "initial_backoff_ms": { "type": "integer", "minimum": 1 },
+        "maximum_backoff_ms": { "type": "integer", "minimum": 1 },
+        "jitter": { "type": "boolean" }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supported",
+        "scope",
+        "cursor_model",
+        "drift_classes",
+        "safe_during_source_degradation"
+      ],
+      "properties": {
+        "supported": { "type": "boolean" },
+        "scope": { "enum": ["item", "collection", "source", "none"] },
+        "cursor_model": { "type": "string", "minLength": 1 },
+        "drift_classes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "missing",
+              "duplicate",
+              "stale",
+              "conflicting",
+              "orphaned",
+              "schema_incompatible",
+              "unknown"
+            ]
+          }
+        },
+        "safe_during_source_degradation": { "type": "boolean" }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "supported_operations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requires_preimage": { "type": "boolean" },
+        "verification_required": { "type": "boolean" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original_capture",
+        "result_capture",
+        "content_hash",
+        "chain_of_custody",
+        "redaction_supported"
+      ],
+      "properties": {
+        "original_capture": { "type": "boolean" },
+        "result_capture": { "type": "boolean" },
+        "content_hash": { "const": "sha256" },
+        "chain_of_custody": { "type": "boolean" },
+        "redaction_supported": { "type": "boolean" }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "endpoint",
+        "readiness_endpoint",
+        "non_mutating",
+        "freshness_seconds",
+        "owner_contact"
+      ],
+      "properties": {
+        "endpoint": { "type": "string", "format": "uri-reference" },
+        "readiness_endpoint": { "type": "string", "format": "uri-reference" },
+        "non_mutating": { "const": true },
+        "freshness_seconds": { "type": "integer", "minimum": 1 },
+        "owner_contact": { "type": "string", "minLength": 1 }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "released_at"],
+      "properties": {
+        "status": {
+          "enum": ["proposed", "supported", "deprecated", "retired"]
+        },
+        "released_at": { "type": "string", "format": "date-time" },
+        "deprecated_at": { "type": ["string", "null"], "format": "date-time" },
+        "retired_at": { "type": ["string", "null"], "format": "date-time" },
+        "replacement_adapter_id": { "type": ["string", "null"] }
+      }
+    },
+    "manifest_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "key_id", "value"],
+      "properties": {
+        "algorithm": { "const": "Ed25519" },
+        "key_id": { "type": "string", "minLength": 1 },
+        "value": { "type": "string", "minLength": 43 }
+      }
+    }
+  },
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "schemaRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "version", "sha256"],
+      "properties": {
+        "uri": { "type": "string", "format": "uri-reference" },
+        "version": { "$ref": "#/$defs/semver" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

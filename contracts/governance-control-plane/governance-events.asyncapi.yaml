@@ -1,0 +1,504 @@
+asyncapi: 3.0.0
+info:
+  title: TrustCircleAI Governance Events
+  version: 1.0.0
+  description: >
+    Durable event contract for canonical changes and rebuildable projections. PostgreSQL
+    records and the tamper-evident audit ledger remain authoritative. Delivery is
+    at-least-once; event_id and aggregate_version make consumers idempotent and ordered.
+defaultContentType: application/json
+servers:
+  internal:
+    host: nats.internal.invalid:4222
+    protocol: nats
+    description: Deployment-specific NATS JetStream endpoint using workload identity.
+channels:
+  inventoryEvents:
+    address: governance.{tenantId}.inventory.{eventName}
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+      eventName:
+        $ref: '#/components/parameters/inventoryEventName'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+  decisionEvents:
+    address: governance.{tenantId}.decision.{eventName}
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+      eventName:
+        $ref: '#/components/parameters/decisionEventName'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+  integrityEvents:
+    address: governance.{tenantId}.integrity.{eventName}
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+      eventName:
+        $ref: '#/components/parameters/integrityEventName'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+  controllerEvents:
+    address: governance.{tenantId}.controller.{eventName}
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+      eventName:
+        $ref: '#/components/parameters/controllerEventName'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+  integrationEvents:
+    address: governance.{tenantId}.integration.{eventName}
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+      eventName:
+        $ref: '#/components/parameters/integrationEventName'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+  evidenceEvents:
+    address: governance.{tenantId}.evidence.{eventName}
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+      eventName:
+        $ref: '#/components/parameters/evidenceEventName'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+  complianceEvents:
+    address: governance.{tenantId}.compliance.{eventName}
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+      eventName:
+        $ref: '#/components/parameters/complianceEventName'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+  auditEvents:
+    address: governance.{tenantId}.audit.recorded
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+    messages:
+      auditRecorded:
+        $ref: '#/components/messages/AuditRecorded'
+  deadLetterEvents:
+    address: governance.{tenantId}.deadletter.recorded
+    parameters:
+      tenantId:
+        $ref: '#/components/parameters/tenantId'
+    messages:
+      governanceEvent:
+        $ref: '#/components/messages/GovernanceEvent'
+operations:
+  publishInventoryEvent:
+    action: send
+    channel:
+      $ref: '#/channels/inventoryEvents'
+    messages:
+      - $ref: '#/channels/inventoryEvents/messages/governanceEvent'
+  consumeInventoryEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/inventoryEvents'
+    messages:
+      - $ref: '#/channels/inventoryEvents/messages/governanceEvent'
+  publishDecisionEvent:
+    action: send
+    channel:
+      $ref: '#/channels/decisionEvents'
+    messages:
+      - $ref: '#/channels/decisionEvents/messages/governanceEvent'
+  consumeDecisionEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/decisionEvents'
+    messages:
+      - $ref: '#/channels/decisionEvents/messages/governanceEvent'
+  publishIntegrityEvent:
+    action: send
+    channel:
+      $ref: '#/channels/integrityEvents'
+    messages:
+      - $ref: '#/channels/integrityEvents/messages/governanceEvent'
+  consumeIntegrityEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/integrityEvents'
+    messages:
+      - $ref: '#/channels/integrityEvents/messages/governanceEvent'
+  publishControllerEvent:
+    action: send
+    channel:
+      $ref: '#/channels/controllerEvents'
+    messages:
+      - $ref: '#/channels/controllerEvents/messages/governanceEvent'
+  consumeControllerEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/controllerEvents'
+    messages:
+      - $ref: '#/channels/controllerEvents/messages/governanceEvent'
+  publishIntegrationEvent:
+    action: send
+    channel:
+      $ref: '#/channels/integrationEvents'
+    messages:
+      - $ref: '#/channels/integrationEvents/messages/governanceEvent'
+  consumeIntegrationEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/integrationEvents'
+    messages:
+      - $ref: '#/channels/integrationEvents/messages/governanceEvent'
+  publishEvidenceEvent:
+    action: send
+    channel:
+      $ref: '#/channels/evidenceEvents'
+    messages:
+      - $ref: '#/channels/evidenceEvents/messages/governanceEvent'
+  consumeEvidenceEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/evidenceEvents'
+    messages:
+      - $ref: '#/channels/evidenceEvents/messages/governanceEvent'
+  publishComplianceEvent:
+    action: send
+    channel:
+      $ref: '#/channels/complianceEvents'
+    messages:
+      - $ref: '#/channels/complianceEvents/messages/governanceEvent'
+  consumeComplianceEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/complianceEvents'
+    messages:
+      - $ref: '#/channels/complianceEvents/messages/governanceEvent'
+  publishAuditEvent:
+    action: send
+    channel:
+      $ref: '#/channels/auditEvents'
+    messages:
+      - $ref: '#/channels/auditEvents/messages/auditRecorded'
+  consumeAuditEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/auditEvents'
+    messages:
+      - $ref: '#/channels/auditEvents/messages/auditRecorded'
+  publishDeadLetterEvent:
+    action: send
+    channel:
+      $ref: '#/channels/deadLetterEvents'
+    messages:
+      - $ref: '#/channels/deadLetterEvents/messages/governanceEvent'
+components:
+  parameters:
+    tenantId:
+      description: Tenant UUID encoded as one subject token.
+      location: $message.payload#/tenant_id
+    inventoryEventName:
+      description: >
+        source.discovered, source.changed, source.gap_opened, asset.changed,
+        correlation.conflicted, or boundary.changed
+    decisionEventName:
+      description: >
+        requested, action_recorded, requirement_satisfied, joint_package_completed,
+        invalidated, expired, or rejected_attempt
+    integrityEventName:
+      description: >
+        detected, original_preserved, quarantined, remediation_proposed,
+        repair_started, repair_finished, verification_finished, or escalated
+    controllerEventName:
+      description: >
+        desired_changed, observed_changed, operation_requested, operation_progressed,
+        continuity_entered, paused, reconciliation_finished, rollback_finished,
+        verification_finished, or health_changed
+    integrationEventName:
+      description: >
+        adapter_changed, connector_health_changed, observation_received,
+        reconciliation_finished, contract_rejected, or dead_lettered
+    evidenceEventName:
+      description: >
+        committed, integrity_failed, accessed, hold_applied, hold_released,
+        export_finished, disposition_requested, or disposed
+    complianceEventName:
+      description: >
+        publication_changed, applicability_proposed, applicability_decided,
+        mapping_changed, assessment_finished, coverage_changed, or gap_opened
+  messages:
+    GovernanceEvent:
+      name: GovernanceEvent
+      title: Canonical governance event
+      correlationId:
+        location: $message.payload#/correlation_id
+      headers:
+        type: object
+        additionalProperties: false
+        required: [Nats-Msg-Id, traceparent]
+        properties:
+          Nats-Msg-Id:
+            type: string
+            description: Same value as payload event_id for transport deduplication.
+          traceparent:
+            type: string
+          schema-version:
+            const: 1.0.0
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+    AuditRecorded:
+      name: AuditRecorded
+      title: Committed audit-ledger event reference
+      correlationId:
+        location: $message.payload#/correlation_id
+      headers:
+        type: object
+        additionalProperties: false
+        required: [Nats-Msg-Id, traceparent]
+        properties:
+          Nats-Msg-Id:
+            type: string
+          traceparent:
+            type: string
+          schema-version:
+            const: 1.0.0
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/EventEnvelope'
+          - type: object
+            properties:
+              event_type:
+                const: governance.audit.recorded
+              data:
+                $ref: '#/components/schemas/AuditReference'
+  schemas:
+    EventEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+        - schema_version
+        - event_id
+        - event_type
+        - tenant_id
+        - aggregate_type
+        - aggregate_id
+        - aggregate_version
+        - occurred_at
+        - recorded_at
+        - actor
+        - correlation_id
+        - policy
+        - evidence
+        - data
+      properties:
+        schema_version:
+          const: 1.0.0
+        event_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          pattern: '^governance\.[a-z0-9_.-]+$'
+        tenant_id:
+          type: string
+          format: uuid
+        aggregate_type:
+          type: string
+          minLength: 1
+        aggregate_id:
+          type: string
+          format: uuid
+        aggregate_version:
+          type: integer
+          minimum: 1
+        occurred_at:
+          type: string
+          format: date-time
+        recorded_at:
+          type: string
+          format: date-time
+        actor:
+          $ref: '#/components/schemas/EventActor'
+        accountable_owner_principal_id:
+          type: string
+          format: uuid
+        reason:
+          oneOf:
+            - $ref: '#/components/schemas/EventReason'
+            - type: 'null'
+        correlation_id:
+          type: string
+          format: uuid
+        causation_id:
+          type: [string, 'null']
+          format: uuid
+        trace_id:
+          type: [string, 'null']
+        source:
+          oneOf:
+            - $ref: '#/components/schemas/SourceReference'
+            - type: 'null'
+        policy:
+          $ref: '#/components/schemas/PolicyReference'
+        controls:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/VersionReference'
+        evidence:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/EvidenceReference'
+        data:
+          type: object
+        extensions:
+          type: object
+          description: Additive same-major extensions; consumers must tolerate unknown keys.
+    EventActor:
+      type: object
+      additionalProperties: false
+      required: [principal_id, principal_type]
+      properties:
+        principal_id:
+          type: string
+          format: uuid
+        principal_type:
+          enum: [human, service, automation, external_assessor]
+        role_assignment_id:
+          type: [string, 'null']
+          format: uuid
+        delegation_id:
+          type: [string, 'null']
+          format: uuid
+    EventReason:
+      type: object
+      additionalProperties: false
+      required: [code, text]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        text:
+          type: string
+          minLength: 3
+          maxLength: 4000
+    SourceReference:
+      type: object
+      additionalProperties: false
+      required: [source_instance_id, external_id, source_revision, observed_at]
+      properties:
+        source_instance_id:
+          type: string
+          format: uuid
+        external_id:
+          type: string
+        source_revision:
+          type: string
+        aggregate_sequence:
+          type: [integer, 'null']
+          minimum: 0
+        observed_at:
+          type: string
+          format: date-time
+        ordering_uncertain:
+          type: boolean
+    PolicyReference:
+      type: object
+      additionalProperties: false
+      required: [policy_version_id, policy_decision_id, bundle_digest]
+      properties:
+        policy_version_id:
+          type: string
+          format: uuid
+        policy_decision_id:
+          type: string
+          format: uuid
+        bundle_digest:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+    VersionReference:
+      type: object
+      additionalProperties: false
+      required: [id, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          type: string
+    EvidenceReference:
+      type: object
+      additionalProperties: false
+      required: [evidence_id, sha256]
+      properties:
+        evidence_id:
+          type: string
+          format: uuid
+        sha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+    AuditReference:
+      type: object
+      additionalProperties: false
+      required:
+        - audit_event_id
+        - ledger_id
+        - sequence
+        - previous_digest
+        - integrity_digest
+      properties:
+        audit_event_id:
+          type: string
+          format: uuid
+        ledger_id:
+          type: string
+          format: uuid
+        sequence:
+          type: integer
+          minimum: 1
+        previous_digest:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        integrity_digest:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        checkpoint_id:
+          type: [string, 'null']
+          format: uuid
+x-trustcircle-jetstream:
+  streams:
+    - name: GOVERNANCE
+      subjects:
+        - governance.*.inventory.>
+        - governance.*.decision.>
+        - governance.*.integrity.>
+        - governance.*.controller.>
+        - governance.*.integration.>
+        - governance.*.evidence.>
+        - governance.*.compliance.>
+        - governance.*.audit.recorded
+        - governance.*.deadletter.recorded
+      retention: limits
+      discard: new
+      replicas: 3
+      duplicate_window_seconds: 120
+      note: >
+        Retention and deduplication are transport settings only. Consumers still use a
+        durable inbox and canonical aggregate version; evidence/audit retention is separate.
+  consumer_defaults:
+    delivery: pull
+    acknowledgement: explicit
+    max_deliveries: 8
+    backoff_seconds: [1, 5, 15, 60, 300, 900, 1800]
+    dead_letter_after_exhaustion: true

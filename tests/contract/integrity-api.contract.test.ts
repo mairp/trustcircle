@@ -4,7 +4,7 @@
 // CONTRACT-LEVEL validation of the CONTAINMENT / REPAIR surface — the integrity-case queue + detail,
 // remediation (recommend / simulate / request-approval / execute-if-pre-authorized), and verification
 // — against the CANONICAL API contract
-// (`specs/001-governance-control-plane/contracts/governance-api.openapi.yaml`) via the runtime module
+// (`contracts/governance-control-plane/governance-api.openapi.yaml`) via the runtime module
 // `@trustcircle/contracts/integrity-api`. That module LOADS the contract and resolves the four
 // `Integrity`-tagged operations + their `$ref` schemas, so every assertion below is coupled to the
 // PUBLISHED API — never a hand-copied shape.

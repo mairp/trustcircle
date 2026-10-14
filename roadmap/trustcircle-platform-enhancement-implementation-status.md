@@ -1,8 +1,8 @@
 # TrustCircle Platform Enhancement Implementation Status
 
 **Updated**: 2026-08-06
-**Implemented features**: [Spec 003 - Platform Enhancement Workspaces](../specs/003-platform-enhancement-workspaces/spec.md) and [Spec 004 - Governed Platform Continuation](../specs/004-governed-platform-continuation/spec.md)
-**Operational foundation**: [Spec 002 - Operations Command Center](../specs/002-operations-command-center/spec.md)
+**Implemented features**: Spec 003 - Platform Enhancement Workspaces and Spec 004 - Governed Platform Continuation
+**Operational foundation**: Spec 002 - Operations Command Center
 
 ## Spec 003: Workspace and usability tranche
 
@@ -49,12 +49,10 @@ External email, chat, ticketing, webhook, model-provider, and source systems rem
 - Authority, evidence, resilience, migration, and performance acceptance suites pass 7/7, 8/8, 11/11, 17/17, and 4/4 respectively.
 - Contract generation/validation/check, lint, canonical format, typecheck, production build, and evidence-manifest verification have passed independently.
 - Composed `verify:release` and `verify:pr` both exit 0; the governed release decision passes all 11 required host-runnable dimensions.
-- Exact command results, the retained initial parallel-build readiness failure, its isolated green rerun, and optional additional-fidelity CI renderings are recorded in the Spec 004 [implementation audit](../specs/004-governed-platform-continuation/implementation-audit.md).
+- Exact command results, the retained initial parallel-build readiness failure, its isolated green rerun, and optional additional-fidelity CI renderings are recorded in the Spec 004 [implementation audit](../evidence/governed-platform-continuation/implementation-audit.md).
 
 ## Governing artifacts
 
 - [Architecture governance and key decisions](../README.md)
-- [Spec 004 design plan](../specs/004-governed-platform-continuation/plan.md)
-- [Spec 004 data model](../specs/004-governed-platform-continuation/data-model.md)
-- [Spec 004 traceability](../specs/004-governed-platform-continuation/traceability.md)
-- [Spec 004 implementation audit](../specs/004-governed-platform-continuation/implementation-audit.md)
+- [Spec 004 traceability](../evidence/governed-platform-continuation/traceability.md)
+- [Spec 004 implementation audit](../evidence/governed-platform-continuation/implementation-audit.md)

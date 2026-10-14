@@ -136,8 +136,7 @@ node scripts/ci/evidence-manifest.mjs verify-operations
 node tests/evidence/audit-readiness/operations-command-center.mjs
 ```
 
-Run the focused suites documented in
-`specs/002-operations-command-center/quickstart.md`. Release is blocked by a missing owner, manifest
+Run the focused operations suites (`tests/**/operations-command-center*`). Release is blocked by a missing owner, manifest
 drift, failed feature test, serious/critical accessibility defect, destructive migration, or an
 unexplained full-repository gate failure.
 

@@ -11,8 +11,8 @@ collaboration, evidence assurance, monitoring, governed change, AI lifecycle, co
 resolution, and multi-framework truth. These additions extend the existing authority, audit,
 evidence, adapter, and projection seams; they do not create a second source of truth. See the
 [implementation status](roadmap/trustcircle-platform-enhancement-implementation-status.md),
-[Spec 003](specs/003-platform-enhancement-workspaces/spec.md), and
-[Spec 004](specs/004-governed-platform-continuation/spec.md).
+Spec 003, and
+Spec 004.
 
 > **Architectural invariant:** a convenient UI, event, search result, dashboard, or telemetry signal
 > never becomes governance authority. Consequential state changes require current human authority,
@@ -255,7 +255,7 @@ adapters/
   agentctl/ kanban/ lisa/ wiggum/ workflow-orchestration/
 db/migrations/          additive and reversible canonical schema evolution
 deploy/                 Compose and Kubernetes deployment profiles
-specs/                  feature authority, plans, contracts, tasks, and traceability
+contracts/              machine-readable OpenAPI, AsyncAPI, and JSON Schema source contracts
 .specify/               project-wide constitution, templates, and specification workflows
 roadmap/                 prioritized platform evolution and honest implementation status
 ```
@@ -294,15 +294,10 @@ indeterminate gate as passing.
 ## Authoritative documentation
 
 - [Project constitution](.specify/memory/constitution.md)
-- [Governance control-plane plan](specs/001-governance-control-plane/plan.md)
-- [Canonical data model](specs/001-governance-control-plane/data-model.md)
-- [Interface contract rules](specs/001-governance-control-plane/contracts/README.md)
-- [Operations Command Center plan](specs/002-operations-command-center/plan.md)
-- [Platform Enhancement Workspaces plan](specs/003-platform-enhancement-workspaces/plan.md)
-- [Platform enhancement traceability](specs/003-platform-enhancement-workspaces/traceability.md)
-- [Governed Platform Continuation plan](specs/004-governed-platform-continuation/plan.md)
-- [Governed Platform Continuation contracts](specs/004-governed-platform-continuation/contracts/)
-- [Governed Platform Continuation traceability](specs/004-governed-platform-continuation/traceability.md)
-- [Governed Platform Continuation implementation audit](specs/004-governed-platform-continuation/implementation-audit.md)
+- [Interface contract rules](contracts/governance-control-plane/README.md)
+- [Platform enhancement traceability](evidence/platform-enhancement-workspaces/traceability.md)
+- [Governed Platform Continuation contracts](contracts/governed-platform-continuation/)
+- [Governed Platform Continuation traceability](evidence/governed-platform-continuation/traceability.md)
+- [Governed Platform Continuation implementation audit](evidence/governed-platform-continuation/implementation-audit.md)
 - [Enhancement roadmap](roadmap/trustcircle-platform-enhancement-roadmap.md)
 - [Current enhancement implementation status](roadmap/trustcircle-platform-enhancement-implementation-status.md)

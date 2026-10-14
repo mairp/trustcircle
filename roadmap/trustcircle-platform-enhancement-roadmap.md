@@ -51,7 +51,7 @@ Key observations:
 | Build/deployment identity | Delivered | Spec 003 disclosure-safe version, commit, profile, schema, and release-drift surfaces                                                            |
 | Product analytics         | Delivered | Spec 003 bounded analytics plus Spec 004 privacy-thresholded improvement hypotheses and attributable outcomes                                    |
 
-The detailed [implementation status](./trustcircle-platform-enhancement-implementation-status.md) and Spec 004 [implementation audit](../specs/004-governed-platform-continuation/implementation-audit.md) define the exact delivered boundary. These status markers do not waive authority, evidence, compatibility, accessibility, or release gates.
+The detailed [implementation status](./trustcircle-platform-enhancement-implementation-status.md) and Spec 004 [implementation audit](../evidence/governed-platform-continuation/implementation-audit.md) define the exact delivered boundary. These status markers do not waive authority, evidence, compatibility, accessibility, or release gates.
 
 ## Phase 1 — Navigation and usability foundation
 

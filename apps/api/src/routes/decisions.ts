@@ -2,7 +2,7 @@
 // FR-013, AC1, AC2, AC4, SC-003, SC-004).
 //
 // Mounts the four decision operations from the OpenAPI contract
-// (specs/001-governance-control-plane/contracts/governance-api.openapi.yaml) onto the
+// (contracts/governance-control-plane/governance-api.openapi.yaml) onto the
 // dependency-free Hono-compatible `App` from ../server.ts:
 //
 //   GET  /v1/decisions                    → listDecisionQueue  → DecisionPage  (prioritized queue)

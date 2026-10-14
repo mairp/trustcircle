@@ -1,6 +1,6 @@
 {
   "kind": "full-quickstart-validation",
-  "guide": "specs/001-governance-control-plane/quickstart.md",
+  "guide": "docs/development/quickstart.md",
   "host": {
     "hasInfra": false,
     "hasBrowser": false
