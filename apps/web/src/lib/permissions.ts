@@ -127,3 +127,28 @@ export function operationsWorkspaceCapabilities(
     readOnly: !canMutate,
   };
 }
+
+export interface DecisionCapabilities {
+  readonly canRead: boolean;
+  /** Role may approve, deny, request changes or escalate (the API still checks authority + SoD). */
+  readonly canAct: boolean;
+  readonly canDelegate: boolean;
+}
+
+const DECISION_ACTOR_ROLES = new Set<OperatorRole>([
+  'governance_officer',
+  'authorized_approver',
+  'tenant_compliance_owner',
+  'central_governance_reviewer',
+]);
+const DECISION_DELEGATOR_ROLES = new Set<OperatorRole>([
+  'governance_officer',
+  'authorized_approver',
+]);
+
+export function decisionCapabilities(session: OperatorSessionContext): DecisionCapabilities {
+  const canRead = permittedDomains(session).some((domain) => domain.id === 'decisions');
+  const canAct = canRead && session.roles.some((role) => DECISION_ACTOR_ROLES.has(role));
+  const canDelegate = canAct && session.roles.some((role) => DECISION_DELEGATOR_ROLES.has(role));
+  return { canRead, canAct, canDelegate };
+}

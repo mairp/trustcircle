@@ -110,6 +110,7 @@ export function OperatorShell({
   pageTitle = 'Governance operating picture',
   pageEyebrow = 'Operator console',
   pageDescription = 'A tenant-scoped view of governance posture, evidence, and operational health.',
+  breadcrumbs,
   children,
 }: {
   readonly session: OperatorSessionContext;
@@ -120,6 +121,8 @@ export function OperatorShell({
   readonly pageTitle?: string;
   readonly pageEyebrow?: string;
   readonly pageDescription?: string;
+  /** Trail after "Dashboard" for detail pages; the last entry is the current page. */
+  readonly breadcrumbs?: readonly { readonly label: string; readonly href?: string }[];
   readonly children: ReactNode;
 }) {
   const links = shellLinks(plans, operationsVisible);
@@ -178,7 +181,19 @@ export function OperatorShell({
                   <a href="/">Dashboard</a>
                 )}
               </li>
-              {currentPath !== '/' ? (
+              {breadcrumbs && breadcrumbs.length > 0 ? (
+                breadcrumbs.map((crumb, index) => (
+                  <li key={`${index}:${crumb.label}`}>
+                    {index === breadcrumbs.length - 1 || !crumb.href ? (
+                      <span aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined}>
+                        {crumb.label}
+                      </span>
+                    ) : (
+                      <a href={crumb.href}>{crumb.label}</a>
+                    )}
+                  </li>
+                ))
+              ) : currentPath !== '/' ? (
                 <li>
                   <span aria-current="page">{activeWorkspace?.shortLabel ?? pageTitle}</span>
                 </li>

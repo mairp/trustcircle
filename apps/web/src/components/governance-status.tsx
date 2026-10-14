@@ -33,6 +33,10 @@ function recordHref(section: ConsoleSectionState, record: ConsoleRecordDetail): 
       ? record.fields.find((field) => field.label === 'Asset ID')?.value
       : undefined;
   if (assetId) return `/assets/${encodeURIComponent(assetId)}`;
+  // Decision records open their live detail page, where an authorized reviewer can act.
+  if (section.id === 'decisions' && /^[0-9a-f-]{36}$/i.test(record.id)) {
+    return `/decisions/${encodeURIComponent(record.id)}`;
+  }
   const workspace = workspaceForDomain(section.id)?.href ?? `/${section.id}`;
   return `${workspace}?record=${encodeURIComponent(record.id)}#record-${encodeURIComponent(record.id)}`;
 }

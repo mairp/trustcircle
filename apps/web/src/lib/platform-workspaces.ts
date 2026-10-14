@@ -604,6 +604,10 @@ function assetIdentifier(record: ConsoleRecordDetail): string | undefined {
 function resultHref(domain: ConsoleDomain, record: ConsoleRecordDetail): string {
   const assetId = domain === 'inventory' ? assetIdentifier(record) : undefined;
   if (assetId) return `/assets/${encodeURIComponent(assetId)}`;
+  // Decision records open their live detail page, where an authorized reviewer can act.
+  if (domain === 'decisions' && /^[0-9a-f-]{36}$/i.test(record.id)) {
+    return `/decisions/${encodeURIComponent(record.id)}`;
+  }
   const workspace = workspaceForDomain(domain)?.href ?? `/${domain}`;
   return `${workspace}?record=${encodeURIComponent(record.id)}#record-${encodeURIComponent(record.id)}`;
 }

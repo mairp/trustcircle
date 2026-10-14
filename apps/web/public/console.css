@@ -889,7 +889,7 @@ footer {
   width: 100%;
   min-height: 2.5rem;
   padding: 0.45rem 0.6rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--border-control);
   border-radius: 0.55rem;
   background: var(--panel);
   color: var(--text);
@@ -1124,5 +1124,379 @@ footer {
   .operations-pill {
     border: 2px solid CanvasText;
     box-shadow: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Decisions: inbox table, package detail and the action panel.
+   Status, risk and time are always stated in words; colour only reinforces them.
+   --------------------------------------------------------------------------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.decision-filter-check {
+  align-self: end;
+  display: flex !important;
+  align-items: center;
+  gap: 0.45rem !important;
+  min-height: 2.5rem;
+  color: var(--text) !important;
+}
+
+.decision-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--panel);
+}
+
+.decision-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.decision-table th,
+.decision-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.decision-table thead th {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--panel-2);
+}
+
+.decision-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.decision-table tbody th a {
+  font-weight: 800;
+}
+
+.decision-table small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.decision-table tr[data-status='approved'],
+.decision-table tr[data-status='denied'],
+.decision-table tr[data-status='expired'],
+.decision-table tr[data-status='cancelled'] {
+  color: var(--muted);
+}
+
+.decision-risk,
+.decision-time,
+.decision-position,
+.decision-gate {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.decision-risk--critical,
+.decision-risk--high,
+.decision-time--expired,
+.decision-gate--failed,
+.decision-gate--waived_forbidden {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.decision-risk--medium,
+.decision-time--expiring_soon,
+.decision-gate--pending,
+.decision-position--own {
+  color: var(--attention);
+  background: var(--attention-soft);
+}
+
+.decision-risk--low,
+.decision-time--fresh,
+.decision-gate--satisfied,
+.decision-position--act {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.decision-time--unknown,
+.decision-position--read,
+.decision-position--closed {
+  color: var(--muted);
+  background: var(--panel-2);
+}
+
+.decision-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.decision-banner {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-left: 0.3rem solid;
+  border-radius: 0.6rem;
+}
+
+.decision-banner--ok {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.decision-banner--error {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.decision-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: 1rem;
+  align-items: start;
+}
+
+.decision-main {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.decision-section,
+.decision-panel {
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+
+.decision-section h2,
+.decision-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.decision-section h3 {
+  margin: 1rem 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.decision-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.decision-facts div {
+  min-width: 0;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--panel-2);
+}
+
+.decision-facts dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.decision-facts dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.decision-cards,
+.decision-gates {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.decision-gates li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--panel-2);
+}
+
+.decision-gates small {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+
+.decision-missing {
+  color: var(--attention);
+  font-weight: 700;
+}
+
+.decision-panel {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.decision-blocked {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.decision-action {
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--panel-2);
+}
+
+.decision-action > summary {
+  padding: 0.65rem 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.decision-action[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.decision-action form {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+}
+
+.decision-action form p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.decision-action label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.decision-action fieldset {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+}
+
+.decision-action .decision-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.decision-action select,
+.decision-action textarea,
+.decision-action input:not([type='checkbox']) {
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-control);
+  border-radius: 0.55rem;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+.decision-action button {
+  justify-self: start;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: var(--accent-strong);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.decision-action--deny button {
+  background: var(--danger);
+}
+
+.decision-footnote {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 64rem) {
+  .decision-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .decision-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 40rem) {
+  .decision-table thead {
+    display: none;
+  }
+
+  .decision-table,
+  .decision-table tbody,
+  .decision-table tr,
+  .decision-table th,
+  .decision-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .decision-table tr {
+    padding-block: 0.4rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .decision-table th,
+  .decision-table td {
+    padding: 0.3rem 0.75rem;
+    border: 0;
   }
 }

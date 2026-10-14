@@ -12,6 +12,8 @@ export interface ApiReadResult {
   readonly diagnostic?: string;
   readonly safeNextAction?: string;
   readonly receivedAt: string;
+  /** Strong validator of the representation read, when the API sends one (optimistic concurrency). */
+  readonly etag?: string;
 }
 
 function apiBaseUrl(): string {
@@ -83,11 +85,13 @@ export async function apiRead(
       };
     }
     const diagnostic = safeDiagnostic(body);
+    const etag = response.headers.get('etag');
     return {
       ok: true,
       status: response.status,
       body,
       ...(diagnostic ? { diagnostic } : {}),
+      ...(etag ? { etag } : {}),
       receivedAt,
     };
   } catch (error) {
@@ -97,7 +101,6 @@ export async function apiRead(
 }
 
 export interface ApiCommandResult extends ApiReadResult {
-  readonly etag?: string;
   readonly location?: string;
 }
 

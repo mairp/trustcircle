@@ -90,12 +90,15 @@ beforeAll(async () => {
       API_BASE_URL: 'http://127.0.0.1:18124',
     },
     stdio: 'ignore',
+    // Own process group: `npm start` forks the Next server, and killing only npm would orphan it
+    // on the port, so a later run would silently test a stale build.
+    detached: true,
   });
   await waitFor(`http://127.0.0.1:${webPort}/healthz`);
 }, 30_000);
 
 afterAll(async () => {
-  web.kill('SIGTERM');
+  if (web.pid !== undefined) process.kill(-web.pid, 'SIGTERM');
   await new Promise<void>((resolve) => api.close(() => resolve()));
 });
 
