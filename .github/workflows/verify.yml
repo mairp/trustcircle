@@ -106,7 +106,7 @@ jobs:
       - name: Contract suite
         run: npm run test:contract
       - name: Build web (production standalone server used by the console integration test)
-        run: npm --workspace @trustcircle/web run build
+        run: npm run typecheck && npm --workspace @trustcircle/web run build
       - name: Integration suite
         run: npm run test:integration
       - name: Security suite
