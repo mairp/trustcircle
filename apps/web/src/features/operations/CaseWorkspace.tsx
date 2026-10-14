@@ -118,9 +118,15 @@ export function CaseWorkspace({
                 <ul>
                   {item.sources.map((source) => (
                     <li key={`${source.domain}:${source.recordId}`}>
-                      <a href={source.href}>
-                        {source.recordType} · {source.recordId}
-                      </a>{' '}
+                      {source.uiHref ? (
+                        <a href={source.uiHref}>
+                          {source.recordType} · {source.recordId}
+                        </a>
+                      ) : (
+                        <span>
+                          {source.recordType} · {source.recordId}
+                        </span>
+                      )}{' '}
                       ·{' '}
                       {source.resolved === true
                         ? 'resolved'

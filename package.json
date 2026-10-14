@@ -37,6 +37,7 @@
     "test:e2e": "playwright test",
     "test:e2e:discovery": "TC_NO_WEBSERVER=1 playwright test --project=discovery",
     "test:accessibility": "playwright test --project=accessibility",
+    "test:a11y:live": "TC_A11Y_LIVE=1 vitest run --project integration tests/integration/accessibility-live-routes.test.ts",
     "test:performance": "node --experimental-strip-types tests/performance/config.ts",
     "test:performance:acceptance": "node --experimental-strip-types tests/performance/acceptance.ts",
     "test:performance:vitest": "vitest run --project performance",

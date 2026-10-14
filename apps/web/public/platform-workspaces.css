@@ -1054,8 +1054,8 @@
 }
 
 .review-period-selector button {
-  background: var(--accent);
-  color: var(--accent-contrast, white);
+  background: var(--accent-strong);
+  color: var(--on-accent);
   cursor: pointer;
   font-weight: 800;
 }
@@ -1274,8 +1274,8 @@
 }
 
 .governed-subscription-form button {
-  background: var(--accent);
-  color: var(--accent-contrast, white);
+  background: var(--accent-strong);
+  color: var(--on-accent);
   cursor: pointer;
   font-weight: 800;
 }
@@ -1525,8 +1525,8 @@
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--accent);
   border-radius: 0.5rem;
-  background: var(--accent);
-  color: var(--accent-contrast, white);
+  background: var(--accent-strong);
+  color: var(--on-accent);
   font: inherit;
   font-weight: 800;
   cursor: pointer;

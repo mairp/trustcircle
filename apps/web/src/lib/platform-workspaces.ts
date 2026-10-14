@@ -601,15 +601,19 @@ function assetIdentifier(record: ConsoleRecordDetail): string | undefined {
   return fieldValue(record, ['Asset ID']);
 }
 
-function resultHref(domain: ConsoleDomain, record: ConsoleRecordDetail): string {
+/**
+ * The page that shows one governed record. Inventory assets open Asset 360, decisions open their
+ * live decision page, and every other record opens `/<workspace>/<record id>`.
+ */
+export function recordDetailHref(domain: ConsoleDomain, record: ConsoleRecordDetail): string {
   const assetId = domain === 'inventory' ? assetIdentifier(record) : undefined;
   if (assetId) return `/assets/${encodeURIComponent(assetId)}`;
-  // Decision records open their live detail page, where an authorized reviewer can act.
-  if (domain === 'decisions' && /^[0-9a-f-]{36}$/i.test(record.id)) {
-    return `/decisions/${encodeURIComponent(record.id)}`;
-  }
+  // Console record ids are `<domain>-<source id>` (see presentConsoleRecords).
+  const decisionId =
+    domain === 'decisions' ? /^(?:decisions-)?([0-9a-f-]{36})$/i.exec(record.id)?.[1] : undefined;
+  if (decisionId) return `/decisions/${encodeURIComponent(decisionId)}`;
   const workspace = workspaceForDomain(domain)?.href ?? `/${domain}`;
-  return `${workspace}?record=${encodeURIComponent(record.id)}#record-${encodeURIComponent(record.id)}`;
+  return `${workspace}/${encodeURIComponent(record.id)}`;
 }
 
 const GROUP_ORDER: Readonly<Record<StatusGroup, number>> = {
@@ -636,7 +640,7 @@ export function searchConsoleSections(
         quality: section.quality,
         title: record.title,
         ...(record.subtitle ? { subtitle: record.subtitle } : {}),
-        href: resultHref(section.id, record),
+        href: recordDetailHref(section.id, record),
         source: section.source,
         ...(section.observedAt ? { observedAt: section.observedAt } : {}),
         fields: record.fields,
@@ -758,4 +762,33 @@ export function deploymentIdentity(
           : 'mismatch',
     mode,
   };
+}
+
+const ATTENTION_DOMAIN_TO_CONSOLE: Readonly<Record<string, ConsoleDomain>> = {
+  decision: 'decisions',
+  integrity: 'integrity',
+  inventory: 'inventory',
+  source: 'gaps',
+  coverage: 'gaps',
+  controller: 'controllers',
+  compliance: 'compliance',
+  evidence: 'evidence',
+  connector: 'integrations',
+  runtime: 'operations',
+};
+
+/**
+ * The console page for an operations source reference (`domain` is the attention domain the API
+ * reports). Undefined for an unknown domain: the UI shows the reference as text rather than
+ * linking a raw API URL or guessing a page.
+ */
+export function operationsSourceHref(domain: string, recordId: string): string | undefined {
+  const consoleDomain = ATTENTION_DOMAIN_TO_CONSOLE[domain];
+  if (!consoleDomain) return undefined;
+  const fields = consoleDomain === 'inventory' ? [{ label: 'Asset ID', value: recordId }] : [];
+  return recordDetailHref(consoleDomain, {
+    id: `${consoleDomain}-${recordId}`,
+    title: recordId,
+    fields,
+  });
 }

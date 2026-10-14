@@ -16,6 +16,7 @@
 #   7. evidence-manifest    — the evidence manifest matches on-disk supported contracts (tamper-evident)
 #   8. secret-scan          — gitleaks over the full history (.gitleaks.toml; no unallowlisted finding)
 #   9. provisioning         — scripts/provision.sh passes shellcheck; compose and kustomize render
+#  10. accessibility        — axe WCAG 2.2 AA on the real production routes, every role, both themes
 #
 # Determinism: Node 22 is pinned, `npm ci` installs from the committed lockfile, and legs whose
 # real tooling lands in a later implementation phase run through scripts/ci/run-if-present.mjs,
@@ -185,11 +186,43 @@ jobs:
           scripts/provision.sh --help > /dev/null
           bash -n scripts/provision.sh
 
+  # ---- 10. accessibility (live routes) ---------------------------------------
+  accessibility:
+    name: accessibility (live routes, WCAG 2.2 AA)
+    runs-on: ubuntu-latest
+    env:
+      # This job deliberately installs the one browser it needs.
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium for axe scans
+        run: npx playwright install --with-deps chromium
+      - name: Build the production web app
+        run: npm run typecheck && npm --workspace @trustcircle/web run build
+      - name: axe on live routes (4 roles x 2 themes), reflow, evidence package flow
+        run: npm run test:a11y:live
+
   # ---- Aggregate gate: every required domain must pass ---------------------
   verify:
     name: verify (required)
     runs-on: ubuntu-latest
-    needs: [lint, types, contracts, tests, migrations, evidence-manifest, secret-scan, provisioning]
+    needs:
+      [
+        lint,
+        types,
+        contracts,
+        tests,
+        migrations,
+        evidence-manifest,
+        secret-scan,
+        provisioning,
+        accessibility,
+      ]
     if: always()
     steps:
       - name: Fail if any required PR-validation domain failed
@@ -202,6 +235,7 @@ jobs:
           echo "evidence-manifest=${{ needs.evidence-manifest.result }}"
           echo "secret-scan=${{ needs.secret-scan.result }}"
           echo "provisioning=${{ needs.provisioning.result }}"
+          echo "accessibility=${{ needs.accessibility.result }}"
           if [ "${{ needs.lint.result }}" != "success" ] \
             || [ "${{ needs.types.result }}" != "success" ] \
             || [ "${{ needs.contracts.result }}" != "success" ] \
@@ -209,7 +243,8 @@ jobs:
             || [ "${{ needs.migrations.result }}" != "success" ] \
             || [ "${{ needs.evidence-manifest.result }}" != "success" ] \
             || [ "${{ needs.secret-scan.result }}" != "success" ] \
-            || [ "${{ needs.provisioning.result }}" != "success" ]; then
+            || [ "${{ needs.provisioning.result }}" != "success" ] \
+            || [ "${{ needs.accessibility.result }}" != "success" ]; then
             echo "::error::One or more required PR-validation domains failed"
             exit 1
           fi

@@ -1,6 +1,7 @@
 import { operationalCaseEtag } from '@trustcircle/contracts';
 
 import { apiRead } from './api-client.ts';
+import { operationsSourceHref } from './platform-workspaces.ts';
 import type { OperationsWorkspaceCapabilities } from './permissions.ts';
 import type { OperatorSessionContext } from './session-context.ts';
 
@@ -10,6 +11,8 @@ export interface OperationsSourceView {
   readonly recordId: string;
   readonly recordVersion?: string;
   readonly href: string;
+  /** Console page for the source; undefined when no page exists (never the raw API URL). */
+  readonly uiHref?: string;
   readonly observedAt: string;
   readonly sourceOwnerId?: string;
   readonly resolved: boolean | 'unknown';
@@ -177,6 +180,9 @@ function sourceView(value: unknown): OperationsSourceView | undefined {
       ? { recordVersion: string(row['record_version']) as string }
       : {}),
     href,
+    ...(operationsSourceHref(domain, recordId)
+      ? { uiHref: operationsSourceHref(domain, recordId) as string }
+      : {}),
     observedAt,
     ...(string(row['source_owner_id'])
       ? { sourceOwnerId: string(row['source_owner_id']) as string }

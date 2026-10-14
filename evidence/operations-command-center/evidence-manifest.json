@@ -19,15 +19,15 @@
     },
     {
       "path": "apps/web/src/features/operations/AttentionQueue.tsx",
-      "digest": "8a08d178c042fec32510304a2a100358fc8ee57d9b516fc944f9c093144a6eaa"
+      "digest": "6fffdc243398815576d10dc04e8c4e3e5642819ee896e56d14278058395f606f"
     },
     {
       "path": "apps/web/src/features/operations/CaseWorkspace.tsx",
-      "digest": "404133ad2e7c161b4b60d07d233aedad86ed40f8b27009737b5d26911a0677ea"
+      "digest": "fffc5249ed3aa6bcf3ef6e7cb9722eb496756cd26cf105cd92868019dbd9c985"
     },
     {
       "path": "apps/web/src/lib/operations-loader.ts",
-      "digest": "f44bc263b2135cfca0e0486f1e52313650001b305007f71b0924e934c1422a6d"
+      "digest": "f20cfb889350b567029632790d3260bcd0c5241253e34fc40db08fb0ae3bbe08"
     },
     {
       "path": "contracts/operations-command-center/operations-command-center.openapi.yaml",
@@ -106,5 +106,5 @@
       "digest": "9984e98fb5e09ac465a9ed01126e9f7dbba6b4bdbc594962f5fa3f6e7838d306"
     }
   ],
-  "inventoryDigest": "e2d8665b6efab5822f0efbc48520d2a3643b25f58286c26bd3f065db21955885"
+  "inventoryDigest": "7674b2aea7785f600c62bc9c5ca2886bf42c98302e14f52375b4e5470e52ee61"
 }

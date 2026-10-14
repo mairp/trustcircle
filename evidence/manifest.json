@@ -11,7 +11,7 @@
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
       "exists": true,
-      "digest": "18de8b89787e3e14acfff3e83996de5e68406b258f096980f83dde18ddbb9711"
+      "digest": "7a23a972010ff54ea6f2f69a83abd3417faf705524d8d6ff05dd74d76b37f396"
     },
     {
       "path": ".gitignore",
@@ -473,5 +473,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "b10d723741c444a1052eee641c6f3d8d42a3f5326127d56ab41164633e5bd185"
+  "inventoryDigest": "afcca06c1172bd6ac9995d153b1704acb86e3260ae90c79a9f2103c8c352b064"
 }

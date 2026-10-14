@@ -1,6 +1,10 @@
 import type { ConsoleSectionState } from '../lib/console-loader.ts';
 import type { ConsoleRecordDetail } from '../lib/console-presenter.ts';
-import { classifyRecordStatus, relatedAssetRecords } from '../lib/platform-workspaces.ts';
+import {
+  classifyRecordStatus,
+  recordDetailHref,
+  relatedAssetRecords,
+} from '../lib/platform-workspaces.ts';
 
 type AssetTab = 'overview' | 'relationships' | 'history';
 
@@ -115,7 +119,9 @@ export function Asset360({
                 {related.map(({ section, record }) => (
                   <li key={`${section.id}-${record.id}`}>
                     <span>{section.title}</span>
-                    <strong>{record.title}</strong>
+                    <strong>
+                      <a href={recordDetailHref(section.id, record)}>{record.title}</a>
+                    </strong>
                   </li>
                 ))}
               </ul>
@@ -149,7 +155,9 @@ export function Asset360({
                 <span aria-hidden="true">→</span>
                 <div className="relationship-node">
                   <span>{section.title}</span>
-                  <strong>{record.title}</strong>
+                  <strong>
+                    <a href={recordDetailHref(section.id, record)}>{record.title}</a>
+                  </strong>
                   <code>{record.id}</code>
                 </div>
               </div>

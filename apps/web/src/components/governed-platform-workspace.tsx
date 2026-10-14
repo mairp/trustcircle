@@ -1,11 +1,21 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   parseGovernedReviewComparison,
   type GovernedReviewComparisonView,
 } from '../lib/governed-platform-client.ts';
+import {
+  isPackageId,
+  packageStatusLabel,
+  parseStoredPackages,
+  parseVerification,
+  updatePackage,
+  upsertPackage,
+  verificationReceipt,
+  type SessionPackage,
+} from '../lib/evidence-packages.ts';
 import type {
   GovernedAiWorkspaceState,
   GovernedConnectorWorkspaceState,
@@ -543,13 +553,29 @@ export function GovernedEvidenceWorkspace({
   readonly state: GovernedEvidenceWorkspaceState;
 }) {
   const [requestId, setRequestId] = useState(state.requests[0]?.id ?? '');
-  const [packageId, setPackageId] = useState('');
+  const [packages, setPackages] = useState<readonly SessionPackage[]>([]);
+  const [manualId, setManualId] = useState('');
   const [message, setMessage] = useState('');
-  const [verification, setVerification] = useState<
-    { readonly valid: boolean; readonly reason: string | null; readonly digest: string } | undefined
-  >();
   const [busy, setBusy] = useState(false);
   const selected = state.requests.find((request) => request.id === requestId);
+  const storageKey = 'trustcircle-evidence-packages:' + state.principalId;
+
+  useEffect(() => {
+    try {
+      setPackages(parseStoredPackages(window.sessionStorage.getItem(storageKey)));
+    } catch {
+      // Session storage is a convenience only; the list simply starts empty without it.
+    }
+  }, [storageKey]);
+
+  function remember(next: readonly SessionPackage[]): void {
+    setPackages(next);
+    try {
+      window.sessionStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      // Unavailable storage only loses the convenience list, never a verification result.
+    }
+  }
 
   async function requestPackage(): Promise<void> {
     if (!selected || !state.principalId) {
@@ -557,7 +583,13 @@ export function GovernedEvidenceWorkspace({
       return;
     }
     const id = crypto.randomUUID();
-    setPackageId(id);
+    let list = upsertPackage(packages, {
+      id,
+      evidenceRequestId: selected.id,
+      requestedAt: new Date().toISOString(),
+      status: 'requested',
+    });
+    remember(list);
     setBusy(true);
     setMessage('');
     try {
@@ -579,51 +611,80 @@ export function GovernedEvidenceWorkspace({
         }),
       });
       const body = (await response.json()) as Record<string, unknown>;
+      list = updatePackage(list, id, {
+        status: response.ok ? 'accepted' : 'not_accepted',
+        ...(response.ok && typeof body['operation_id'] === 'string'
+          ? { operationId: body['operation_id'] }
+          : {}),
+      });
       setMessage(
         response.ok
-          ? 'Package generation accepted as operation ' + String(body['operation_id']) + '.'
+          ? 'Package generation accepted. Verify it from the list once generation completes.'
           : 'Package generation was not accepted. No evidence source was changed.',
       );
     } catch {
+      list = updatePackage(list, id, { status: 'not_accepted' });
       setMessage('Package generation is unavailable. No evidence source was changed.');
     } finally {
+      remember(list);
       setBusy(false);
     }
   }
 
-  async function verifyPackage(): Promise<void> {
-    if (!/^[0-9a-f-]{36}$/i.test(packageId)) {
+  async function verifyPackage(id: string): Promise<void> {
+    if (!isPackageId(id)) {
       setMessage('Enter a valid package identifier to verify.');
       return;
     }
+    const packageId = id.trim().toLowerCase();
+    let list = packages.some((item) => item.id === packageId)
+      ? packages
+      : upsertPackage(packages, {
+          id: packageId,
+          requestedAt: new Date().toISOString(),
+          status: 'requested',
+        });
     setBusy(true);
     setMessage('');
-    setVerification(undefined);
     try {
       const response = await fetch(
         '/api/governed-platform/evidence-packages/' + encodeURIComponent(packageId) + '/verify',
         { method: 'POST' },
       );
-      const body = (await response.json()) as Record<string, unknown>;
-      if (!response.ok || typeof body['valid'] !== 'boolean') {
+      const verification = response.ok ? parseVerification(await response.json()) : undefined;
+      if (!verification) {
+        list = updatePackage(list, packageId, { status: 'verification_unavailable' });
         setMessage('Package verification is unavailable. Do not release the package.');
         return;
       }
-      setVerification({
-        valid: body['valid'],
-        reason: typeof body['reason'] === 'string' ? body['reason'] : null,
-        digest: typeof body['canonical_digest'] === 'string' ? body['canonical_digest'] : '',
+      list = updatePackage(list, packageId, {
+        status: verification.valid ? 'verified' : 'verification_failed',
+        verification,
       });
       setMessage(
-        body['valid']
+        verification.valid
           ? 'Package signature, manifest, entries, audience, and tenant boundary verified.'
           : 'Package verification failed. Retain failure evidence and do not release it.',
       );
     } catch {
+      list = updatePackage(list, packageId, { status: 'verification_unavailable' });
       setMessage('Package verification is unavailable. Do not release the package.');
     } finally {
+      remember(list);
       setBusy(false);
     }
+  }
+
+  function downloadReceipt(entry: SessionPackage): void {
+    const blob = new Blob([JSON.stringify(verificationReceipt(entry), null, 2) + '\n'], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'evidence-package-' + entry.id + '-verification.json';
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -708,7 +769,7 @@ export function GovernedEvidenceWorkspace({
       </section>
 
       <section className="governed-subscription-panel" aria-labelledby="package-controls-title">
-        <h3 id="package-controls-title">Signed package and independent verification</h3>
+        <h3 id="package-controls-title">Signed packages and independent verification</h3>
         <form
           className="governed-subscription-form"
           onSubmit={(event) => {
@@ -730,51 +791,127 @@ export function GovernedEvidenceWorkspace({
             {busy ? 'Working...' : 'Request signed package'}
           </button>
         </form>
-        <form
-          className="governed-subscription-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void verifyPackage();
-          }}
-        >
-          <label>
-            Package identifier
-            <input
-              value={packageId}
-              onChange={(event) => setPackageId(event.target.value)}
-              placeholder="00000000-0000-4000-8000-000000000000"
-            />
-          </label>
-          <button type="submit" disabled={busy}>
-            Verify package independently
-          </button>
-        </form>
+
         <p role="status" aria-live="polite">
           {message || state.safeNextAction}
         </p>
-        {verification ? (
+
+        {packages.length > 0 ? (
           <div
-            className={
-              'status-explanation status-explanation--' +
-              (verification.valid ? 'healthy' : 'unknown')
-            }
+            className="decision-table-wrap"
+            role="region"
+            aria-label="Evidence packages"
+            tabIndex={0}
           >
-            <div>
-              <h3>
-                {verification.valid ? 'Package integrity verified' : 'Package verification failed'}
-              </h3>
-              <p>
-                {verification.valid
-                  ? 'The manifest is attributable to the exact signed entries and authorized audience.'
-                  : (verification.reason ?? 'Verification evidence is incomplete.')}
-              </p>
-            </div>
-            <p title={verification.digest}>
-              <strong>Manifest digest</strong>
-              <span>{shortDigest(verification.digest)}</span>
-            </p>
+            <table className="decision-table evidence-package-table">
+              <caption className="visually-hidden">
+                Evidence packages requested or verified in this session, newest first
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Package</th>
+                  <th scope="col">Evidence request</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Manifest digest</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {packages.map((entry) => (
+                  <tr key={entry.id} data-status={entry.status}>
+                    <th scope="row">
+                      <code title={entry.id}>{shortDigest(entry.id)}</code>
+                      <small>
+                        <time dateTime={entry.requestedAt}>
+                          {new Date(entry.requestedAt).toLocaleString()}
+                        </time>
+                      </small>
+                    </th>
+                    <td>
+                      {entry.evidenceRequestId ? (
+                        <code title={entry.evidenceRequestId}>
+                          {shortDigest(entry.evidenceRequestId)}
+                        </code>
+                      ) : (
+                        'Entered by identifier'
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className={
+                          'evidence-package-status evidence-package-status--' + entry.status
+                        }
+                      >
+                        {packageStatusLabel(entry.status)}
+                      </span>
+                      {entry.verification?.reason ? (
+                        <small>{entry.verification.reason}</small>
+                      ) : null}
+                    </td>
+                    <td>
+                      {entry.verification?.canonicalDigest ? (
+                        <code title={entry.verification.canonicalDigest}>
+                          {shortDigest(entry.verification.canonicalDigest)}
+                        </code>
+                      ) : (
+                        'Not verified yet'
+                      )}
+                    </td>
+                    <td className="evidence-package-actions">
+                      <button
+                        type="button"
+                        disabled={busy || entry.status === 'not_accepted'}
+                        onClick={() => void verifyPackage(entry.id)}
+                        aria-label={'Verify package ' + entry.id}
+                      >
+                        Verify
+                      </button>
+                      {entry.verification ? (
+                        <button
+                          type="button"
+                          onClick={() => downloadReceipt(entry)}
+                          aria-label={'Download verification receipt for package ' + entry.id}
+                        >
+                          Download receipt
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : null}
+        ) : (
+          <p>No packages requested or verified in this session yet.</p>
+        )}
+
+        <details className="evidence-package-manual">
+          <summary>Verify a package received from elsewhere</summary>
+          <form
+            className="governed-subscription-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void verifyPackage(manualId);
+            }}
+          >
+            <label>
+              Package identifier
+              <input
+                value={manualId}
+                onChange={(event) => setManualId(event.target.value)}
+                placeholder="00000000-0000-4000-8000-000000000000"
+              />
+            </label>
+            <button type="submit" disabled={busy}>
+              Verify package independently
+            </button>
+          </form>
+        </details>
+        <p className="evidence-package-note">
+          This list is kept for this browser session only. The package itself, its signature and its
+          verification live in the governed platform; a package is valid only when verification says
+          so.
+        </p>
       </section>
     </section>
   );

@@ -13,7 +13,8 @@
   --focus-ring: var(--attention);
   --text: #17201c;
   --muted: #5c6962;
-  --quiet: #65716a;
+  /* >=4.5:1 on bg, panel, panel-2 and panel-3 (WCAG 1.4.3). */
+  --quiet: #636f68;
   --accent: #4d7c18;
   --accent-strong: #365d0e;
   --accent-soft: #edf6df;
@@ -1510,5 +1511,119 @@ footer {
   .decision-table td {
     padding: 0.3rem 0.75rem;
     border: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Record detail (/<workspace>/<record id>) and evidence package tracking.
+   --------------------------------------------------------------------------- */
+
+.record-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+
+.record-detail__fields,
+.record-detail__source {
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+
+.record-detail__fields h2,
+.record-detail__source h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.record-detail__subtitle {
+  margin: -0.4rem 0 0.75rem;
+  color: var(--muted);
+}
+
+.record-detail__source p {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.record-detail dd {
+  overflow-wrap: anywhere;
+}
+
+.evidence-package-status {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--muted);
+  background: var(--panel-2);
+}
+
+.evidence-package-status--verified,
+.evidence-package-status--accepted {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.evidence-package-status--verification_failed,
+.evidence-package-status--not_accepted {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.evidence-package-status--verification_unavailable {
+  color: var(--attention);
+  background: var(--attention-soft);
+}
+
+.evidence-package-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.evidence-package-actions button {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-control);
+  border-radius: 0.55rem;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.evidence-package-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.evidence-package-manual {
+  margin-top: 0.75rem;
+}
+
+.evidence-package-manual > summary {
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.evidence-package-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 64rem) {
+  .record-detail {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

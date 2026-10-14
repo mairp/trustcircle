@@ -1,6 +1,6 @@
 import type { ConsoleSectionState } from '../lib/console-loader.ts';
-import type { ConsoleRecordDetail, ConsoleRecordField } from '../lib/console-presenter.ts';
-import { classifyRecordStatus, workspaceForDomain } from '../lib/platform-workspaces.ts';
+import type { ConsoleRecordField } from '../lib/console-presenter.ts';
+import { classifyRecordStatus, recordDetailHref } from '../lib/platform-workspaces.ts';
 import type { ReadQuality } from '../lib/read-model.ts';
 
 const LABELS: Readonly<Record<ReadQuality, string>> = {
@@ -25,20 +25,6 @@ function FieldValue({ field }: { readonly field: ConsoleRecordField }) {
     return <time dateTime={field.value}>{field.value}</time>;
   }
   return <>{field.value}</>;
-}
-
-function recordHref(section: ConsoleSectionState, record: ConsoleRecordDetail): string {
-  const assetId =
-    section.id === 'inventory'
-      ? record.fields.find((field) => field.label === 'Asset ID')?.value
-      : undefined;
-  if (assetId) return `/assets/${encodeURIComponent(assetId)}`;
-  // Decision records open their live detail page, where an authorized reviewer can act.
-  if (section.id === 'decisions' && /^[0-9a-f-]{36}$/i.test(record.id)) {
-    return `/decisions/${encodeURIComponent(record.id)}`;
-  }
-  const workspace = workspaceForDomain(section.id)?.href ?? `/${section.id}`;
-  return `${workspace}?record=${encodeURIComponent(record.id)}#record-${encodeURIComponent(record.id)}`;
 }
 
 export function GovernanceSection({ section }: { readonly section: ConsoleSectionState }) {
@@ -103,7 +89,7 @@ export function GovernanceSection({ section }: { readonly section: ConsoleSectio
                   <div className="record-heading">
                     <div>
                       <strong>
-                        <a href={recordHref(section, record)}>{record.title}</a>
+                        <a href={recordDetailHref(section.id, record)}>{record.title}</a>
                       </strong>
                       {record.subtitle ? <span>{record.subtitle}</span> : null}
                     </div>

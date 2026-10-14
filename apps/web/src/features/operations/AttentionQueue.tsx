@@ -209,16 +209,22 @@ export function AttentionQueue({
                 <ul>
                   {item.sources.map((source) => (
                     <li key={`${source.domain}:${source.recordId}`}>
-                      <a href={source.href}>
-                        {source.recordType} · {source.recordId}
-                      </a>
+                      {source.uiHref ? (
+                        <a href={source.uiHref}>
+                          {source.recordType} · {source.recordId}
+                        </a>
+                      ) : (
+                        <span>
+                          {source.recordType} · {source.recordId}
+                        </span>
+                      )}
                       {source.recordVersion ? ` · version ${source.recordVersion}` : ''}
                     </li>
                   ))}
                 </ul>
               </details>
               <div className="operations-actions">
-                {item.safeNextAction.href ? (
+                {item.safeNextAction.href && !item.safeNextAction.href.startsWith('/v1/') ? (
                   <a className="operations-link" href={item.safeNextAction.href}>
                     {item.safeNextAction.label}
                   </a>
