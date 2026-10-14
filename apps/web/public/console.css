@@ -633,9 +633,15 @@ main {
   color: var(--attention);
 }
 
-.status--unavailable,
-.status--unknown {
+.status--unavailable {
   color: var(--danger);
+}
+
+/* Unknown is not failing: neutral colour plus a dotted underline so it never reads as red. */
+.status--unknown {
+  color: var(--muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
 }
 
 .metadata {

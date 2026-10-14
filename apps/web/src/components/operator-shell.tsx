@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { SearchShortcut } from './search-shortcut.tsx';
+
 import {
   PLATFORM_WORKSPACES,
   deploymentIdentity,
@@ -142,6 +144,7 @@ export function OperatorShell({
               Search governed records
               <kbd>/</kbd>
             </a>
+            <SearchShortcut />
             <span className={`deployment-mode deployment-mode--${build.mode}`}>
               {build.profile}
             </span>

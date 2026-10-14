@@ -56,10 +56,10 @@ Status key: **done** (applied in this change) · **next** (scheduled) · **later
 
 - One terminology set routed through `i18n/catalog.ts`. The catalog has no importers today, and
   most concepts have two or three names.
-- Make the `/` search shortcut work, or remove the hint (`components/operator-shell.tsx`).
+- **done:** the `/` search shortcut now works (`components/search-shortcut.tsx`).
 - Retire the legacy `SHELL_NAV` / `renderAppShell` in `app/layout.tsx` and point the
   accessibility specs at the live shell.
-- Show relative ages ("6 h ago") next to ISO timestamps.
+- **done (Trends):** relative ages ("6 h ago") with the ISO timestamp kept as `<time>` and tooltip. Other pages are still to do.
 - Delete `src/app/globals.css`, which is unused and wrongly claims to mirror `public/console.css`.
 - Re-run the usability study against the live routes.
 

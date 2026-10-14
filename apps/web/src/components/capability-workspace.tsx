@@ -4,6 +4,7 @@ import {
   searchConsoleSections,
   statusExplanation,
 } from '../lib/platform-workspaces.ts';
+import { relativeAge } from '../lib/relative-age.ts';
 
 export type CapabilityWorkspaceKind = 'trends' | 'registers' | 'automation' | 'ai-governance';
 
@@ -144,7 +145,15 @@ export function CapabilityWorkspace({
                 <span>{section.title}</span>
                 <strong>{section.recordCount ?? 'Unknown'} records</strong>
                 <span className={`status-group status-group--${state.group}`}>{state.label}</span>
-                <small>{section.observedAt ?? 'Observation time unavailable'}</small>
+                <small>
+                  {section.observedAt ? (
+                    <time dateTime={section.observedAt} title={section.observedAt}>
+                      {relativeAge(section.observedAt) ?? section.observedAt}
+                    </time>
+                  ) : (
+                    'Observation time unavailable'
+                  )}
+                </small>
               </article>
             ))}
           </div>
