@@ -1,0 +1,28 @@
+# gitleaks configuration — default ruleset plus narrowly scoped, justified allowlists.
+# Every entry below was reviewed in docs/security/SANITIZATION_REPORT.md. Do not widen these
+# to whole directories: a real credential committed under tests/ must still fail the scan.
+title = "trustcircle gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public jwt.io sample token ({\"sub\":\"1234567890\"}) used as a redaction fixture"
+regexes = ['''eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIn0\.[A-Za-z0-9_-]+''']
+paths = ['''^tests/security/''']
+
+[[allowlists]]
+description = "Synthetic idempotency / correlation keys in test fixtures (not credentials)"
+regexes = [
+  '''operation-key-\d{4}''',
+  '''sla-evaluation-\d{4}''',
+  '''idem-key-[0-9a-f]+''',
+  '''gate90-idempotency-key''',
+  '''corr-\d{8}''',
+]
+paths = ['''^tests/''']
+
+[[allowlists]]
+description = "Prose mentioning 'key, delivery/...' and 'delivery/idempotency' (not credentials)"
+regexTarget = "line"
+regexes = ['''deduplication key, delivery/reconciliation state''', '''content-access mode, delivery/idempotency''']

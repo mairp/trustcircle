@@ -19,6 +19,29 @@ evidence, adapter, and projection seams; they do not create a second source of t
 > policy and separation-of-duties checks, an atomic canonical state and audit commit, and retained
 > evidence.
 
+## ISO/IEC 42001 alignment
+
+TrustCircleAI is designed to support ISO/IEC 42001 AI management system implementation and audit
+readiness. Its controls and evidence are mapped to the standard's clauses 4–10 and Annex A control
+areas, and it ships a sample, non-certified ISO/IEC 42001 / 42005 / 42006 readiness package
+(`tests/fixtures/audit-readiness/`). It reports readiness, never certification: only an accredited
+certification body can certify an organisation. See
+[docs/compliance/ISO42001.md](docs/compliance/ISO42001.md).
+
+## Provisioning an instance
+
+Consumers stand up their own control plane with one idempotent script, on Docker Compose or
+Kubernetes:
+
+```bash
+scripts/provision.sh --target compose                       # single host, http://localhost:14000
+scripts/provision.sh --target kubernetes --registry <registry> --push
+```
+
+Secrets are generated per instance and never committed, and every run writes a provisioning receipt
+as change evidence. See [docs/PROVISIONING.md](docs/PROVISIONING.md). Claude Code users can ask the
+`provisioner` agent (`.claude/agents/provisioner.md`) to do it interactively.
+
 ## Architecture at a glance
 
 ```mermaid

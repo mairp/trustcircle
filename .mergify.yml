@@ -1,0 +1,43 @@
+# Mergify — automatic merge of approved pull requests into the default branch once CI is green.
+#
+# A PR is queued automatically when it is ready (not a draft), approved by at least one reviewer,
+# conflict-free, has no blocking label and no requested changes, and `verify (required)` passes.
+# The merge queue re-runs CI against the latest base before merging, so nothing lands on a branch
+# state that was never verified. Requires the Mergify GitHub App to be installed on this repository.
+
+queue_rules:
+  - name: default
+    queue_conditions:
+      - base~=^(main|wsl-updated)$
+      - -draft
+      - -conflict
+      - '#approved-reviews-by>=1'
+      - '#changes-requested-reviews-by=0'
+      - label!=do-not-merge
+      - label!=wip
+      - check-success=verify (required)
+    merge_conditions:
+      - check-success=verify (required)
+    merge_method: squash
+
+pull_request_rules:
+  - name: auto-merge approved PRs when CI passes
+    conditions:
+      - base~=^(main|wsl-updated)$
+    actions:
+      queue:
+        name: default
+
+  - name: delete head branch after merge
+    conditions:
+      - merged
+    actions:
+      delete_head_branch: {}
+
+  - name: ask for rebase on conflict
+    conditions:
+      - conflict
+      - -closed
+    actions:
+      comment:
+        message: This pull request has conflicts with `{{ base }}`. Please rebase it.

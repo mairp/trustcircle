@@ -86,7 +86,6 @@ export function normalizeInfrastructure(raw: string): InfrastructureClassificati
     case 'lb-observer-mcp':
     case 'load-balancer-observer':
       return 'lb-observer';
-    case 'terraform':
     case 'tf':
     case 'terraform-iac':
       return 'terraform';
@@ -164,7 +163,7 @@ const PLACEMENTS: Readonly<
       'read/observed: the LB Observer (mcp-lb) reads live load-balancer state; no infrastructure mutation',
   },
   // Terraform — declares desired state AND applies it (mutation).
-  'terraform': {
+  terraform: {
     interactionMode: 'mutation',
     risk: 'high',
     stateFacet: 'both',

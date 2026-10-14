@@ -62,7 +62,7 @@ export function AttentionQueue({
         ))}
       </dl>
 
-      <form className="operations-filters" method="get" action="/">
+      <form className="operations-filters" method="get" action="/operations">
         <fieldset>
           <legend>Narrow the visible queue</legend>
           <label>
@@ -131,7 +131,7 @@ export function AttentionQueue({
           <div className="operations-filter-actions">
             <button type="submit">Apply filters</button>
             <a href="#operations-command-center">Keep current view</a>
-            <a href="/">Clear filters</a>
+            <a href="/operations">Clear filters</a>
           </div>
         </fieldset>
         <p>Urgent totals above are unfiltered so hidden critical work remains visible.</p>

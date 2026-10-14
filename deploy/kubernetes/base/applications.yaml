@@ -1,0 +1,248 @@
+# Application tiers (startupIndex 5-9). Images are placeholders `trustcircle/<tier>:local`;
+# scripts/provision.sh rewrites them to the consumer's registry/tag in the generated overlay.
+# Pods fail closed: an app whose prerequisites are unhealthy reports not-ready and is restarted,
+# matching the compose profile's `service_healthy` edges (NFR-010).
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: api }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app.kubernetes.io/name: api } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: api } }
+    spec:
+      securityContext: { runAsNonRoot: false }
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: trustcircle/api:local
+          envFrom: [{ configMapRef: { name: trustcircle-core-env } }]
+          env:
+            - { name: SERVICE_NAME, value: 'api' }
+            - { name: API_PORT, value: '3000' }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: trustcircle-secrets, key: DATABASE_URL } }
+            - { name: OBJECT_STORE_ACCESS_KEY, value: trustcircle }
+            - name: OBJECT_STORE_SECRET_KEY
+              valueFrom:
+                { secretKeyRef: { name: trustcircle-secrets, key: OBJECT_STORE_SECRET_KEY } }
+          ports: [{ containerPort: 3000 }]
+          readinessProbe:
+            exec:
+              {
+                command:
+                  [
+                    'node',
+                    '/app/deploy/compose/healthcheck.mjs',
+                    'http://localhost:3000/v1/health',
+                  ],
+              }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              {
+                command:
+                  [
+                    'node',
+                    '/app/deploy/compose/healthcheck.mjs',
+                    'http://localhost:3000/v1/health',
+                  ],
+              }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: v1
+kind: Service
+metadata: { name: api }
+spec:
+  selector: { app.kubernetes.io/name: api }
+  ports: [{ name: http, port: 3000, targetPort: 3000 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: command-worker }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: command-worker } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: command-worker } }
+    spec:
+      securityContext: { runAsNonRoot: false }
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: command-worker
+          image: trustcircle/command-worker:local
+          envFrom: [{ configMapRef: { name: trustcircle-core-env } }]
+          env:
+            - { name: SERVICE_NAME, value: 'command-worker' }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: trustcircle-secrets, key: DATABASE_URL } }
+            - { name: OBJECT_STORE_ACCESS_KEY, value: trustcircle }
+            - name: OBJECT_STORE_SECRET_KEY
+              valueFrom:
+                { secretKeyRef: { name: trustcircle-secrets, key: OBJECT_STORE_SECRET_KEY } }
+          readinessProbe:
+            exec:
+              {
+                command:
+                  [
+                    'node',
+                    '/app/deploy/compose/healthcheck.mjs',
+                    'file:///app/.health/command-worker',
+                  ],
+              }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              {
+                command:
+                  [
+                    'node',
+                    '/app/deploy/compose/healthcheck.mjs',
+                    'file:///app/.health/command-worker',
+                  ],
+              }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: projector }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: projector } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: projector } }
+    spec:
+      securityContext: { runAsNonRoot: false }
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: projector
+          image: trustcircle/projector:local
+          envFrom: [{ configMapRef: { name: trustcircle-core-env } }]
+          env:
+            - { name: SERVICE_NAME, value: 'projector' }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: trustcircle-secrets, key: DATABASE_URL } }
+            - { name: OBJECT_STORE_ACCESS_KEY, value: trustcircle }
+            - name: OBJECT_STORE_SECRET_KEY
+              valueFrom:
+                { secretKeyRef: { name: trustcircle-secrets, key: OBJECT_STORE_SECRET_KEY } }
+          readinessProbe:
+            exec:
+              {
+                command:
+                  ['node', '/app/deploy/compose/healthcheck.mjs', 'file:///app/.health/projector'],
+              }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              {
+                command:
+                  ['node', '/app/deploy/compose/healthcheck.mjs', 'file:///app/.health/projector'],
+              }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: discovery-agent }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: discovery-agent } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: discovery-agent } }
+    spec:
+      securityContext: { runAsNonRoot: false }
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: discovery-agent
+          image: trustcircle/discovery-agent:local
+          envFrom: [{ configMapRef: { name: trustcircle-core-env } }]
+          env:
+            - { name: SERVICE_NAME, value: 'discovery-agent' }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: trustcircle-secrets, key: DATABASE_URL } }
+            - { name: OBJECT_STORE_ACCESS_KEY, value: trustcircle }
+            - name: OBJECT_STORE_SECRET_KEY
+              valueFrom:
+                { secretKeyRef: { name: trustcircle-secrets, key: OBJECT_STORE_SECRET_KEY } }
+          readinessProbe:
+            exec:
+              {
+                command:
+                  [
+                    'node',
+                    '/app/deploy/compose/healthcheck.mjs',
+                    'file:///app/.health/discovery-agent',
+                  ],
+              }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              {
+                command:
+                  [
+                    'node',
+                    '/app/deploy/compose/healthcheck.mjs',
+                    'file:///app/.health/discovery-agent',
+                  ],
+              }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app.kubernetes.io/name: web } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: web } }
+    spec:
+      securityContext: { runAsNonRoot: true }
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: web
+          image: trustcircle/web:local
+          envFrom: [{ configMapRef: { name: trustcircle-core-env } }]
+          env:
+            - { name: SERVICE_NAME, value: 'web' }
+            - { name: API_BASE_URL, value: 'http://api:3000' }
+            - { name: PORT, value: '8080' }
+            - { name: HOSTNAME, value: '0.0.0.0' }
+            - { name: TRUST_IDENTITY_HEADERS, value: 'false' }
+          ports: [{ containerPort: 8080 }]
+          readinessProbe:
+            exec:
+              {
+                command:
+                  ['node', '/app/deploy/compose/healthcheck.mjs', 'http://localhost:8080/healthz'],
+              }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              {
+                command:
+                  ['node', '/app/deploy/compose/healthcheck.mjs', 'http://localhost:8080/healthz'],
+              }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: v1
+kind: Service
+metadata: { name: web }
+spec:
+  selector: { app.kubernetes.io/name: web }
+  ports: [{ name: http, port: 8080, targetPort: 8080 }]

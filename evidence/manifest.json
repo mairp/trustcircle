@@ -11,14 +11,14 @@
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
       "exists": true,
-      "digest": "5fb5861af762f2a26c0afc72fc65571abffe1320a3f9db9013b6ba0e2d547c69"
+      "digest": "816f8b402c30d4fde96b6a7ba59457afc4a77cbecff4398d918a7bd7213e460f"
     },
     {
       "path": ".gitignore",
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
       "exists": true,
-      "digest": "0df623f97d18cb2be2c5aae2e903bbe8cf0fe14bc36e4657ac0debd9d688b66c"
+      "digest": "1909b31bded7c7d05cfa9d72e6de8ebbf1cf4d6d13dfd0533ae3c86f7b8cbc59"
     },
     {
       "path": "adapters/wiggum/src/snapshot.ts",
@@ -137,7 +137,7 @@
       "status": "present",
       "vo": "VO-ec575c4ce42b548bfb4d",
       "exists": true,
-      "digest": "74b06faa167bd46a89c0f9b41c6a95a82e7467bfec3b69a408f23a153b9b010b"
+      "digest": "1cbe77868f32b7b8f16a4ed6447910c2c9b5f235816ae3f42ff2c1c3df58f0fa"
     },
     {
       "path": "packages/application/src/concurrency.ts",
@@ -305,7 +305,7 @@
       "status": "present",
       "vo": "VO-52d0780c11bcc6fd7583",
       "exists": true,
-      "digest": "06ea88839621e8c71a1c59f6ec56b2e1181e872cad9e0ea07aed5bbbafb2d310"
+      "digest": "36a1088dfdb331e68b60ad7d3c06476354bd65e07962d941d23811a525397ac9"
     },
     {
       "path": "specs/001-governance-control-plane/traceability.md",
@@ -487,5 +487,5 @@
       "digest": "d744d0ef7cd3141d49b8708f5a27aa92520f37002d9fc9798af3c3f8ed282502"
     }
   ],
-  "inventoryDigest": "397a94a5a25e8119c9030dd5057edbcc441ca4d15e6880e8400ad5b25eb4e62f"
+  "inventoryDigest": "e79dddb019c6cb7f4cd486d10b38685e690a468e84fde411a9745cdd5e6e8a8d"
 }

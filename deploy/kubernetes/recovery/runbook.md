@@ -10,6 +10,10 @@ The end-to-end recovery boundary is proven by `tests/recovery/canonical-restore.
 approved four-hour restore, no committed loss, evidence verification, replay, projection rebuild,
 and paused reconciliation. This runbook is the operational counterpart.
 
+> Commands below use `$NAMESPACE`: the namespace the control plane was provisioned into
+> (`scripts/provision.sh --namespace`, default `trustcircle`). Export it first, e.g.
+> `export NAMESPACE=trustcircle`.
+
 > For day-to-day operations (alerts, dead letters, reconciliation, audit freeze, evidence gaps) see
 > `docs/runbooks/operations.md` (T285).
 
@@ -47,7 +51,7 @@ Backups are useless if they are not restorable, so this section is part of DR re
 1. **Database.** Continuous WAL archiving + periodic base backups, encrypted at rest with a KMS key
    distinct from the running cluster's data key. Verify the archive is advancing:
    ```
-   kubectl -n governance exec statefulset/postgres -- pg_controldata | grep "Latest checkpoint location"
+   kubectl -n "$NAMESPACE" exec statefulset/postgres -- pg_controldata | grep "Latest checkpoint location"
    ```
 2. **Object store (evidence, A3).** Versioned, object-lock (WORM) enabled, replicated to a second
    region. Evidence is content-addressed, so a restored blob is self-verifying.
@@ -68,7 +72,7 @@ to (but not past) the corruption boundary.
 
 1. Freeze writes: scale the API and workers to zero.
    ```
-   kubectl -n governance scale deploy/api deploy/worker --replicas=0
+   kubectl -n "$NAMESPACE" scale deploy/api deploy/worker --replicas=0
    ```
 2. Provision a fresh PostgreSQL StatefulSet from the encrypted base backup.
 3. Configure recovery target (timestamp or LSN) just before the incident:
@@ -132,8 +136,8 @@ This is the gate that lets the platform come back online.
 5. **Resume.** Only when chain-verifies AND head/checkpoint match AND evidence verifies AND RTO is
    met: unpause reconciliation and scale the API/workers back up.
    ```
-   kubectl -n governance scale deploy/api --replicas=3
-   kubectl -n governance scale deploy/worker --replicas=2
+   kubectl -n "$NAMESPACE" scale deploy/api --replicas=3
+   kubectl -n "$NAMESPACE" scale deploy/worker --replicas=2
    ```
 6. Record `recovery.completed` as a governed audit event with the accountable owner, the verified
    checkpoint id, and the measured RTO.

@@ -154,7 +154,10 @@ services:
   # Backs the evidence prerequisite and OPA's signed-bundle custody.
   # ===========================================================================
   object-storage:
-    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    # The upstream minio/minio Docker Hub and quay.io images are no longer publicly pullable;
+    # the Chainguard build of the same MinIO server is used instead (no curl/mc inside, so the
+    # healthcheck speaks HTTP over bash's /dev/tcp).
+    image: cgr.dev/chainguard/minio:latest@sha256:2136d593beacf4461187035eca949fe49abd589d5079735025c711ca58fee0c8
     container_name: cp-object-storage
     restart: *restart
     networks: [control-plane]
@@ -166,7 +169,11 @@ services:
     volumes:
       - object-store-data:/data
     healthcheck:
-      test: ['CMD-SHELL', 'mc ready local || curl -fsS http://localhost:9000/minio/health/live']
+      test:
+        - 'CMD'
+        - '/bin/bash'
+        - '-c'
+        - 'exec 3<>/dev/tcp/127.0.0.1/9000 && printf "GET /minio/health/live HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3 && read -r status <&3 && [[ $$status == *" 200 "* ]]'
       interval: 5s
       timeout: 3s
       retries: 12

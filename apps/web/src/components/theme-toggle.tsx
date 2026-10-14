@@ -45,13 +45,15 @@ export function ThemeToggle() {
     return () => media.removeEventListener('change', followSystemTheme);
   }, []);
 
-  const nextTheme = theme === 'dark' ? 'light' : 'dark';
-  const label = theme ? `Switch to ${nextTheme} theme` : 'Toggle color theme';
+  // A switch whose accessible name contains its visible label (WCAG 2.5.3); state is aria-checked.
+  const label = 'Dark theme';
 
   return (
     <button
       className="theme-toggle"
       type="button"
+      role="switch"
+      aria-checked={theme === 'dark'}
       aria-label={label}
       title={label}
       onClick={() => {
@@ -79,7 +81,7 @@ export function ThemeToggle() {
           </svg>
         </span>
       </span>
-      <span className="theme-toggle__label">{theme === 'dark' ? 'Dark' : 'Light'}</span>
+      <span className="theme-toggle__label">{label}</span>
     </button>
   );
 }

@@ -1,0 +1,180 @@
+# Backing prerequisites: postgres, object-storage, nats, opa, collector (startupIndex 0-4).
+# Images are pinned by digest, identical to deploy/compose/control-plane.yml.
+apiVersion: v1
+kind: Service
+metadata: { name: postgres }
+spec:
+  selector: { app.kubernetes.io/name: postgres }
+  ports: [{ name: pg, port: 5432 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: postgres }
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: postgres } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: postgres } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+          env:
+            - { name: POSTGRES_USER, value: trustcircle }
+            - { name: POSTGRES_DB, value: trustcircle }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: trustcircle-secrets, key: POSTGRES_PASSWORD } }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe:
+            exec: { command: ['pg_isready', '-U', 'trustcircle', '-d', 'trustcircle'] }
+            periodSeconds: 5
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: migrations, mountPath: /docker-entrypoint-initdb.d, readOnly: true }
+      volumes:
+        - name: migrations
+          configMap: { name: trustcircle-migrations }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 10Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: object-storage }
+spec:
+  selector: { app.kubernetes.io/name: object-storage }
+  ports: [{ name: s3, port: 9000 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: object-storage }
+spec:
+  serviceName: object-storage
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: object-storage } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: object-storage } }
+    spec:
+      containers:
+        - name: minio
+          image: cgr.dev/chainguard/minio:latest@sha256:2136d593beacf4461187035eca949fe49abd589d5079735025c711ca58fee0c8
+          args: ['server', '/data']
+          env:
+            - { name: MINIO_ROOT_USER, value: trustcircle }
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                { secretKeyRef: { name: trustcircle-secrets, key: OBJECT_STORE_SECRET_KEY } }
+          ports: [{ containerPort: 9000 }]
+          readinessProbe:
+            httpGet: { path: /minio/health/live, port: 9000 }
+            periodSeconds: 5
+          volumeMounts: [{ name: data, mountPath: /data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 20Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: nats }
+spec:
+  selector: { app.kubernetes.io/name: nats }
+  ports:
+    - { name: client, port: 4222 }
+    - { name: monitor, port: 8222 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: nats }
+spec:
+  serviceName: nats
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: nats } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: nats } }
+    spec:
+      containers:
+        - name: nats
+          image: nats:2.10-alpine@sha256:b83efabe3e7def1e0a4a31ec6e078999bb17c80363f881df35edc70fcb6bb927
+          args: ['--jetstream', '--store_dir=/data', '--http_port=8222']
+          ports: [{ containerPort: 4222 }, { containerPort: 8222 }]
+          readinessProbe:
+            httpGet: { path: '/healthz?js-enabled-only=true', port: 8222 }
+            periodSeconds: 5
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            - { name: topology, mountPath: /etc/nats, readOnly: true }
+      volumes:
+        - name: topology
+          configMap: { name: trustcircle-nats-topology }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 5Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: opa }
+spec:
+  selector: { app.kubernetes.io/name: opa }
+  ports: [{ name: http, port: 8181 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: opa }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: opa } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: opa } }
+    spec:
+      containers:
+        - name: opa
+          image: openpolicyagent/opa:latest@sha256:1248dbe708586cb4cb89c58437d5e42496b1b1883ed9aff3bbbdd3ac5d24c4ee
+          args:
+            [
+              'run',
+              '--server',
+              '--addr=0.0.0.0:8181',
+              '--log-level=error',
+              '--set=decision_logs.console=true',
+            ]
+          ports: [{ containerPort: 8181 }]
+          readinessProbe:
+            httpGet: { path: /health, port: 8181 }
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata: { name: collector }
+spec:
+  selector: { app.kubernetes.io/name: collector }
+  ports:
+    - { name: otlp-grpc, port: 4317 }
+    - { name: otlp-http, port: 4318 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: collector }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app.kubernetes.io/name: collector } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: collector } }
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:latest@sha256:f2f01157055a9b2aab9df7118e1f1c9abf345e99b23bc7a2bc791db374a7d0f6
+          args: ['--config=/etc/otelcol/config.yaml']
+          ports: [{ containerPort: 4317 }, { containerPort: 4318 }]
+          volumeMounts: [{ name: config, mountPath: /etc/otelcol, readOnly: true }]
+      volumes:
+        - name: config
+          configMap:
+            { name: trustcircle-otel, items: [{ key: otel-collector.yaml, path: config.yaml }] }

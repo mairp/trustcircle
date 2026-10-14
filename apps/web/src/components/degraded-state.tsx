@@ -21,35 +21,46 @@ export function ConsoleSummary({
   const affected = sections.filter((section) => section.quality !== 'current').length;
   const current = sections.length - affected;
   const governedSections = sections.filter((section) => section.id !== 'posture');
+  // A section whose count is unknown is never folded in as zero: the total is a lower bound and the
+  // number of uncounted sections is shown beside it, so an undercount cannot read as exact.
   const governedRecords = governedSections.reduce(
     (total, section) => total + (section.recordCount ?? 0),
     0,
   );
+  const uncounted = governedSections.filter(
+    (section) => section.recordCount == null && !section.verifiedEmpty,
+  ).length;
+  const recordsLabel = uncounted
+    ? `≥${governedRecords} (${uncounted} section${uncounted === 1 ? '' : 's'} uncounted)`
+    : `${governedRecords}`;
   const verifiedEmpty = governedSections.filter((section) => section.verifiedEmpty).length;
   return (
-    <aside
+    <section
       className={affected ? 'summary summary--attention' : 'summary'}
-      aria-live="polite"
       aria-label="Console data quality and governed scope"
     >
       <span className="summary-signal" aria-hidden="true">
         {affected ? '!' : '✓'}
       </span>
-      <div className="summary-copy">
+      <div className="summary-copy" role="status">
         <span className="summary-kicker">System overview</span>
         <strong>
           {affected
             ? 'Attention required'
-            : governedRecords > 0
-              ? 'Current governed scope'
-              : 'No governed resources registered'}
+            : uncounted
+              ? 'Current governed scope (partly counted)'
+              : governedRecords > 0
+                ? 'Current governed scope'
+                : 'No governed resources registered'}
         </strong>
         <span>
           {affected
             ? `${affected} section${affected === 1 ? '' : 's'} are stale, partial, degraded, unavailable, or unknown.`
-            : governedRecords > 0
-              ? `${governedRecords} governed record${governedRecords === 1 ? '' : 's'} are visible across the authoritative tenant and runtime read models.`
-              : 'The API is current, but the authoritative tenant read models contain no assets, decisions, cases, controllers, compliance records, evidence, connectors, or health observations.'}
+            : uncounted
+              ? `At least ${governedRecords} governed record${governedRecords === 1 ? '' : 's'} are visible; ${uncounted} read model${uncounted === 1 ? ' did' : 's did'} not report a count, so the total is a lower bound.`
+              : governedRecords > 0
+                ? `${governedRecords} governed record${governedRecords === 1 ? '' : 's'} are visible across the authoritative tenant and runtime read models.`
+                : 'The API is current, but the authoritative tenant read models contain no assets, decisions, cases, controllers, compliance records, evidence, connectors, or health observations.'}
         </span>
       </div>
       <dl className="summary-metrics">
@@ -61,7 +72,7 @@ export function ConsoleSummary({
         </div>
         <div>
           <dt>Governed records</dt>
-          <dd>{governedRecords}</dd>
+          <dd>{recordsLabel}</dd>
         </div>
         <div>
           <dt>Verified empty</dt>
@@ -70,6 +81,6 @@ export function ConsoleSummary({
           </dd>
         </div>
       </dl>
-    </aside>
+    </section>
   );
 }

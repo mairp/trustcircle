@@ -1,4 +1,4 @@
-# `deploy/kubernetes/` — hybrid central-catalog / federated-cell deployment (ownership stub)
+# `deploy/kubernetes/` — hybrid central-catalog / federated-cell deployment
 
 Owner: platform / deployment.
 Target: Linux containers, hybrid central-catalog/federated-cell deployment
@@ -11,5 +11,14 @@ boundaries (`apps/api`, `apps/command-worker`, `apps/projector`,
 supported operator consumers or provide migration/rollback notice (GAR-010,
 `VO-ec575c4ce42b548bfb4d`).
 
-Concrete manifests land in a later deployment phase; this stub reserves and
-documents ownership so `docs/architecture/repository-layout.md` remains truthful.
+## Layout
+
+- `base/` — kustomize base for the core-only profile, mirroring `deploy/compose/control-plane.yml`
+  (same pinned infrastructure images and the same fail-closed health probes). The base is
+  namespace-agnostic and holds no secret values.
+- `recovery/` — disaster-recovery runbook.
+
+Deploy with `scripts/provision.sh --target kubernetes` (see `docs/PROVISIONING.md`). The script
+creates the namespace-scoped Secret and ConfigMaps the base references, then applies a generated
+overlay that sets the namespace and image references. Federated-cell and sidecar adapter
+manifests are still to come.

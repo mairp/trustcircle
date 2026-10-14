@@ -62,7 +62,7 @@ export async function createOperationalCaseAction(form: FormData): Promise<void>
     { idempotencyKey: randomUUID() },
   );
   ensureSuccess(result);
-  revalidatePath('/');
+  revalidatePath('/operations');
 }
 
 export async function transitionOperationalCaseAction(form: FormData): Promise<void> {
@@ -82,7 +82,7 @@ export async function transitionOperationalCaseAction(form: FormData): Promise<v
     ifMatch: required(form, 'etag'),
   });
   ensureSuccess(result);
-  revalidatePath('/');
+  revalidatePath('/operations');
 }
 
 export async function evaluateOperationalCaseSlaAction(form: FormData): Promise<void> {
@@ -99,5 +99,5 @@ export async function evaluateOperationalCaseSlaAction(form: FormData): Promise<
     { idempotencyKey: randomUUID(), ifMatch: required(form, 'etag') },
   );
   ensureSuccess(result);
-  revalidatePath('/');
+  revalidatePath('/operations');
 }

@@ -14,6 +14,8 @@
 #   5. tests               — unit / contract / integration / security + governance suites pass
 #   6. migrations          — schema migrations apply / migration suite passes
 #   7. evidence-manifest    — the evidence manifest matches on-disk supported contracts (tamper-evident)
+#   8. secret-scan          — gitleaks over the full history (.gitleaks.toml; no unallowlisted finding)
+#   9. provisioning         — scripts/provision.sh passes shellcheck; compose and kustomize render
 #
 # Determinism: Node 22 is pinned, `npm ci` installs from the committed lockfile, and legs whose
 # real tooling lands in a later implementation phase run through scripts/ci/run-if-present.mjs,
@@ -23,9 +25,9 @@ name: verify
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, wsl-updated]
   push:
-    branches: [main]
+    branches: [main, wsl-updated]
   workflow_dispatch: {}
 
 # Never let two runs of the same ref fight; cancel superseded runs.
@@ -144,11 +146,48 @@ jobs:
       - name: Verify evidence manifest matches on-disk supported contracts
         run: npm run evidence:verify
 
+  # ---- 8. secret-scan --------------------------------------------------------
+  secret-scan:
+    name: secret-scan (gitleaks)
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: '8.30.1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -fsSL -o gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf gitleaks.tgz gitleaks && sudo mv gitleaks /usr/local/bin/
+      - name: Scan full history and working tree
+        run: |
+          gitleaks git . --config .gitleaks.toml --redact --no-banner
+          gitleaks dir . --config .gitleaks.toml --redact --no-banner
+
+  # ---- 9. provisioning -------------------------------------------------------
+  provisioning:
+    name: provisioning (shellcheck + compose/kustomize render)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck scripts/provision.sh
+        run: shellcheck -S warning scripts/provision.sh
+      - name: Compose profile renders
+        run: docker compose -f deploy/compose/control-plane.yml config -q
+      - name: Kubernetes base renders
+        run: kubectl kustomize deploy/kubernetes/base > /dev/null
+      - name: Script syntax and help
+        run: |
+          scripts/provision.sh --help > /dev/null
+          bash -n scripts/provision.sh
+
   # ---- Aggregate gate: every required domain must pass ---------------------
   verify:
     name: verify (required)
     runs-on: ubuntu-latest
-    needs: [lint, types, contracts, tests, migrations, evidence-manifest]
+    needs: [lint, types, contracts, tests, migrations, evidence-manifest, secret-scan, provisioning]
     if: always()
     steps:
       - name: Fail if any required PR-validation domain failed
@@ -159,12 +198,16 @@ jobs:
           echo "tests=${{ needs.tests.result }}"
           echo "migrations=${{ needs.migrations.result }}"
           echo "evidence-manifest=${{ needs.evidence-manifest.result }}"
+          echo "secret-scan=${{ needs.secret-scan.result }}"
+          echo "provisioning=${{ needs.provisioning.result }}"
           if [ "${{ needs.lint.result }}" != "success" ] \
             || [ "${{ needs.types.result }}" != "success" ] \
             || [ "${{ needs.contracts.result }}" != "success" ] \
             || [ "${{ needs.tests.result }}" != "success" ] \
             || [ "${{ needs.migrations.result }}" != "success" ] \
-            || [ "${{ needs.evidence-manifest.result }}" != "success" ]; then
+            || [ "${{ needs.evidence-manifest.result }}" != "success" ] \
+            || [ "${{ needs.secret-scan.result }}" != "success" ] \
+            || [ "${{ needs.provisioning.result }}" != "success" ]; then
             echo "::error::One or more required PR-validation domains failed"
             exit 1
           fi

@@ -65,6 +65,8 @@ tmp/
 # (protects workspace state & secrets; the tracked example template is re-included)
 .env
 .env.*
+# Consumer provisioning state: generated secrets, overlays, receipts (scripts/provision.sh).
+.provision/
 *.local
 
 # --- OS / editor scratch (disposable) ----------------------------------------

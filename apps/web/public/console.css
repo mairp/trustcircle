@@ -8,6 +8,9 @@
   --surface-2: var(--panel-2);
   --line: #dde5e0;
   --line-strong: #c5d0ca;
+  /* Form-control borders: >=3:1 against every light surface (WCAG 1.4.11). */
+  --border-control: #7d8a83;
+  --focus-ring: var(--attention);
   --text: #17201c;
   --muted: #5c6962;
   --quiet: #65716a;
@@ -44,9 +47,11 @@
   --surface-2: var(--panel-2);
   --line: #29362f;
   --line-strong: #3b4c43;
+  --border-control: #6f8278;
   --text: #f3f7f4;
   --muted: #a3b0a8;
-  --quiet: #718078;
+  /* >=4.5:1 on panel, panel-2 and panel-3 (WCAG 1.4.3). */
+  --quiet: #8a978f;
   --accent: #9bd45c;
   --accent-strong: #b6e77e;
   --accent-soft: #1d2b17;
@@ -91,8 +96,12 @@ a {
 
 a:focus-visible,
 button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
 [tabindex]:focus-visible {
-  outline: 0.2rem solid var(--attention);
+  outline: 0.2rem solid var(--focus-ring);
   outline-offset: 0.2rem;
 }
 
@@ -1051,7 +1060,7 @@ footer {
   min-height: 2.5rem;
   width: 100%;
   padding: 0.5rem 0.65rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--border-control);
   border-radius: 0.55rem;
   background: var(--panel);
   color: var(--text);
