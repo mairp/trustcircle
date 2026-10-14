@@ -301,3 +301,7 @@ indeterminate gate as passing.
 - [Governed Platform Continuation implementation audit](evidence/governed-platform-continuation/implementation-audit.md)
 - [Enhancement roadmap](roadmap/trustcircle-platform-enhancement-roadmap.md)
 - [Current enhancement implementation status](roadmap/trustcircle-platform-enhancement-implementation-status.md)
+
+## License
+
+Licensed under the [Apache License, Version 2.0](LICENSE).
