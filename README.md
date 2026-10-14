@@ -21,11 +21,20 @@ Spec 004.
 
 ## See it running
 
-![TrustCircleAI operator console tour: dashboard, search, operations queue, inventory, compliance, evidence, trends, dark theme](docs/media/trustcircle-ui-tour.gif)
+![TrustCircleAI operator console tour: dashboard, search, operations queue, decision inbox, compliance and trends on a live instance, then a decision package approved with a reason](docs/media/trustcircle-ui-tour.gif)
 
-A 47-second tour of the operator console on a fresh `scripts/provision.sh --target compose`
-instance, in read-only local preview. Full-quality video:
-[docs/media/trustcircle-ui-tour.mp4](docs/media/trustcircle-ui-tour.mp4).
+A 55-second tour in two captioned parts:
+
+1. **Live local instance** from `scripts/provision.sh --target compose`, in its read-only auditor
+   preview: dashboard, the `/` search shortcut, operations, the decision inbox, compliance and
+   trends.
+2. **Decision screens** on the same production web build, with sample data from a stub API and
+   signed in as an approver: the inbox, a full decision package, an approval with a reason, and
+   the separation-of-duties explanation on the approver's own request. The local preview cannot
+   hold decisions until an identity gateway is configured, which is why this part uses sample
+   data.
+
+Full-quality video: [docs/media/trustcircle-ui-tour.mp4](docs/media/trustcircle-ui-tour.mp4).
 
 ## ISO/IEC 42001 alignment
 

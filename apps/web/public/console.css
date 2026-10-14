@@ -1251,6 +1251,18 @@ footer {
   background: var(--panel-2);
 }
 
+.decision-summary .operations-summary {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+
+/* Status words such as "Approved" or "Changes requested" wrap between words, never inside one. */
+.decision-summary .operations-summary dd {
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
 .decision-layout {
   display: grid;
   gap: 1rem;
